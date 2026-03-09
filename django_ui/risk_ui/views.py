@@ -52,8 +52,11 @@ def _handle_diabetes(request, context):
         }
         response = requests.post(f"{FASTAPI_BASE}/predict", json=payload, timeout=10)
         response.raise_for_status()
-        context["diabetes_result"] = response.json()
+        result = response.json()
+        context["diabetes_result"] = result
         context["diabetes_form"] = payload
+        pct = float(result.get("risk_percentage", 0))
+        context["diabetes_gauge_offset"] = round(251.2 - 188.4 * pct / 100, 1)
     except requests.exceptions.ConnectionError:
         context["diabetes_error"] = "Cannot connect to the prediction API. Make sure the FastAPI server is running on port 8000."
     except requests.exceptions.RequestException as e:
@@ -83,8 +86,11 @@ def _handle_heart_disease(request, context):
         }
         response = requests.post(f"{FASTAPI_BASE}/predict-heart", json=payload, timeout=10)
         response.raise_for_status()
-        context["heart_result"] = response.json()
+        result = response.json()
+        context["heart_result"] = result
         context["heart_form"] = payload
+        pct = float(result.get("risk_percentage", 0))
+        context["heart_gauge_offset"] = round(251.2 - 188.4 * pct / 100, 1)
     except requests.exceptions.ConnectionError:
         context["heart_error"] = "Cannot connect to the prediction API. Make sure the FastAPI server is running on port 8000."
     except requests.exceptions.RequestException as e:
