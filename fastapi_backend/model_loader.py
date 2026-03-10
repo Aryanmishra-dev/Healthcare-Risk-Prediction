@@ -26,6 +26,10 @@ _heart_model = None
 _heart_calibrator = None
 _heart_features = None
 
+_lung_model = None
+_lung_scaler = None
+_lung_features = None
+
 
 # ══════════════════════════════════════════════════════════════════════════
 #  Loaders
@@ -35,6 +39,7 @@ def load_models():
     """Load all disease models at startup."""
     _load_diabetes_models()
     _load_heart_disease_models()
+    _load_lung_cancer_models()
 
 
 def _load_diabetes_models():
@@ -57,6 +62,18 @@ def _load_heart_disease_models():
         logger.info("Heart disease models loaded successfully. Features: %s", _heart_features)
     except FileNotFoundError as e:
         logger.error("Heart disease model files not found: %s", e)
+        raise
+
+
+def _load_lung_cancer_models():
+    global _lung_model, _lung_scaler, _lung_features
+    try:
+        _lung_model = joblib.load(os.path.join(MODEL_DIR, "lung_cancer_model.pkl"))
+        _lung_scaler = joblib.load(os.path.join(MODEL_DIR, "lung_cancer_scaler.pkl"))
+        _lung_features = joblib.load(os.path.join(MODEL_DIR, "lung_cancer_features.pkl"))
+        logger.info("Lung cancer models loaded successfully. Features: %s", _lung_features)
+    except FileNotFoundError as e:
+        logger.error("Lung cancer model files not found: %s", e)
         raise
 
 
@@ -104,13 +121,15 @@ def predict_diabetes(
     mental_health: float,
 ) -> dict:
     """Run diabetes inference and return risk percentage + level."""
+    if _diabetes_model is None or _diabetes_calibrator is None:
+        raise RuntimeError("Diabetes model not loaded. Restart the server.")
     df = build_diabetes_features(
         age_group, bmi, high_bp, smoker, high_cholesterol,
         physical_activity, general_health, mental_health,
     )
 
     raw_prob = _diabetes_model.predict_proba(df)[:, 1][0]
-    cal_prob = float(_diabetes_calibrator.predict([raw_prob])[0])
+    cal_prob = float(np.clip(_diabetes_calibrator.predict([raw_prob])[0], 0.0, 1.0))
     risk_pct = round(cal_prob * 100, 1)
 
     if risk_pct < 20:
@@ -149,6 +168,8 @@ def predict_heart_disease(
     diabetes: int,
 ) -> dict:
     """Run heart disease inference and return risk percentage + level."""
+    if _heart_model is None or _heart_calibrator is None or _heart_features is None:
+        raise RuntimeError("Heart disease model not loaded. Restart the server.")
     # Build DataFrame with columns in the exact order the model expects
     # The heart disease model was trained with BRFSS calculated-variable encoding
     # where _RFHYPE5, _RFCHOL, _RFDRHV5 use 1=No-risk, 0=Has-risk (inverted).
@@ -172,12 +193,55 @@ def predict_heart_disease(
     df = pd.DataFrame([row])[_heart_features].astype(np.float64)
 
     raw_prob = _heart_model.predict_proba(df)[:, 1][0]
-    cal_prob = float(_heart_calibrator.predict([raw_prob])[0])
+    cal_prob = float(np.clip(_heart_calibrator.predict([raw_prob])[0], 0.0, 1.0))
     risk_pct = round(cal_prob * 100, 1)
 
     if risk_pct < 20:
         level = "Low"
     elif risk_pct < 45:
+        level = "Moderate"
+    else:
+        level = "High"
+
+    return {"risk_percentage": risk_pct, "risk_level": level}
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  Lung Cancer Prediction
+# ══════════════════════════════════════════════════════════════════════════
+
+def predict_lung_cancer(
+    age: int,
+    gender: int,
+    smoking: int,
+    yellow_fingers: int,
+    chronic_disease: int,
+    fatigue: int,
+    wheezing: int,
+    shortness_of_breath: int,
+) -> dict:
+    """Run lung cancer inference and return risk percentage + level."""
+    if _lung_model is None or _lung_scaler is None or _lung_features is None:
+        raise RuntimeError("Lung cancer model not loaded. Restart the server.")
+    row = {
+        "Age": float(age),
+        "Gender": float(gender),
+        "Smoking": float(smoking),
+        "Yellow Fingers": float(yellow_fingers),
+        "Chronic Disease": float(chronic_disease),
+        "Fatigue": float(fatigue),
+        "Wheezing": float(wheezing),
+        "Shortness of Breath": float(shortness_of_breath),
+    }
+    df = pd.DataFrame([row])[_lung_features].copy()
+    df["Age"] = _lung_scaler.transform(df[["Age"]])
+    df = df.astype(np.float64)
+
+    risk_pct = round(float(np.clip(_lung_model.predict_proba(df)[:, 1][0], 0.0, 1.0)) * 100, 1)
+
+    if risk_pct < 30:
+        level = "Low"
+    elif risk_pct < 60:
         level = "Moderate"
     else:
         level = "High"

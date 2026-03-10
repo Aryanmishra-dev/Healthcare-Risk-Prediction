@@ -18,16 +18,19 @@ from fastapi_backend.schemas import (
     PredictionRequest,
     PredictionResponse,
     HeartDiseasePredictionRequest,
+    LungCancerPredictionRequest,
 )
 from fastapi_backend.model_loader import (
     load_models,
     predict,
     predict_heart_disease,
+    predict_lung_cancer,
 )
 
 # ── Rate limiting ──────────────────────────────────────────────────────────
 RATE_LIMIT = int(os.environ.get("RATE_LIMIT_PER_MINUTE", "60"))
 _request_log: dict[str, list[float]] = defaultdict(list)
+_MAX_TRACKED_IPS = 10_000  # Prevent unbounded memory growth
 
 
 @asynccontextmanager
@@ -67,7 +70,7 @@ async def rate_limit_middleware(request: Request, call_next):
     client_ip = request.client.host if request.client else "unknown"
     now = time.time()
     window = now - 60
-    # Prune old entries
+    # Prune old entries for this IP
     _request_log[client_ip] = [t for t in _request_log[client_ip] if t > window]
     if len(_request_log[client_ip]) >= RATE_LIMIT:
         return JSONResponse(
@@ -75,6 +78,11 @@ async def rate_limit_middleware(request: Request, call_next):
             content={"detail": "Too many requests. Try again later."},
         )
     _request_log[client_ip].append(now)
+    # Evict stale IPs to prevent unbounded memory growth
+    if len(_request_log) > _MAX_TRACKED_IPS:
+        stale = [ip for ip, ts in _request_log.items() if not ts or ts[-1] < window]
+        for ip in stale:
+            del _request_log[ip]
     return await call_next(request)
 
 
@@ -88,7 +96,7 @@ def root():
     return {
         "service": "Healthcare Risk Prediction API",
         "status": "running",
-        "models": ["diabetes", "heart_disease"],
+        "models": ["diabetes", "heart_disease", "lung_cancer"],
     }
 
 
@@ -144,5 +152,30 @@ def make_heart_disease_prediction(data: HeartDiseasePredictionRequest):
         ment_health=data.ment_health,
         phys_health=data.phys_health,
         diabetes=data.diabetes,
+    )
+    return PredictionResponse(**result)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  Lung Cancer Prediction
+# ══════════════════════════════════════════════════════════════════════════
+
+@app.post("/predict-lung", response_model=PredictionResponse)
+@app.post("/api/predict-lung", response_model=PredictionResponse)
+def make_lung_cancer_prediction(data: LungCancerPredictionRequest):
+    """
+    Predict lung cancer risk from patient indicators.
+
+    Returns risk percentage (0-100) and risk level (Low/Moderate/High).
+    """
+    result = predict_lung_cancer(
+        age=data.age,
+        gender=data.gender,
+        smoking=data.smoking,
+        yellow_fingers=data.yellow_fingers,
+        chronic_disease=data.chronic_disease,
+        fatigue=data.fatigue,
+        wheezing=data.wheezing,
+        shortness_of_breath=data.shortness_of_breath,
     )
     return PredictionResponse(**result)

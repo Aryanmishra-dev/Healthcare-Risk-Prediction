@@ -81,6 +81,36 @@ class HeartDiseasePredictionRequest(BaseModel):
     }
 
 
+# ── Lung Cancer ────────────────────────────────────────────────────────────
+
+class LungCancerPredictionRequest(BaseModel):
+    age: int = Field(..., ge=18, le=100, description="Patient age in years")
+    gender: int = Field(..., ge=0, le=1, description="Gender (1=Male, 0=Female)")
+    smoking: int = Field(..., ge=0, le=1, description="Smoking (1=Yes, 0=No)")
+    yellow_fingers: int = Field(..., ge=0, le=1, description="Yellow fingers (1=Yes, 0=No)")
+    chronic_disease: int = Field(..., ge=0, le=1, description="Chronic disease (1=Yes, 0=No)")
+    fatigue: int = Field(..., ge=0, le=1, description="Fatigue (1=Yes, 0=No)")
+    wheezing: int = Field(..., ge=0, le=1, description="Wheezing (1=Yes, 0=No)")
+    shortness_of_breath: int = Field(..., ge=0, le=1, description="Shortness of breath (1=Yes, 0=No)")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "age": 65,
+                    "gender": 1,
+                    "smoking": 1,
+                    "yellow_fingers": 1,
+                    "chronic_disease": 1,
+                    "fatigue": 1,
+                    "wheezing": 1,
+                    "shortness_of_breath": 1,
+                }
+            ]
+        }
+    }
+
+
 # ── Shared Response ────────────────────────────────────────────────────────
 
 class PredictionResponse(BaseModel):

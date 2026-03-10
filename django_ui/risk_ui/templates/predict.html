@@ -29,13 +29,23 @@ body { font-family: 'Inter', sans-serif; }
 .section-panel.active { display: block; }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 .animate-fade-up { animation: fadeUp 0.35s ease; }
+/* Mobile sidebar overlay */
+#sidebar-overlay { display: none; }
+#sidebar-overlay.active { display: block; }
+@media (max-width: 767px) {
+    #sidebar { transform: translateX(-100%); transition: transform 0.25s ease; position: fixed; top: 0; left: 0; z-index: 50; height: 100vh; }
+    #sidebar.open { transform: translateX(0); }
+}
 </style>
 </head>
-<body class="bg-background-light text-slate-900 antialiased" data-initial-tab="{% if heart_result or heart_error %}heart{% else %}diabetes{% endif %}">
+<body class="bg-background-light text-slate-900 antialiased" data-initial-tab="{% if lung_result or lung_error %}lung{% elif heart_result or heart_error %}heart{% else %}diabetes{% endif %}">
 <div class="flex h-screen overflow-hidden">
 
+<!-- ═══════════ Mobile Overlay ═══════════ -->
+<div id="sidebar-overlay" class="fixed inset-0 bg-black/40 z-40" onclick="closeSidebar()"></div>
+
 <!-- ═══════════ Sidebar ═══════════ -->
-<aside class="w-64 flex-shrink-0 border-r border-slate-200 bg-white flex flex-col justify-between p-4">
+<aside id="sidebar" class="w-64 flex-shrink-0 border-r border-slate-200 bg-white flex flex-col justify-between p-4">
     <div class="flex flex-col gap-8">
         <div class="flex items-center gap-3 px-2">
             <div class="bg-primary rounded-lg p-1.5 text-white">
@@ -56,6 +66,11 @@ body { font-family: 'Inter', sans-serif; }
                class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors">
                 <span class="material-symbols-outlined text-[20px]">favorite</span>
                 <span class="text-sm font-medium">Heart Disease Risk</span>
+            </a>
+            <a id="nav-lung" href="#" onclick="switchTab('lung');return false"
+               class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors">
+                <span class="material-symbols-outlined text-[20px]">pulmonology</span>
+                <span class="text-sm font-medium">Lung Cancer Risk</span>
             </a>
         </nav>
     </div>
@@ -78,20 +93,23 @@ body { font-family: 'Inter', sans-serif; }
 <main class="flex-1 flex flex-col overflow-hidden">
 
     <!-- Header -->
-    <header class="h-16 border-b border-slate-200 bg-white flex items-center justify-between px-8 z-10">
-        <div class="flex items-center gap-4">
-            <h2 id="header-title" class="text-slate-900 text-lg font-bold">Diabetes Risk Assessment</h2>
-            <div class="h-4 w-[1px] bg-slate-300"></div>
-            <span class="text-xs text-slate-400 font-medium">AI-powered clinical risk prediction</span>
+    <header class="h-14 md:h-16 border-b border-slate-200 bg-white flex items-center justify-between px-4 md:px-8 z-10">
+        <div class="flex items-center gap-3 md:gap-4">
+            <button id="menu-btn" class="md:hidden p-1 -ml-1 text-slate-600" onclick="toggleSidebar()">
+                <span class="material-symbols-outlined text-2xl">menu</span>
+            </button>
+            <h2 id="header-title" class="text-slate-900 text-base md:text-lg font-bold">Diabetes Risk Assessment</h2>
+            <div class="hidden sm:block h-4 w-[1px] bg-slate-300"></div>
+            <span class="hidden sm:inline text-xs text-slate-400 font-medium">AI-powered clinical risk prediction</span>
         </div>
         <div class="flex items-center gap-3">
-            <div class="h-4 w-[1px] bg-slate-300 mx-1"></div>
+            <div class="h-4 w-[1px] bg-slate-300 mx-1 hidden sm:block"></div>
             <div class="size-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs">AI</div>
         </div>
     </header>
 
     <!-- Scrollable Content -->
-    <div class="flex-1 overflow-y-auto p-8 hide-scrollbar bg-background-light">
+    <div class="flex-1 overflow-y-auto p-4 md:p-8 hide-scrollbar bg-background-light">
         <div class="max-w-7xl mx-auto">
 
         <!-- ══════════════ DIABETES SECTION ══════════════ -->
@@ -124,7 +142,7 @@ body { font-family: 'Inter', sans-serif; }
                                     <span class="material-symbols-outlined text-primary text-xl">person</span>
                                     <h4 class="text-sm font-bold uppercase tracking-wider text-slate-400">Demographics</h4>
                                 </div>
-                                <div class="grid grid-cols-2 gap-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div class="space-y-1.5">
                                         <label class="text-xs font-semibold text-slate-600">Age Group</label>
                                         <select name="age" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
@@ -157,7 +175,7 @@ body { font-family: 'Inter', sans-serif; }
                                     <span class="material-symbols-outlined text-primary text-xl">medical_services</span>
                                     <h4 class="text-sm font-bold uppercase tracking-wider text-slate-400">Medical History</h4>
                                 </div>
-                                <div class="grid grid-cols-2 gap-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div class="space-y-1.5">
                                         <label class="text-xs font-semibold text-slate-600">High Blood Pressure</label>
                                         <select name="bp" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
@@ -181,7 +199,7 @@ body { font-family: 'Inter', sans-serif; }
                                     <span class="material-symbols-outlined text-primary text-xl">fitness_center</span>
                                     <h4 class="text-sm font-bold uppercase tracking-wider text-slate-400">Lifestyle &amp; Well-being</h4>
                                 </div>
-                                <div class="grid grid-cols-2 gap-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div class="space-y-1.5">
                                         <label class="text-xs font-semibold text-slate-600">Smoking History</label>
                                         <select name="smoker" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
@@ -359,7 +377,7 @@ body { font-family: 'Inter', sans-serif; }
                                     <span class="material-symbols-outlined text-primary text-xl">person</span>
                                     <h4 class="text-sm font-bold uppercase tracking-wider text-slate-400">Demographics</h4>
                                 </div>
-                                <div class="grid grid-cols-2 gap-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div class="space-y-1.5">
                                         <label class="text-xs font-semibold text-slate-600">Age Group</label>
                                         <select name="hd_age" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
@@ -399,7 +417,7 @@ body { font-family: 'Inter', sans-serif; }
                                     <span class="material-symbols-outlined text-primary text-xl">medical_services</span>
                                     <h4 class="text-sm font-bold uppercase tracking-wider text-slate-400">Medical History</h4>
                                 </div>
-                                <div class="grid grid-cols-2 gap-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div class="space-y-1.5">
                                         <label class="text-xs font-semibold text-slate-600">High Blood Pressure</label>
                                         <select name="hd_high_bp" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
@@ -430,7 +448,7 @@ body { font-family: 'Inter', sans-serif; }
                                     <span class="material-symbols-outlined text-primary text-xl">fitness_center</span>
                                     <h4 class="text-sm font-bold uppercase tracking-wider text-slate-400">Lifestyle &amp; Diet</h4>
                                 </div>
-                                <div class="grid grid-cols-2 gap-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div class="space-y-1.5">
                                         <label class="text-xs font-semibold text-slate-600">Smoking History</label>
                                         <select name="hd_smoker" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
@@ -475,7 +493,7 @@ body { font-family: 'Inter', sans-serif; }
                                     <span class="material-symbols-outlined text-primary text-xl">self_improvement</span>
                                     <h4 class="text-sm font-bold uppercase tracking-wider text-slate-400">Self-Assessment</h4>
                                 </div>
-                                <div class="grid grid-cols-2 gap-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div class="space-y-1.5">
                                         <label class="text-xs font-semibold text-slate-600">General Health</label>
                                         <select name="hd_gen_health" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
@@ -638,6 +656,229 @@ body { font-family: 'Inter', sans-serif; }
             </div>
         </div>
 
+        <!-- ══════════════ LUNG CANCER SECTION ══════════════ -->
+        <div class="section-panel" id="section-lung">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+                <!-- Left: Form -->
+                <div class="lg:col-span-7 flex flex-col gap-6">
+                    {% if lung_error %}
+                    <div class="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+                        <span class="material-symbols-outlined text-red-500">error</span>
+                        <p class="text-sm text-red-700 font-medium">{{ lung_error }}</p>
+                    </div>
+                    {% endif %}
+
+                    <form method="POST" action="">
+                    {% csrf_token %}
+                    <input type="hidden" name="form_type" value="lung">
+
+                    <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-6 border-b border-slate-100">
+                            <h3 class="text-lg font-bold text-slate-900">Lung Cancer Risk Assessment</h3>
+                            <p class="text-sm text-slate-500">Enter patient details for lung cancer risk analysis.</p>
+                        </div>
+                        <div class="p-6 space-y-8">
+
+                            <!-- Demographics -->
+                            <div>
+                                <div class="flex items-center gap-2 mb-4">
+                                    <span class="material-symbols-outlined text-primary text-xl">person</span>
+                                    <h4 class="text-sm font-bold uppercase tracking-wider text-slate-400">Demographics</h4>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div class="space-y-1.5">
+                                        <label class="text-xs font-semibold text-slate-600">Age (years)</label>
+                                        <input type="number" name="lc_age" min="18" max="100" value="{{ lung_form.age|default:'50' }}"
+                                               class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="text-xs font-semibold text-slate-600">Gender</label>
+                                        <select name="lc_gender" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                                            <option value="1" {% if lung_form.gender == 1 or not lung_form %}selected{% endif %}>Male</option>
+                                            <option value="0" {% if lung_form.gender == 0 %}selected{% endif %}>Female</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Risk Factors -->
+                            <div>
+                                <div class="flex items-center gap-2 mb-4">
+                                    <span class="material-symbols-outlined text-primary text-xl">warning</span>
+                                    <h4 class="text-sm font-bold uppercase tracking-wider text-slate-400">Risk Factors</h4>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div class="space-y-1.5">
+                                        <label class="text-xs font-semibold text-slate-600">Smoking</label>
+                                        <select name="lc_smoking" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                                            <option value="0" {% if lung_form.smoking == 0 or not lung_form %}selected{% endif %}>No</option>
+                                            <option value="1" {% if lung_form.smoking == 1 %}selected{% endif %}>Yes</option>
+                                        </select>
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="text-xs font-semibold text-slate-600">Yellow Fingers</label>
+                                        <select name="lc_yellow_fingers" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                                            <option value="0" {% if lung_form.yellow_fingers == 0 or not lung_form %}selected{% endif %}>No</option>
+                                            <option value="1" {% if lung_form.yellow_fingers == 1 %}selected{% endif %}>Yes</option>
+                                        </select>
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="text-xs font-semibold text-slate-600">Chronic Disease</label>
+                                        <select name="lc_chronic_disease" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                                            <option value="0" {% if lung_form.chronic_disease == 0 or not lung_form %}selected{% endif %}>No</option>
+                                            <option value="1" {% if lung_form.chronic_disease == 1 %}selected{% endif %}>Yes</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Symptoms -->
+                            <div>
+                                <div class="flex items-center gap-2 mb-4">
+                                    <span class="material-symbols-outlined text-primary text-xl">symptoms</span>
+                                    <h4 class="text-sm font-bold uppercase tracking-wider text-slate-400">Symptoms</h4>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div class="space-y-1.5">
+                                        <label class="text-xs font-semibold text-slate-600">Fatigue</label>
+                                        <select name="lc_fatigue" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                                            <option value="0" {% if lung_form.fatigue == 0 or not lung_form %}selected{% endif %}>No</option>
+                                            <option value="1" {% if lung_form.fatigue == 1 %}selected{% endif %}>Yes</option>
+                                        </select>
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="text-xs font-semibold text-slate-600">Wheezing</label>
+                                        <select name="lc_wheezing" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                                            <option value="0" {% if lung_form.wheezing == 0 or not lung_form %}selected{% endif %}>No</option>
+                                            <option value="1" {% if lung_form.wheezing == 1 %}selected{% endif %}>Yes</option>
+                                        </select>
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="text-xs font-semibold text-slate-600">Shortness of Breath</label>
+                                        <select name="lc_shortness_of_breath" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                                            <option value="0" {% if lung_form.shortness_of_breath == 0 or not lung_form %}selected{% endif %}>No</option>
+                                            <option value="1" {% if lung_form.shortness_of_breath == 1 %}selected{% endif %}>Yes</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                        <div class="p-6 bg-slate-50 flex justify-end">
+                            <button type="submit" class="bg-violet-600 hover:bg-violet-700 text-white px-8 py-2.5 rounded-lg font-bold text-sm shadow-lg shadow-violet-600/20 transition-all flex items-center gap-2">
+                                <span class="material-symbols-outlined text-lg">bolt</span>
+                                Generate AI Prediction
+                            </button>
+                        </div>
+                    </section>
+                    </form>
+                </div>
+
+                <!-- Right: Results -->
+                <div class="lg:col-span-5 space-y-6">
+                    {% if lung_result %}
+                    <!-- Risk Gauge -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 animate-fade-up">
+                        <h3 class="text-sm font-bold text-slate-900 mb-6">Lung Cancer Risk Probability</h3>
+                        <div class="flex flex-col items-center justify-center py-4">
+                            <div class="relative w-48 h-48">
+                                <svg class="w-full h-full" viewBox="0 0 100 100">
+                                    <circle cx="50" cy="50" r="40" fill="transparent" stroke="#e2e8f0" stroke-width="8"
+                                            stroke-dasharray="251.2" stroke-dashoffset="62.8" stroke-linecap="round"
+                                            transform="rotate(135 50 50)"></circle>
+                                    <circle cx="50" cy="50" r="40" fill="transparent"
+                                            stroke="{% if lung_result.risk_level == 'Low' %}#10b981{% elif lung_result.risk_level == 'Moderate' %}#f59e0b{% else %}#ef4444{% endif %}"
+                                            stroke-width="8" stroke-dasharray="251.2"
+                                            stroke-dashoffset="{{ lung_gauge_offset|default:'240' }}"
+                                            stroke-linecap="round" transform="rotate(135 50 50)"></circle>
+                                </svg>
+                                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                    <span class="text-4xl font-black text-slate-900">{{ lung_result.risk_percentage }}%</span>
+                                    <span class="text-[10px] font-bold uppercase tracking-widest {% if lung_result.risk_level == 'Low' %}text-emerald-500{% elif lung_result.risk_level == 'Moderate' %}text-amber-500{% else %}text-red-500{% endif %}">
+                                        {{ lung_result.risk_level }} Risk
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Input Summary -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 animate-fade-up">
+                        <h3 class="text-sm font-bold text-slate-900 mb-4">Assessment Inputs</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center py-1.5 px-3 bg-slate-50 rounded-lg text-xs">
+                                <span class="text-slate-500 font-medium">Age</span>
+                                <span class="font-bold text-slate-800">{{ lung_form.age }}</span>
+                            </div>
+                            <div class="flex justify-between items-center py-1.5 px-3 bg-slate-50 rounded-lg text-xs">
+                                <span class="text-slate-500 font-medium">Gender</span>
+                                <span class="font-bold text-slate-800">{% if lung_form.gender == 1 %}Male{% else %}Female{% endif %}</span>
+                            </div>
+                            <div class="flex justify-between items-center py-1.5 px-3 bg-slate-50 rounded-lg text-xs">
+                                <span class="text-slate-500 font-medium">Smoking</span>
+                                <span class="font-bold text-slate-800">{% if lung_form.smoking == 1 %}Yes{% else %}No{% endif %}</span>
+                            </div>
+                            <div class="flex justify-between items-center py-1.5 px-3 bg-slate-50 rounded-lg text-xs">
+                                <span class="text-slate-500 font-medium">Yellow Fingers</span>
+                                <span class="font-bold text-slate-800">{% if lung_form.yellow_fingers == 1 %}Yes{% else %}No{% endif %}</span>
+                            </div>
+                            <div class="flex justify-between items-center py-1.5 px-3 bg-slate-50 rounded-lg text-xs">
+                                <span class="text-slate-500 font-medium">Chronic Disease</span>
+                                <span class="font-bold text-slate-800">{% if lung_form.chronic_disease == 1 %}Yes{% else %}No{% endif %}</span>
+                            </div>
+                            <div class="flex justify-between items-center py-1.5 px-3 bg-slate-50 rounded-lg text-xs">
+                                <span class="text-slate-500 font-medium">Fatigue</span>
+                                <span class="font-bold text-slate-800">{% if lung_form.fatigue == 1 %}Yes{% else %}No{% endif %}</span>
+                            </div>
+                            <div class="flex justify-between items-center py-1.5 px-3 bg-slate-50 rounded-lg text-xs">
+                                <span class="text-slate-500 font-medium">Wheezing</span>
+                                <span class="font-bold text-slate-800">{% if lung_form.wheezing == 1 %}Yes{% else %}No{% endif %}</span>
+                            </div>
+                            <div class="flex justify-between items-center py-1.5 px-3 bg-slate-50 rounded-lg text-xs">
+                                <span class="text-slate-500 font-medium">Shortness of Breath</span>
+                                <span class="font-bold text-slate-800">{% if lung_form.shortness_of_breath == 1 %}Yes{% else %}No{% endif %}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <!-- Empty State -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                        <h3 class="text-sm font-bold text-slate-900 mb-6">Lung Cancer Risk Probability</h3>
+                        <div class="flex flex-col items-center justify-center py-8">
+                            <div class="relative w-48 h-48">
+                                <svg class="w-full h-full" viewBox="0 0 100 100">
+                                    <circle cx="50" cy="50" r="40" fill="transparent" stroke="#e2e8f0" stroke-width="8"
+                                            stroke-dasharray="251.2" stroke-dashoffset="62.8" stroke-linecap="round"
+                                            transform="rotate(135 50 50)"></circle>
+                                </svg>
+                                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                    <span class="material-symbols-outlined text-4xl text-slate-300">pulmonology</span>
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Awaiting Data</span>
+                                </div>
+                            </div>
+                            <p class="text-xs text-slate-400 text-center mt-2">Submit the form to generate a risk prediction.</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Disclaimer -->
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-5">
+                        <div class="flex gap-3">
+                            <span class="material-symbols-outlined text-amber-500">info</span>
+                            <div>
+                                <h4 class="text-sm font-bold text-amber-900">Clinical Disclaimer</h4>
+                                <p class="text-xs text-amber-800 leading-relaxed mt-1">
+                                    This is a statistical estimate, not a medical diagnosis. Results are based on population-level data and should not replace professional medical advice. Consult a healthcare provider for clinical decisions.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
         </div>
     </div>
 </main>
@@ -645,6 +886,15 @@ body { font-family: 'Inter', sans-serif; }
 </div>
 
 <script>
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebar-overlay').classList.toggle('active');
+}
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('active');
+}
+
 function switchTab(tab) {
     document.querySelectorAll('.section-panel').forEach(function(s) { s.classList.remove('active'); });
     document.getElementById('section-' + tab).classList.add('active');
@@ -657,12 +907,17 @@ function switchTab(tab) {
     active.className = 'nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary transition-colors';
     active.querySelector('span:last-child').className = 'text-sm font-bold';
 
-    document.getElementById('header-title').textContent =
-        tab === 'diabetes' ? 'Diabetes Risk Assessment' : 'Heart Disease Risk Assessment';
+    var titles = {
+        'diabetes': 'Diabetes Risk Assessment',
+        'heart': 'Heart Disease Risk Assessment',
+        'lung': 'Lung Cancer Risk Assessment'
+    };
+    document.getElementById('header-title').textContent = titles[tab] || tab;
+    closeSidebar();
 }
 
-if (document.body.dataset.initialTab === 'heart') {
-    switchTab('heart');
+if (document.body.dataset.initialTab) {
+    switchTab(document.body.dataset.initialTab);
 }
 
 </script>

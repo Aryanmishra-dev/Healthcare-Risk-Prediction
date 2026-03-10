@@ -16,7 +16,7 @@ def _clamp(value, lo, hi):
 
 
 def predict_view(request):
-    """Handle both diabetes and heart disease prediction forms."""
+    """Handle diabetes, heart disease, and lung cancer prediction forms."""
     context = {
         "diabetes_result": None,
         "diabetes_error": None,
@@ -24,6 +24,9 @@ def predict_view(request):
         "heart_result": None,
         "heart_error": None,
         "heart_form": None,
+        "lung_result": None,
+        "lung_error": None,
+        "lung_form": None,
     }
 
     if request.method == "POST":
@@ -33,6 +36,8 @@ def predict_view(request):
             _handle_diabetes(request, context)
         elif form_type == "heart":
             _handle_heart_disease(request, context)
+        elif form_type == "lung":
+            _handle_lung_cancer(request, context)
 
     return render(request, "predict.html", context)
 
@@ -97,3 +102,31 @@ def _handle_heart_disease(request, context):
         context["heart_error"] = f"API request failed: {e}"
     except (ValueError, TypeError) as e:
         context["heart_error"] = f"Invalid input: {e}"
+
+
+def _handle_lung_cancer(request, context):
+    """Process lung cancer prediction form."""
+    try:
+        payload = {
+            "age": _clamp(int(request.POST.get("lc_age", 50)), 18, 100),
+            "gender": _clamp(int(request.POST.get("lc_gender", 1)), 0, 1),
+            "smoking": _clamp(int(request.POST.get("lc_smoking", 0)), 0, 1),
+            "yellow_fingers": _clamp(int(request.POST.get("lc_yellow_fingers", 0)), 0, 1),
+            "chronic_disease": _clamp(int(request.POST.get("lc_chronic_disease", 0)), 0, 1),
+            "fatigue": _clamp(int(request.POST.get("lc_fatigue", 0)), 0, 1),
+            "wheezing": _clamp(int(request.POST.get("lc_wheezing", 0)), 0, 1),
+            "shortness_of_breath": _clamp(int(request.POST.get("lc_shortness_of_breath", 0)), 0, 1),
+        }
+        response = requests.post(f"{FASTAPI_BASE}/predict-lung", json=payload, timeout=10)
+        response.raise_for_status()
+        result = response.json()
+        context["lung_result"] = result
+        context["lung_form"] = payload
+        pct = float(result.get("risk_percentage", 0))
+        context["lung_gauge_offset"] = round(251.2 - 188.4 * pct / 100, 1)
+    except requests.exceptions.ConnectionError:
+        context["lung_error"] = "Cannot connect to the prediction API. Make sure the FastAPI server is running on port 8000."
+    except requests.exceptions.RequestException as e:
+        context["lung_error"] = f"API request failed: {e}"
+    except (ValueError, TypeError) as e:
+        context["lung_error"] = f"Invalid input: {e}"

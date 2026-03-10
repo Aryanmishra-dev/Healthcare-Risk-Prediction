@@ -2,18 +2,37 @@
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
 
 # Virtual environments
 .venv/
-.venv-1/
+.venv-*/
 env/
 venv/
+ENV/
 
 # Notebook checkpoints
 .ipynb_checkpoints/
 
 # macOS
 .DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+.directory
 
 # Large data files (raw SAS ~1.1 GB)
 data_raw/*
@@ -27,3 +46,39 @@ data_processed/*
 # IDE / editor
 .vscode/
 .idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# Coverage / testing
+htmlcov/
+.coverage
+.coverage.*
+.pytest_cache/
+.tox/
+.nox/
+
+# Jupyter / notebook outputs
+notebooks/*_plots/
+
+# Django
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+media/
+
+# Distribution / packaging
+*.tar.gz
+*.zip
+#data
+survey_lung_cancer.csv
