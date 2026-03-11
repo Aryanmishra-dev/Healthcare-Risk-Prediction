@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>{% block title %}Healthcare AI - Risk Prediction{% endblock %}</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>
+tailwind.config = {
+    theme: {
+        extend: {
+            colors: {
+                "primary": "#0284c5",
+                "background-light": "#f5f7f8",
+            },
+            fontFamily: { "display": ["Inter", "sans-serif"] },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+        },
+    },
+}
+</script>
+<style>
+body { font-family: 'Inter', sans-serif; }
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.section-panel { display: none; }
+.section-panel.active { display: block; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.animate-fade-up { animation: fadeUp 0.35s ease; }
+#sidebar-overlay { display: none; }
+#sidebar-overlay.active { display: block; }
+@media (max-width: 767px) {
+    #sidebar { transform: translateX(-100%); transition: transform 0.25s ease; position: fixed; top: 0; left: 0; z-index: 50; height: 100vh; }
+    #sidebar.open { transform: translateX(0); }
+}
+.htmx-indicator { display: none; }
+.htmx-request .htmx-indicator { display: inline-flex; }
+.htmx-request .htmx-hide-on-request { display: none; }
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body class="bg-background-light text-slate-900 antialiased">
+{% block body %}{% endblock %}
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

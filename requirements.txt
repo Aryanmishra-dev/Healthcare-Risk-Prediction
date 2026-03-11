@@ -1,12 +1,13 @@
 fastapi~=0.135.1
 uvicorn~=0.41.0
 pydantic~=2.12.5
+jinja2~=3.1.6
+python-multipart~=0.0.20
 scikit-learn~=1.8.0
 xgboost~=3.2.0
 pandas~=3.0.1
 numpy~=2.4.2
 joblib~=1.5.3
-django~=6.0.3
 requests~=2.32.5
 shap~=0.51.0
 matplotlib~=3.10.8

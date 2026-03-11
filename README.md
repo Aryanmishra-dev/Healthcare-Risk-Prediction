@@ -1,8 +1,8 @@
 # Healthcare Risk Prediction — End-to-End ML Pipeline
 
-A production-grade machine learning system for predicting **diabetes**, **heart disease**, and **lung cancer** risk from patient health indicators. Built with FastAPI, Django, and XGBoost.
+A production-grade machine learning system for predicting **diabetes**, **heart disease**, and **lung cancer** risk from patient health indicators. Built with FastAPI, HTMX, and XGBoost.
 
-> **Status:** Three models live — localhost deployment. API v2.0.0.
+> **Status:** Three models live — single-server deployment. App v3.0.0.
 
 ---
 
@@ -21,20 +21,26 @@ A production-grade machine learning system for predicting **diabetes**, **heart 
 ```
 Healthcare_risk_prediction/
 │
-├── fastapi_backend/
-│   ├── main.py                        # FastAPI prediction service (v2.0.0)
-│   ├── model_loader.py                # Model loading & inference for all 3 diseases
-│   ├── schemas.py                     # Pydantic request/response schemas
-│   └── requirements.txt               # Backend-specific dependencies
+├── app/
+│   ├── main.py                        # Unified FastAPI + HTMX app (v3.0.0)
+│   ├── risk_assistant.py              # CLI + Gradio diabetes risk calculator
+│   ├── templates/
+│   │   ├── base.html                  # Base layout (HTMX, Tailwind, fonts)
+│   │   ├── index.html                 # Main page with 3 prediction tabs
+│   │   └── partials/
+│   │       ├── diabetes_result.html   # Diabetes result fragment
+│   │       ├── diabetes_empty.html    # Diabetes empty state
+│   │       ├── heart_result.html      # Heart disease result fragment
+│   │       ├── heart_empty.html       # Heart disease empty state
+│   │       ├── lung_result.html       # Lung cancer result fragment
+│   │       ├── lung_empty.html        # Lung cancer empty state
+│   │       └── error.html             # Error fragment
+│   └── static/
+│       └── css/style.css              # Custom styles
 │
-├── django_ui/
-│   ├── manage.py                      # Django management script
-│   └── risk_ui/
-│       ├── settings.py                # Django settings
-│       ├── urls.py                    # URL routing
-│       ├── views.py                   # Prediction form view
-│       └── templates/
-│           └── predict.html           # Prediction UI template
+├── fastapi_backend/
+│   ├── model_loader.py                # Model loading & inference for all 3 diseases
+│   └── schemas.py                     # Pydantic request/response schemas
 │
 ├── notebooks/
 │   ├── brfss_cleaning.ipynb           # Diabetes: cleaning → training → SHAP
@@ -52,9 +58,6 @@ Healthcare_risk_prediction/
 │   ├── lung_cancer_scaler.pkl         # Lung cancer StandardScaler
 │   └── lung_cancer_features.pkl       # Lung cancer feature list
 │
-├── app/
-│   └── risk_assistant.py              # CLI + Gradio diabetes risk calculator
-│
 ├── utils/
 │   └── feature_engineering.py         # Reusable feature pipeline
 │
@@ -62,7 +65,8 @@ Healthcare_risk_prediction/
 ├── data_processed/                    # Cleaned CSVs (not tracked)
 │
 ├── retrain.py                         # One-shot retraining script (auto-downloads data)
-├── requirements.txt
+├── start.sh                           # One-command server startup script
+├── requirements.txt                   # All Python dependencies
 └── README.md
 ```
 
@@ -117,7 +121,18 @@ XGBoost config: `n_estimators=800, max_depth=6, lr=0.03, subsample=0.8, colsampl
 
 ## API Endpoints
 
-All endpoints accept POST requests with JSON bodies. Swagger UI: `http://127.0.0.1:8000/api/docs`
+### HTMX UI Endpoints (return HTML fragments)
+
+| Endpoint | Disease | Description |
+|---|---|---|
+| `GET /` | — | Main UI with all 3 prediction tabs |
+| `POST /predict/diabetes` | Diabetes | Form submission → HTML result fragment |
+| `POST /predict/heart` | Heart Disease | Form submission → HTML result fragment |
+| `POST /predict/lung` | Lung Cancer | Form submission → HTML result fragment |
+
+### JSON API Endpoints
+
+Swagger UI: `http://127.0.0.1:8000/api/docs`
 
 | Endpoint | Disease | Schema fields |
 |---|---|---|
@@ -125,11 +140,11 @@ All endpoints accept POST requests with JSON bodies. Swagger UI: `http://127.0.0
 | `POST /api/predict-heart` | Heart Disease | `age`, `sex`, `bmi`, `high_bp`, `high_chol`, `smoker`, `phys_activity`, `fruits`, `veggies`, `heavy_drinker`, `gen_health`, `ment_health`, `phys_health`, `diabetes` |
 | `POST /api/predict-lung` | Lung Cancer | `age`, `gender`, `smoking`, `yellow_fingers`, `chronic_disease`, `fatigue`, `wheezing`, `shortness_of_breath` |
 
-**Response format (all endpoints):**
+**Response format (JSON API):**
 ```json
 {
-  "risk_percent": 72.0,
-  "risk_level": "HIGH"
+  "risk_percentage": 29.9,
+  "risk_level": "Moderate"
 }
 ```
 
@@ -194,36 +209,35 @@ python app/risk_assistant.py --ui
 ====================================================
 ```
 
-### FastAPI + Django (Web Deployment)
+### FastAPI + HTMX (Web Deployment)
 
-**Terminal 1 — FastAPI prediction API:**
-```bash
-uvicorn fastapi_backend.main:app --reload --port 8000
-```
-Swagger docs: http://127.0.0.1:8000/api/docs
-
-**Terminal 2 — Django UI:**
-```bash
-cd django_ui
-python manage.py runserver 8001
-```
-Open http://127.0.0.1:8001 in your browser.
-
-**Or use the convenience script:**
+**Option 1 — One-command startup:**
 ```bash
 bash start.sh
 ```
 
+**Option 2 — Manual:**
+```bash
+source .venv-1/bin/activate
+uvicorn app.main:app --reload --port 8000
+```
+
+Open http://127.0.0.1:8000 in your browser.
+
+Swagger API docs: http://127.0.0.1:8000/api/docs
+
 ### System Architecture
 ```
-User Browser
+User Browser (http://localhost:8000)
       │
       ▼
-Django UI (port 8001)   →   Form input / result display
+FastAPI + HTMX UI (single server)
+      │
+      ├── HTMX forms → POST /predict/{disease} → HTML fragment response
+      ├── JSON API   → POST /api/predict*       → JSON response
       │
       ▼
-FastAPI API (port 8000) →   ML inference / JSON response
-      │
+ML Models (loaded at startup)
       ├── diabetes_xgboost.pkl + isotonic_calibrator.pkl
       ├── heart_disease_xgboost.pkl + heart_disease_calibrator.pkl
       └── lung_cancer_model.pkl + lung_cancer_scaler.pkl
@@ -239,7 +253,7 @@ FastAPI API (port 8000) →   ML inference / JSON response
 | ML | XGBoost 3.2, scikit-learn 1.8, SHAP 0.51 |
 | Data | pandas 3.0, NumPy 2.4, pyreadstat |
 | API | FastAPI 0.135, Uvicorn 0.41, Pydantic 2.12 |
-| UI | Django 6.0 |
+| UI | HTMX 1.9, Jinja2 3.1, Tailwind CSS (CDN) |
 | Visualisation | matplotlib 3.10, seaborn 0.13 |
 | Serialisation | joblib 1.5 |
 | Optional | Gradio (interactive local UI) |

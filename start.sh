@@ -2,7 +2,7 @@
 # ─────────────────────────────────────────────────────────────
 #  Healthcare Risk Prediction – local dev startup script
 #  Usage:  ./start.sh
-#  Stops:  Ctrl+C  (shuts down both servers cleanly)
+#  Stops:  Ctrl+C  (shuts down cleanly)
 # ─────────────────────────────────────────────────────────────
 
 set -e
@@ -24,56 +24,43 @@ fi
 
 PYTHON="$VENV/bin/python"
 
-# ── free ports if already in use ────────────────────────────
-echo "⏳  Checking ports 8000 and 8001..."
+# ── free port if already in use ─────────────────────────────
+echo "⏳  Checking port 8000..."
 lsof -ti:8000 | xargs kill -9 2>/dev/null || true
-lsof -ti:8001 | xargs kill -9 2>/dev/null || true
 sleep 1
 
-# ── start FastAPI (port 8000) ────────────────────────────────
-echo "🚀  Starting FastAPI backend on http://localhost:8000"
-"$PYTHON" -m uvicorn fastapi_backend.main:app \
+# ── start unified FastAPI + HTMX app (port 8000) ────────────
+echo "🚀  Starting HealthPredict AI on http://localhost:8000"
+"$PYTHON" -m uvicorn app.main:app \
   --host 0.0.0.0 \
   --port 8000 \
   --reload \
+  --reload-dir "$REPO_DIR/app" \
   --reload-dir "$REPO_DIR/fastapi_backend" &
-FASTAPI_PID=$!
+APP_PID=$!
 
-# give it a moment before starting Django
-sleep 2
-
-# ── start Django (port 8001) ────────────────────────────────
-echo "🌐  Starting Django UI       on http://localhost:8001"
-"$PYTHON" "$REPO_DIR/django_ui/manage.py" runserver 0.0.0.0:8001 &
-DJANGO_PID=$!
-
-# ── wait for both to be ready ───────────────────────────────
+# ── wait for server to be ready ─────────────────────────────
 echo ""
-echo "⏳  Waiting for servers to come up..."
-for i in $(seq 1 10); do
+echo "⏳  Waiting for server to come up..."
+for i in $(seq 1 15); do
   sleep 1
-  FA_OK=false
-  DJ_OK=false
-  curl -sf http://localhost:8000/ -o /dev/null 2>/dev/null && FA_OK=true
-  curl -sf http://localhost:8001/ -o /dev/null 2>/dev/null && DJ_OK=true
-  if $FA_OK && $DJ_OK; then break; fi
+  if curl -sf http://localhost:8000/ -o /dev/null 2>/dev/null; then break; fi
 done
 
 echo ""
 echo "────────────────────────────────────────────────"
-echo "  ✅  FastAPI API  →  http://localhost:8000"
-echo "  ✅  Django UI    →  http://localhost:8001"
-echo "  📖  API docs     →  http://localhost:8000/docs"
+echo "  ✅  UI + API     →  http://localhost:8000"
+echo "  📖  API docs     →  http://localhost:8000/api/docs"
 echo "────────────────────────────────────────────────"
-echo "  Press Ctrl+C to stop both servers"
+echo "  Press Ctrl+C to stop the server"
 echo ""
 
-# ── trap Ctrl+C to shut both down cleanly ───────────────────
+# ── trap Ctrl+C to shut down cleanly ────────────────────────
 cleanup() {
   echo ""
-  echo "🛑  Shutting down servers..."
-  kill "$FASTAPI_PID" "$DJANGO_PID" 2>/dev/null || true
-  wait "$FASTAPI_PID" "$DJANGO_PID" 2>/dev/null || true
+  echo "🛑  Shutting down server..."
+  kill "$APP_PID" 2>/dev/null || true
+  wait "$APP_PID" 2>/dev/null || true
   echo "👋  Done."
 }
 trap cleanup INT TERM

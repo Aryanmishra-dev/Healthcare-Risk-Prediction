@@ -1,0 +1,78 @@
+<!-- Lung cancer result partial — returned by HTMX POST /predict/lung -->
+
+<!-- Risk Gauge -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 animate-fade-up">
+    <h3 class="text-sm font-bold text-slate-900 mb-6">Lung Cancer Risk Probability</h3>
+    <div class="flex flex-col items-center justify-center py-4">
+        <div class="relative w-48 h-48">
+            <svg class="w-full h-full" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#e2e8f0" stroke-width="8"
+                        stroke-dasharray="251.2" stroke-dashoffset="62.8" stroke-linecap="round"
+                        transform="rotate(135 50 50)"></circle>
+                <circle cx="50" cy="50" r="40" fill="transparent"
+                        stroke="{% if result.risk_level == 'Low' %}#10b981{% elif result.risk_level == 'Moderate' %}#f59e0b{% else %}#ef4444{% endif %}"
+                        stroke-width="8" stroke-dasharray="251.2"
+                        stroke-dashoffset="{{ gauge_offset }}"
+                        stroke-linecap="round" transform="rotate(135 50 50)"></circle>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <span class="text-4xl font-black text-slate-900">{{ result.risk_percentage }}%</span>
+                <span class="text-[10px] font-bold uppercase tracking-widest {% if result.risk_level == 'Low' %}text-emerald-500{% elif result.risk_level == 'Moderate' %}text-amber-500{% else %}text-red-500{% endif %}">
+                    {{ result.risk_level }} Risk
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Input Summary -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 animate-fade-up">
+    <h3 class="text-sm font-bold text-slate-900 mb-4">Assessment Inputs</h3>
+    <div class="space-y-2">
+        <div class="flex justify-between items-center py-1.5 px-3 bg-slate-50 rounded-lg text-xs">
+            <span class="text-slate-500 font-medium">Age</span>
+            <span class="font-bold text-slate-800">{{ form.age }}</span>
+        </div>
+        <div class="flex justify-between items-center py-1.5 px-3 bg-slate-50 rounded-lg text-xs">
+            <span class="text-slate-500 font-medium">Gender</span>
+            <span class="font-bold text-slate-800">{{ 'Male' if form.gender == 1 else 'Female' }}</span>
+        </div>
+        <div class="flex justify-between items-center py-1.5 px-3 bg-slate-50 rounded-lg text-xs">
+            <span class="text-slate-500 font-medium">Smoking</span>
+            <span class="font-bold text-slate-800">{{ 'Yes' if form.smoking == 1 else 'No' }}</span>
+        </div>
+        <div class="flex justify-between items-center py-1.5 px-3 bg-slate-50 rounded-lg text-xs">
+            <span class="text-slate-500 font-medium">Yellow Fingers</span>
+            <span class="font-bold text-slate-800">{{ 'Yes' if form.yellow_fingers == 1 else 'No' }}</span>
+        </div>
+        <div class="flex justify-between items-center py-1.5 px-3 bg-slate-50 rounded-lg text-xs">
+            <span class="text-slate-500 font-medium">Chronic Disease</span>
+            <span class="font-bold text-slate-800">{{ 'Yes' if form.chronic_disease == 1 else 'No' }}</span>
+        </div>
+        <div class="flex justify-between items-center py-1.5 px-3 bg-slate-50 rounded-lg text-xs">
+            <span class="text-slate-500 font-medium">Fatigue</span>
+            <span class="font-bold text-slate-800">{{ 'Yes' if form.fatigue == 1 else 'No' }}</span>
+        </div>
+        <div class="flex justify-between items-center py-1.5 px-3 bg-slate-50 rounded-lg text-xs">
+            <span class="text-slate-500 font-medium">Wheezing</span>
+            <span class="font-bold text-slate-800">{{ 'Yes' if form.wheezing == 1 else 'No' }}</span>
+        </div>
+        <div class="flex justify-between items-center py-1.5 px-3 bg-slate-50 rounded-lg text-xs">
+            <span class="text-slate-500 font-medium">Shortness of Breath</span>
+            <span class="font-bold text-slate-800">{{ 'Yes' if form.shortness_of_breath == 1 else 'No' }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- Disclaimer -->
+<div class="bg-amber-50 border border-amber-200 rounded-xl p-5">
+    <div class="flex gap-3">
+        <span class="material-symbols-outlined text-amber-500">info</span>
+        <div>
+            <h4 class="text-sm font-bold text-amber-900">Clinical Disclaimer</h4>
+            <p class="text-xs text-amber-800 leading-relaxed mt-1">
+                This is a statistical estimate, not a medical diagnosis. Results are based on population-level data and should not replace professional medical advice. Consult a healthcare provider for clinical decisions.
+            </p>
+        </div>
+    </div>
+</div>
