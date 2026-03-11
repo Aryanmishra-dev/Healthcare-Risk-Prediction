@@ -1,0 +1,54 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "title": "HealthPredict AI — API Dashboard",
+  "uid": "healthpredict-api",
+  "version": 1,
+  "panels": [
+    {
+      "title": "Request Rate (req/s)",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [
+        {
+          "expr": "rate(http_requests_total{job=\"healthpredict-api\"}[5m])",
+          "legendFormat": "{{method}} {{handler}} {{status}}"
+        }
+      ]
+    },
+    {
+      "title": "Response Latency (p95)",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"healthpredict-api\"}[5m]))",
+          "legendFormat": "p95 {{handler}}"
+        }
+      ]
+    },
+    {
+      "title": "Error Rate",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 8},
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{job=\"healthpredict-api\",status=~\"5..\"}[5m])) / sum(rate(http_requests_total{job=\"healthpredict-api\"}[5m])) * 100",
+          "legendFormat": "Error %"
+        }
+      ]
+    },
+    {
+      "title": "Prediction Requests by Model",
+      "type": "piechart",
+      "gridPos": {"h": 8, "w": 6, "x": 6, "y": 8},
+      "targets": [
+        {
+          "expr": "sum by (handler) (increase(http_requests_total{handler=~\"/api/v1/predict/.*\"}[1h]))",
+          "legendFormat": "{{handler}}"
+        }
+      ]
+    }
+  ]
+}

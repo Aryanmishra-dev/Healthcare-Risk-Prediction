@@ -1,0 +1,4 @@
+# DVC cache and temp files
+/cache
+/tmp
+/lock
