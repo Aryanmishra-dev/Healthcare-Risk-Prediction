@@ -1,10 +1,22 @@
 # data_raw/
 
-This directory holds the raw BRFSS SAS dataset.
+Raw source datasets for model training. **Not tracked by Git** (large files).
 
-**Not tracked by Git** (1.1 GB file).
+## Files
+
+| File | Size | Source | Used By |
+|---|---|---|---|
+| `LLCP2015.XPT` | ~1.1 GB | CDC BRFSS 2015 | Diabetes + Heart Disease models |
 
 ## Download
 
-1. Go to: https://www.cdc.gov/brfss/annual_data/2015/files/LLCP2015XPT.zip
+**Automatic** — run `python retrain.py` and the script downloads + extracts automatically.
+
+**Manual:**
+1. Download: https://www.cdc.gov/brfss/annual_data/2015/files/LLCP2015XPT.zip
 2. Extract `LLCP2015.XPT` into this directory.
+
+## Data Versioning
+
+This directory is tracked by [DVC](https://dvc.org/) when a remote is configured.  
+See `dvc.yaml` in the project root for pipeline stage definitions.

@@ -29,6 +29,7 @@ _heart_features = None
 _lung_model = None
 _lung_scaler = None
 _lung_features = None
+_lung_calibrator = None
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -66,11 +67,16 @@ def _load_heart_disease_models():
 
 
 def _load_lung_cancer_models():
-    global _lung_model, _lung_scaler, _lung_features
+    global _lung_model, _lung_scaler, _lung_features, _lung_calibrator
     try:
         _lung_model = joblib.load(os.path.join(MODEL_DIR, "lung_cancer_model.pkl"))
         _lung_scaler = joblib.load(os.path.join(MODEL_DIR, "lung_cancer_scaler.pkl"))
         _lung_features = joblib.load(os.path.join(MODEL_DIR, "lung_cancer_features.pkl"))
+        # Optional isotonic calibrator
+        cal_path = os.path.join(MODEL_DIR, "lung_cancer_calibrator.pkl")
+        if os.path.exists(cal_path):
+            _lung_calibrator = joblib.load(cal_path)
+            logger.info("Lung cancer calibrator loaded.")
         logger.info("Lung cancer models loaded successfully. Features: %s", _lung_features)
     except FileNotFoundError as e:
         logger.error("Lung cancer model files not found: %s", e)
@@ -237,7 +243,10 @@ def predict_lung_cancer(
     df["Age"] = _lung_scaler.transform(df[["Age"]])
     df = df.astype(np.float64)
 
-    risk_pct = round(float(np.clip(_lung_model.predict_proba(df)[:, 1][0], 0.0, 1.0)) * 100, 1)
+    raw_prob = float(np.clip(_lung_model.predict_proba(df)[:, 1][0], 0.0, 1.0))
+    if _lung_calibrator is not None:
+        raw_prob = float(np.clip(_lung_calibrator.predict([raw_prob])[0], 0.0, 1.0))
+    risk_pct = round(raw_prob * 100, 1)
 
     if risk_pct < 30:
         level = "Low"

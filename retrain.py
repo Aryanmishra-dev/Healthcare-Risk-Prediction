@@ -16,6 +16,16 @@ import zipfile
 import numpy as np
 import pandas as pd
 
+# ── Optional MLflow tracking ──────────────────────────────────────────────
+try:
+    from scripts.mlflow_config import init_tracking, log_training_run
+    mlflow = init_tracking()
+    _MLFLOW_AVAILABLE = True
+    print("MLflow tracking enabled.")
+except ImportError:
+    _MLFLOW_AVAILABLE = False
+    print("MLflow not installed — skipping experiment tracking.")
+
 # ── Paths ─────────────────────────────────────────────────────────────────
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA_RAW = os.path.join(ROOT, "data_raw")
@@ -344,6 +354,37 @@ for name, *args in scenarios:
     raw, cal = build_and_predict(name, *args)
     level = "Low" if cal < 0.20 else "Moderate" if cal < 0.45 else "High"
     print(f"  {name:<30} {raw:>5.3f} {cal*100:>10.1f}% {level:>10}")
+
+# ══════════════════════════════════════════════════════════════════════════
+# STEP 10: MLflow experiment tracking
+# ══════════════════════════════════════════════════════════════════════════
+if _MLFLOW_AVAILABLE:
+    print("\n" + "=" * 60)
+    print("STEP 10: Logging to MLflow")
+    print("=" * 60)
+    log_training_run(
+        model_name="diabetes_xgboost",
+        params={
+            "n_estimators": 800,
+            "max_depth": 6,
+            "learning_rate": 0.03,
+            "subsample": 0.8,
+            "colsample_bytree": 0.8,
+            "scale_pos_weight": round(scale_pos_weight, 4),
+            "best_iteration": xgb.best_iteration,
+        },
+        metrics={
+            "roc_auc": roc_auc,
+            "brier_raw": brier_raw,
+            "brier_calibrated": brier_cal,
+            "calibration_improvement_pct": round(improvement, 2),
+        },
+        artifacts=[
+            os.path.join(MODEL_DIR, "diabetes_xgboost.pkl"),
+            os.path.join(MODEL_DIR, "isotonic_calibrator.pkl"),
+        ],
+        tags={"algorithm": "XGBoost", "dataset": "BRFSS_2015"},
+    )
 
 print("\n" + "=" * 60)
 print("RETRAINING COMPLETE")
