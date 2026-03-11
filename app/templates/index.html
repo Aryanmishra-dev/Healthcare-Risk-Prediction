@@ -514,6 +514,109 @@
 
 {% block scripts %}
 <script>
+/* ── Virtual Doctor Speech Engine ─────────────────────── */
+(function () {
+    var synthesis = window.speechSynthesis;
+    var voiceObj = null;
+
+    function loadVoices() {
+        var voices = synthesis.getVoices();
+        var enVoices = voices.filter(function(v) {
+            return v.lang.indexOf("en") !== -1;
+        });
+        voiceObj = enVoices.find(function(v) {
+            var n = v.name.toLowerCase();
+            return n.indexOf("male") !== -1 && n.indexOf("female") === -1;
+        }) || enVoices.find(function(v) {
+            var n = v.name.toLowerCase();
+            return (n.indexOf("google") !== -1 || n.indexOf("premium") !== -1) && n.indexOf("female") === -1;
+        }) || enVoices.find(function(v) {
+            return v.lang.indexOf("en-US") !== -1 || v.lang.indexOf("en-GB") !== -1;
+        }) || voices[0] || null;
+    }
+
+    if (synthesis.onvoiceschanged !== undefined) {
+        synthesis.onvoiceschanged = loadVoices;
+    }
+    loadVoices();
+    setTimeout(loadVoices, 500);
+
+    function findInWidget(widget, sel) {
+        return widget.querySelector(sel);
+    }
+
+    window._drSpeak = function (btn) {
+        var widget = btn.closest('.doctor-widget');
+        if (!widget) return;
+
+        var avatar  = findInWidget(widget, '.doctor-avatar-box');
+        var waves   = findInWidget(widget, '.dr-audio-waves');
+        var status  = findInWidget(widget, '.dr-status');
+        var captions= findInWidget(widget, '.dr-captions');
+
+        if (synthesis.speaking) {
+            synthesis.cancel();
+            avatar.classList.remove('speaking');
+            waves.classList.remove('active');
+            status.textContent = 'Playback Stopped';
+            btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg> Listen to Dr. AI';
+            return;
+        }
+
+        var disease = widget.getAttribute('data-dr-disease') || 'this condition';
+        var risk    = widget.getAttribute('data-dr-risk') || 'moderate';
+
+        var message = 'Hello. I have reviewed your clinical parameters from the HealthPredict AI engine. '
+            + 'Based on our predictive models, your probability for ' + disease
+            + ' is currently assessed as ' + risk + '. '
+            + 'Please remember this is a statistical estimate based on population data to help guide us, not a definitive medical diagnosis. '
+            + 'Let us arrange a follow-up consultation to discuss these insights and formulate a preventative care plan.';
+
+        var utterance = new SpeechSynthesisUtterance(message);
+        if (voiceObj) utterance.voice = voiceObj;
+        utterance.rate  = 0.92;
+        utterance.pitch = 0.75;
+
+        utterance.onstart = function () {
+            avatar.classList.add('speaking');
+            waves.classList.add('active');
+            status.textContent = 'Dr. AI is speaking...';
+            captions.innerHTML = '"' + message + '"';
+            btn.innerHTML = 'Stop Playback';
+        };
+
+        var resetBtn = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg> Listen Again';
+
+        utterance.onend = function () {
+            avatar.classList.remove('speaking');
+            waves.classList.remove('active');
+            status.textContent = 'Assessment Complete';
+            btn.innerHTML = resetBtn;
+        };
+
+        utterance.onerror = function () {
+            avatar.classList.remove('speaking');
+            waves.classList.remove('active');
+            status.textContent = 'Audio unavailable';
+            btn.innerHTML = resetBtn;
+        };
+
+        synthesis.speak(utterance);
+    };
+
+    /* Auto-play doctor speech when HTMX swaps in a result */
+    document.body.addEventListener('htmx:afterSwap', function (evt) {
+        var widget = evt.detail.target.querySelector('.doctor-widget');
+        if (widget) {
+            var btn = widget.querySelector('.dr-play-btn');
+            if (btn) {
+                setTimeout(function () { window._drSpeak(btn); }, 600);
+            }
+        }
+    });
+})();
+
+/* ── Tab Switching ────────────────────────────────────── */
 function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('open');
     document.getElementById('sidebar-overlay').classList.toggle('active');
@@ -524,6 +627,9 @@ function closeSidebar() {
 }
 
 function switchTab(tab) {
+    // Stop any in-progress speech when switching tabs
+    if (window.speechSynthesis.speaking) { window.speechSynthesis.cancel(); }
+
     document.querySelectorAll('.section-panel').forEach(function(s) { s.classList.remove('active'); });
     document.getElementById('section-' + tab).classList.add('active');
 

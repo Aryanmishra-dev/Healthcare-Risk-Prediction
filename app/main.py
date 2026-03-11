@@ -15,6 +15,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.routing import APIRouter
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -29,7 +30,18 @@ from fastapi_backend.model_loader import (
     predict,
     predict_heart_disease,
     predict_lung_cancer,
+    build_diabetes_features,
 )
+from fastapi_backend.shap_explainer import (
+    load_explainers,
+    explain_diabetes,
+    explain_heart,
+    explain_lung,
+)
+from app.logging_config import setup_logging, get_logger
+from prometheus_fastapi_instrumentator import Instrumentator
+
+logger = get_logger(__name__)
 
 # ── Rate limiting ──────────────────────────────────────────────────────────
 RATE_LIMIT = int(os.environ.get("RATE_LIMIT_PER_MINUTE", "60"))
@@ -40,8 +52,13 @@ _MAX_TRACKED_IPS = 10_000
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Load ML models at startup."""
+    setup_logging()
+    logger.info("application_startup", version="3.0.0")
     load_models()
+    load_explainers()
+    logger.info("models_loaded")
     yield
+    logger.info("application_shutdown")
 
 
 app = FastAPI(
@@ -75,6 +92,12 @@ app.add_middleware(
     allow_credentials=False,
 )
 
+# ── Prometheus metrics (exposes /metrics) ─────────────────────────────────
+Instrumentator(
+    excluded_handlers=["/metrics", "/healthz"],
+    should_group_status_codes=True,
+).instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
+
 
 # ── Rate-limit middleware ──────────────────────────────────────────────────
 @app.middleware("http")
@@ -93,7 +116,17 @@ async def rate_limit_middleware(request: Request, call_next):
         stale = [ip for ip, ts in _request_log.items() if not ts or ts[-1] < window]
         for ip in stale:
             del _request_log[ip]
-    return await call_next(request)
+    response = await call_next(request)
+    duration_ms = round((time.time() - now) * 1000, 1)
+    logger.info(
+        "http_request",
+        method=request.method,
+        path=str(request.url.path),
+        status=response.status_code,
+        duration_ms=duration_ms,
+        client_ip=client_ip,
+    )
+    return response
 
 
 # ── Helper ─────────────────────────────────────────────────────────────────
@@ -115,6 +148,12 @@ def _gauge_offset(pct: float) -> float:
 def index(request: Request):
     """Render the main prediction page."""
     return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.get("/healthz")
+def healthz():
+    """Liveness / readiness probe for Kubernetes / Docker."""
+    return {"status": "healthy"}
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -348,3 +387,164 @@ def api_predict_lung(data: LungCancerPredictionRequest):
         shortness_of_breath=data.shortness_of_breath,
     )
     return PredictionResponse(**result)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  Versioned API — /api/v1/
+# ══════════════════════════════════════════════════════════════════════════
+
+v1 = APIRouter(prefix="/api/v1", tags=["v1"])
+
+
+@v1.get("/")
+def v1_root():
+    return {
+        "service": "Healthcare Risk Prediction API",
+        "version": "v1",
+        "status": "running",
+        "models": ["diabetes", "heart_disease", "lung_cancer"],
+    }
+
+
+@v1.get("/models")
+def v1_model_registry():
+    """Return model registry metadata (versions, metrics, status)."""
+    import json
+    registry_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "models", "model_registry.json",
+    )
+    with open(registry_path) as f:
+        registry = json.load(f)
+    # Return only safe metadata — strip sha256 hashes from public API
+    summary = {}
+    for name, meta in registry["models"].items():
+        summary[name] = {
+            "version": meta["version"],
+            "algorithm": meta["algorithm"],
+            "target": meta["target"],
+            "status": meta["status"],
+            "metrics": meta.get("metrics", {}),
+        }
+    return {"registry_version": registry["registry_version"], "models": summary}
+
+
+@v1.post("/predict/diabetes", response_model=PredictionResponse)
+def v1_predict_diabetes(data: PredictionRequest):
+    """Predict diabetes risk (v1)."""
+    result = predict(
+        age_group=data.age, bmi=data.bmi, high_bp=data.bp,
+        smoker=data.smoker, high_cholesterol=data.cholesterol,
+        physical_activity=data.activity, general_health=data.health,
+        mental_health=data.mental,
+    )
+    return PredictionResponse(**result)
+
+
+@v1.post("/predict/heart", response_model=PredictionResponse)
+def v1_predict_heart(data: HeartDiseasePredictionRequest):
+    """Predict heart disease risk (v1)."""
+    result = predict_heart_disease(
+        age=data.age, sex=data.sex, bmi=data.bmi,
+        high_bp=data.high_bp, high_chol=data.high_chol,
+        smoker=data.smoker, phys_activity=data.phys_activity,
+        fruits=data.fruits, veggies=data.veggies,
+        heavy_drinker=data.heavy_drinker, gen_health=data.gen_health,
+        ment_health=data.ment_health, phys_health=data.phys_health,
+        diabetes=data.diabetes,
+    )
+    return PredictionResponse(**result)
+
+
+@v1.post("/predict/lung", response_model=PredictionResponse)
+def v1_predict_lung(data: LungCancerPredictionRequest):
+    """Predict lung cancer risk (v1)."""
+    result = predict_lung_cancer(
+        age=data.age, gender=data.gender, smoking=data.smoking,
+        yellow_fingers=data.yellow_fingers,
+        chronic_disease=data.chronic_disease, fatigue=data.fatigue,
+        wheezing=data.wheezing,
+        shortness_of_breath=data.shortness_of_breath,
+    )
+    return PredictionResponse(**result)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  SHAP Explanation Endpoints (v1 only)
+# ══════════════════════════════════════════════════════════════════════════
+
+@v1.post("/explain/diabetes")
+def v1_explain_diabetes(data: PredictionRequest):
+    """Return SHAP feature importances for a diabetes prediction."""
+    df = build_diabetes_features(
+        age_group=data.age, bmi=data.bmi, high_bp=data.bp,
+        smoker=data.smoker, high_cholesterol=data.cholesterol,
+        physical_activity=data.activity, general_health=data.health,
+        mental_health=data.mental,
+    )
+    result = predict(
+        age_group=data.age, bmi=data.bmi, high_bp=data.bp,
+        smoker=data.smoker, high_cholesterol=data.cholesterol,
+        physical_activity=data.activity, general_health=data.health,
+        mental_health=data.mental,
+    )
+    shap_data = explain_diabetes(df)
+    return {**result, "explanation": shap_data}
+
+
+@v1.post("/explain/heart")
+def v1_explain_heart(data: HeartDiseasePredictionRequest):
+    """Return SHAP feature importances for a heart disease prediction."""
+    import pandas as pd, numpy as np
+    row = {
+        "_AGEG5YR": float(data.age), "SEX": float(data.sex),
+        "_BMI5": float(data.bmi),
+        "_RFHYPE5": float(1 - data.high_bp), "_RFCHOL": float(1 - data.high_chol),
+        "SMOKE100": float(data.smoker), "_TOTINDA": float(data.phys_activity),
+        "_FRTLT1": float(data.fruits), "_VEGLT1": float(data.veggies),
+        "_RFDRHV5": float(1 - data.heavy_drinker),
+        "GENHLTH": float(data.gen_health), "MENTHLTH": float(data.ment_health),
+        "PHYSHLTH": float(data.phys_health), "DIABETE3": float(data.diabetes),
+    }
+    from fastapi_backend.model_loader import _heart_features
+    df = pd.DataFrame([row])[_heart_features].astype(np.float64)
+    result = predict_heart_disease(
+        age=data.age, sex=data.sex, bmi=data.bmi,
+        high_bp=data.high_bp, high_chol=data.high_chol,
+        smoker=data.smoker, phys_activity=data.phys_activity,
+        fruits=data.fruits, veggies=data.veggies,
+        heavy_drinker=data.heavy_drinker, gen_health=data.gen_health,
+        ment_health=data.ment_health, phys_health=data.phys_health,
+        diabetes=data.diabetes,
+    )
+    shap_data = explain_heart(df)
+    return {**result, "explanation": shap_data}
+
+
+@v1.post("/explain/lung")
+def v1_explain_lung(data: LungCancerPredictionRequest):
+    """Return SHAP feature importances for a lung cancer prediction."""
+    import pandas as pd, numpy as np
+    from fastapi_backend.model_loader import _lung_features, _lung_scaler
+    row = {
+        "Age": float(data.age), "Gender": float(data.gender),
+        "Smoking": float(data.smoking), "Yellow Fingers": float(data.yellow_fingers),
+        "Chronic Disease": float(data.chronic_disease),
+        "Fatigue": float(data.fatigue), "Wheezing": float(data.wheezing),
+        "Shortness of Breath": float(data.shortness_of_breath),
+    }
+    df = pd.DataFrame([row])[_lung_features].copy()
+    df["Age"] = _lung_scaler.transform(df[["Age"]])
+    df = df.astype(np.float64)
+    result = predict_lung_cancer(
+        age=data.age, gender=data.gender, smoking=data.smoking,
+        yellow_fingers=data.yellow_fingers,
+        chronic_disease=data.chronic_disease, fatigue=data.fatigue,
+        wheezing=data.wheezing, shortness_of_breath=data.shortness_of_breath,
+    )
+    shap_data = explain_lung(df)
+    return {**result, "explanation": shap_data}
+
+
+# ── Mount v1 router (after all routes are defined) ────────────────────────
+app.include_router(v1)

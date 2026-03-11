@@ -1,0 +1,75 @@
+{
+  "registry_version": "1.0.0",
+  "models": {
+    "diabetes_xgboost": {
+      "version": "1.0.0",
+      "algorithm": "XGBoost",
+      "task": "binary_classification",
+      "target": "Diabetes (BRFSS 2015)",
+      "features": 13,
+      "training_date": "2025-01-15",
+      "artifacts": {
+        "model": "diabetes_xgboost.pkl",
+        "calibrator": "isotonic_calibrator.pkl",
+        "explainer": "shap_explainer.pkl"
+      },
+      "metrics": {
+        "auc_roc": 0.82,
+        "brier_score": 0.12,
+        "calibration": "isotonic"
+      },
+      "sha256": {
+        "diabetes_xgboost.pkl": "4cc83d687eb5ff9e368bbfa1312ff323519521846288cb0f00aeefca2d2323f7",
+        "isotonic_calibrator.pkl": "7bc1852f0ba1d18846f2cd0d1f0a335ea90b88cf04ec46a25fb2dd8e869c3792"
+      },
+      "status": "production"
+    },
+    "heart_disease_xgboost": {
+      "version": "1.0.0",
+      "algorithm": "XGBoost",
+      "task": "binary_classification",
+      "target": "Heart Disease (BRFSS 2015)",
+      "features": 14,
+      "training_date": "2025-01-15",
+      "artifacts": {
+        "model": "heart_disease_xgboost.pkl",
+        "calibrator": "heart_disease_calibrator.pkl",
+        "features": "heart_disease_features.pkl"
+      },
+      "metrics": {
+        "auc_roc": 0.85,
+        "brier_score": 0.10,
+        "calibration": "isotonic"
+      },
+      "sha256": {
+        "heart_disease_xgboost.pkl": "32e86b68108e47c14369cb535119ce61b6cc168d06fbdecebee8da3a4998040d",
+        "heart_disease_calibrator.pkl": "a6ed2961b76ea94b5f4e6ae75b1272a7108f795e77072d242ec162c349202869"
+      },
+      "status": "production"
+    },
+    "lung_cancer_logreg": {
+      "version": "1.0.0",
+      "algorithm": "LogisticRegression",
+      "task": "binary_classification",
+      "target": "Lung Cancer",
+      "features": 8,
+      "training_date": "2025-01-15",
+      "artifacts": {
+        "model": "lung_cancer_model.pkl",
+        "scaler": "lung_cancer_scaler.pkl",
+        "features": "lung_cancer_features.pkl",
+        "calibrator": "lung_cancer_calibrator.pkl"
+      },
+      "metrics": {
+        "auc_roc": 0.97,
+        "brier_score": 0.12,
+        "calibration": "isotonic"
+      },
+      "sha256": {
+        "lung_cancer_model.pkl": "3a857959d8ad921131b41b23e2f49daddf1137a3ffe22f32bba47332ce798900",
+        "lung_cancer_calibrator.pkl": "2a9ffeddb871e962ad44b8ac60d2a4145aab2c82246d6990f0a36112adf5a28d"
+      },
+      "status": "production"
+    }
+  }
+}

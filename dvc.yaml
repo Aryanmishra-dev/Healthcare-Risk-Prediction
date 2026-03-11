@@ -1,0 +1,46 @@
+# DVC Pipeline for Healthcare Risk Prediction
+#
+# Tracks data processing and model training stages.
+# Run: dvc repro (to execute the full pipeline)
+# Run: dvc dag  (to visualize the pipeline DAG)
+
+stages:
+  process_data:
+    cmd: python retrain.py
+    deps:
+      - data_raw/LLCP2015.XPT
+      - retrain.py
+      - utils/feature_engineering.py
+    outs:
+      - data_processed/brfss_diabetes_clean.csv
+    metrics:
+      - models/model_registry.json:
+          cache: false
+
+  train_diabetes:
+    cmd: python retrain.py
+    deps:
+      - data_processed/brfss_diabetes_clean.csv
+      - retrain.py
+    outs:
+      - models/diabetes_xgboost.pkl
+      - models/isotonic_calibrator.pkl
+      - models/shap_explainer.pkl
+
+  train_heart:
+    cmd: python notebooks/train_heart_disease_model.ipynb.ipynb
+    deps:
+      - data_raw/LLCP2015.XPT
+    outs:
+      - models/heart_disease_xgboost.pkl
+      - models/heart_disease_calibrator.pkl
+      - models/heart_disease_features.pkl
+
+  train_lung:
+    cmd: python notebooks/train_lung_cancer_model.py
+    deps:
+      - notebooks/train_lung_cancer_model.py
+    outs:
+      - models/lung_cancer_model.pkl
+      - models/lung_cancer_scaler.pkl
+      - models/lung_cancer_features.pkl

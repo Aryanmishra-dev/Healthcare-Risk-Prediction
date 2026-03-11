@@ -1,0 +1,24 @@
+# Files not needed in the Docker image
+.venv/
+.venv-1/
+.git/
+.github/
+.gitignore
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
+data_raw/
+data_processed/
+notebooks/
+tests/
+htmlcov/
+*.md
+*.png
+*.ipynb
+retrain.py
+image.png
+pyproject.toml
+requirements-dev.txt
+docker-compose.yml
+Dockerfile
+.dockerignore
