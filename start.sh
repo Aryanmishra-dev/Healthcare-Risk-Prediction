@@ -31,8 +31,9 @@ sleep 1
 
 # ── start unified FastAPI + HTMX app (port 8000) ────────────
 echo "🚀  Starting HealthPredict AI on http://localhost:8000"
+echo "    (bound to 127.0.0.1 — not publicly accessible)"
 "$PYTHON" -m uvicorn app.main:app \
-  --host 0.0.0.0 \
+  --host 127.0.0.1 \
   --port 8000 \
   --reload \
   --reload-dir "$REPO_DIR/app" \

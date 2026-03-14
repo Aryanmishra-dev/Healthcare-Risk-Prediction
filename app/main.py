@@ -9,11 +9,13 @@ Run locally:
 
 import os
 import time
+import uuid
 from collections import defaultdict
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
 from fastapi.staticfiles import StaticFiles
@@ -81,7 +83,7 @@ if os.path.isdir(static_dir):
 # ── CORS ───────────────────────────────────────────────────────────────────
 ALLOWED_ORIGINS = os.environ.get(
     "CORS_ORIGINS",
-    "http://localhost:3000,http://localhost:8000,http://127.0.0.1:8000",
+    "https://yourdomain.com,http://localhost:8000,http://127.0.0.1:8000",
 ).split(",")
 
 app.add_middleware(
@@ -92,6 +94,17 @@ app.add_middleware(
     allow_credentials=False,
 )
 
+# ── Trusted Host middleware (reject spoofed Host headers) ─────────────
+TRUSTED_HOSTS = os.environ.get(
+    "TRUSTED_HOSTS",
+    "localhost,127.0.0.1,yourdomain.com,www.yourdomain.com,testserver",
+).split(",")
+
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=TRUSTED_HOSTS,
+)
+
 # ── Prometheus metrics (exposes /metrics) ─────────────────────────────────
 Instrumentator(
     excluded_handlers=["/metrics", "/healthz"],
@@ -99,10 +112,25 @@ Instrumentator(
 ).instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
 
 
+# ── Request-ID middleware (traceability) ───────────────────────────────
+@app.middleware("http")
+async def request_id_middleware(request: Request, call_next):
+    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+    request.state.request_id = request_id
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    return response
+
+
 # ── Rate-limit middleware ──────────────────────────────────────────────────
 @app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next):
-    client_ip = request.client.host if request.client else "unknown"
+    # Prefer X-Forwarded-For (set by Nginx) over direct client IP
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    if forwarded_for:
+        client_ip = forwarded_for.split(",")[0].strip()
+    else:
+        client_ip = request.client.host if request.client else "unknown"
     now = time.time()
     window = now - 60
     _request_log[client_ip] = [t for t in _request_log[client_ip] if t > window]
@@ -118,6 +146,7 @@ async def rate_limit_middleware(request: Request, call_next):
             del _request_log[ip]
     response = await call_next(request)
     duration_ms = round((time.time() - now) * 1000, 1)
+    request_id = getattr(request.state, "request_id", "-")
     logger.info(
         "http_request",
         method=request.method,
@@ -152,8 +181,21 @@ def index(request: Request):
 
 @app.get("/healthz")
 def healthz():
-    """Liveness / readiness probe for Kubernetes / Docker."""
+    """Liveness probe for Kubernetes / Docker."""
     return {"status": "healthy"}
+
+
+@app.get("/api/v1/health/ready")
+def readiness():
+    """Readiness probe — confirms models are loaded and app is ready."""
+    from fastapi_backend.model_loader import _diabetes_model
+    models_loaded = _diabetes_model is not None
+    if not models_loaded:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "not_ready", "reason": "models not loaded"},
+        )
+    return {"status": "ready"}
 
 
 # ══════════════════════════════════════════════════════════════════════════

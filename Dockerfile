@@ -59,4 +59,6 @@ CMD ["uvicorn", "app.main:app", \
      "--port", "8000", \
      "--workers", "2", \
      "--timeout-keep-alive", "30", \
+     "--proxy-headers", \
+     "--forwarded-allow-ips", "*", \
      "--access-log"]

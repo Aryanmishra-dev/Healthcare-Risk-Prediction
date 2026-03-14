@@ -82,3 +82,12 @@ media/
 *.zip
 #data
 survey_lung_cancer.csv
+
+# SSL certificates (never commit!)
+nginx/ssl/*.pem
+nginx/ssl/*.key
+nginx/ssl/*.crt
+
+# Monitoring data volumes
+prometheus_data/
+grafana_data/

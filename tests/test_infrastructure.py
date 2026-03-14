@@ -132,6 +132,104 @@ class TestMonitoring:
 
 
 # ══════════════════════════════════════════════════════════════════════════
+#  Security Headers & Middleware
+# ══════════════════════════════════════════════════════════════════════════
+
+class TestSecurityHeaders:
+    def test_request_id_header_present(self, client):
+        """Every response should include an X-Request-ID header."""
+        resp = client.get("/healthz")
+        assert "X-Request-ID" in resp.headers
+        # Should be a valid UUID-like string
+        assert len(resp.headers["X-Request-ID"]) >= 32
+
+    def test_request_id_preserved_when_sent(self, client):
+        """If client sends X-Request-ID, server should echo it back."""
+        custom_id = "test-request-12345"
+        resp = client.get("/healthz", headers={"X-Request-ID": custom_id})
+        assert resp.headers["X-Request-ID"] == custom_id
+
+    def test_cors_rejects_disallowed_origin(self, client):
+        """CORS should reject requests from unlisted origins."""
+        resp = client.options(
+            "/api/predict",
+            headers={
+                "Origin": "https://evil-site.com",
+                "Access-Control-Request-Method": "POST",
+            },
+        )
+        # Should NOT include the evil origin in allow-origin
+        allow_origin = resp.headers.get("access-control-allow-origin", "")
+        assert "evil-site.com" not in allow_origin
+
+    def test_rate_limiting_returns_429(self, client):
+        """Exceeding rate limit should return 429 status."""
+        # Set a very low limit for testing
+        from app.main import _request_log
+        _request_log.clear()
+        import app.main as app_module
+        original_limit = app_module.RATE_LIMIT
+        try:
+            app_module.RATE_LIMIT = 3
+            for _ in range(3):
+                client.get("/healthz")
+            resp = client.get("/healthz")
+            assert resp.status_code == 429
+            assert "Too many requests" in resp.json()["detail"]
+        finally:
+            app_module.RATE_LIMIT = original_limit
+            _request_log.clear()
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  Production Readiness
+# ══════════════════════════════════════════════════════════════════════════
+
+class TestProductionReadiness:
+    def test_readiness_endpoint(self, client):
+        """Readiness probe should confirm models are loaded."""
+        resp = client.get("/api/v1/health/ready")
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "ready"
+
+    def test_nginx_config_exists(self):
+        """Nginx production config file should exist."""
+        nginx_conf = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "nginx", "nginx.conf",
+        )
+        assert os.path.isfile(nginx_conf), "nginx/nginx.conf not found"
+
+    def test_nginx_dev_config_exists(self):
+        """Nginx development config file should exist."""
+        nginx_conf = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "nginx", "nginx.dev.conf",
+        )
+        assert os.path.isfile(nginx_conf), "nginx/nginx.dev.conf not found"
+
+    def test_docker_compose_no_exposed_backend_port(self):
+        """docker-compose.yml should NOT publish port 8000 to host."""
+        compose_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "docker-compose.yml",
+        )
+        with open(compose_path) as f:
+            content = f.read()
+        # The web service should use 'expose' not 'ports' for 8000
+        # Check that "8000:8000" is NOT in the file (direct port mapping)
+        assert '"8000:8000"' not in content, "Port 8000 should not be published to host"
+
+    def test_security_md_exists(self):
+        """SECURITY.md documentation should exist."""
+        sec_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "SECURITY.md",
+        )
+        assert os.path.isfile(sec_path), "SECURITY.md not found"
+
+
+# ══════════════════════════════════════════════════════════════════════════
 #  Structured Logging
 # ══════════════════════════════════════════════════════════════════════════
 
