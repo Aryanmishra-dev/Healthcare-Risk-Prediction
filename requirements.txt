@@ -17,5 +17,5 @@ structlog>=24.0
 prometheus-fastapi-instrumentator>=7.0
 redis
 fastapi-cache2[redis]
-fastapi-limiter
+fastapi-limiter~=0.1.6
 SQLAlchemy~=2.0.0
