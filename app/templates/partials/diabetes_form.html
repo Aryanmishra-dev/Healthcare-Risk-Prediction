@@ -1,0 +1,117 @@
+<div class="lg:col-span-7 flex flex-col gap-6">
+    <form hx-post="/predict/diabetes" hx-target="#diabetes-result" hx-swap="innerHTML" hx-indicator="#diabetes-spinner">
+
+    <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-6 border-b border-slate-100">
+            <h3 class="text-lg font-bold text-slate-900">New Risk Assessment</h3>
+            <p class="text-sm text-slate-500">Fill in the clinical data to generate AI insights.</p>
+        </div>
+        <div class="p-6 space-y-8">
+
+            <!-- Demographics -->
+            <div>
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="material-symbols-outlined text-primary text-xl" aria-hidden="true">person</span>
+                    <h4 class="text-sm font-bold uppercase tracking-wider text-slate-400">Demographics</h4>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label for="diab_age" class="text-xs font-semibold text-slate-600">Age Group</label>
+                        <select id="diab_age" name="age" required aria-required="true" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                            <option value="1">18 - 24</option>
+                            <option value="2">25 - 29</option>
+                            <option value="3">30 - 34</option>
+                            <option value="4">35 - 39</option>
+                            <option value="5">40 - 44</option>
+                            <option value="6">45 - 49</option>
+                            <option value="7" selected>50 - 54</option>
+                            <option value="8">55 - 59</option>
+                            <option value="9">60 - 64</option>
+                            <option value="10">65 - 69</option>
+                            <option value="11">70 - 74</option>
+                            <option value="12">75 - 79</option>
+                            <option value="13">80+</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label for="diab_bmi" class="text-xs font-semibold text-slate-600">BMI (kg/m&sup2;)</label>
+                        <input id="diab_bmi" type="number" name="bmi" step="0.1" min="10" max="80" value="25.0" required aria-required="true"
+                               class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Medical History -->
+            <div>
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="material-symbols-outlined text-primary text-xl" aria-hidden="true">medical_services</span>
+                    <h4 class="text-sm font-bold uppercase tracking-wider text-slate-400">Medical History</h4>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label for="diab_bp" class="text-xs font-semibold text-slate-600">High Blood Pressure</label>
+                        <select id="diab_bp" name="bp" required aria-required="true" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                            <option value="0" selected>No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label for="diab_cholesterol" class="text-xs font-semibold text-slate-600">High Cholesterol</label>
+                        <select id="diab_cholesterol" name="cholesterol" required aria-required="true" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                            <option value="0" selected>No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lifestyle -->
+            <div>
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="material-symbols-outlined text-primary text-xl" aria-hidden="true">fitness_center</span>
+                    <h4 class="text-sm font-bold uppercase tracking-wider text-slate-400">Lifestyle &amp; Well-being</h4>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label for="diab_smoker" class="text-xs font-semibold text-slate-600">Smoking History</label>
+                        <select id="diab_smoker" name="smoker" required aria-required="true" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                            <option value="0" selected>No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label for="diab_activity" class="text-xs font-semibold text-slate-600">Physical Activity</label>
+                        <select id="diab_activity" name="activity" required aria-required="true" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                            <option value="1" selected>Active</option>
+                            <option value="0">Inactive</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label for="diab_health" class="text-xs font-semibold text-slate-600">General Health</label>
+                        <select id="diab_health" name="health" required aria-required="true" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                            <option value="1">1 - Excellent</option>
+                            <option value="2">2 - Very Good</option>
+                            <option value="3" selected>3 - Good</option>
+                            <option value="4">4 - Fair</option>
+                            <option value="5">5 - Poor</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label for="diab_mental" class="text-xs font-semibold text-slate-600">Mental Health Days</label>
+                        <input id="diab_mental" type="number" name="mental" min="0" max="30" value="0" required aria-required="true"
+                               class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="p-6 bg-slate-50 flex justify-end">
+            <button type="submit" aria-label="Generate AI Prediction for Diabetes" class="bg-primary hover:bg-primary/90 text-white px-8 py-2.5 rounded-lg font-bold text-sm shadow-lg shadow-primary/20 transition-all flex items-center gap-2">
+                <span id="diabetes-spinner" class="htmx-indicator material-symbols-outlined text-lg animate-spin" aria-hidden="true">progress_activity</span>
+                <span class="htmx-hide-on-request material-symbols-outlined text-lg" aria-hidden="true">bolt</span>
+                Generate AI Prediction
+            </button>
+        </div>
+    </section>
+    </form>
+</div>

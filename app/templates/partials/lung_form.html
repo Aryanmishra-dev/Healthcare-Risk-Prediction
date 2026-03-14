@@ -1,0 +1,105 @@
+<div class="lg:col-span-7 flex flex-col gap-6">
+    <form hx-post="/predict/lung" hx-target="#lung-result" hx-swap="innerHTML" hx-indicator="#lung-spinner">
+
+    <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-6 border-b border-slate-100">
+            <h3 class="text-lg font-bold text-slate-900">Lung Cancer Risk Assessment</h3>
+            <p class="text-sm text-slate-500">Enter patient details for lung cancer risk analysis.</p>
+        </div>
+        <div class="p-6 space-y-8">
+
+            <!-- Demographics -->
+            <div>
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="material-symbols-outlined text-primary text-xl" aria-hidden="true">person</span>
+                    <h4 class="text-sm font-bold uppercase tracking-wider text-slate-400">Demographics</h4>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label for="lc_age" class="text-xs font-semibold text-slate-600">Age (years)</label>
+                        <input id="lc_age" type="number" name="lc_age" min="18" max="100" value="50" required aria-required="true"
+                               class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label for="lc_gender" class="text-xs font-semibold text-slate-600">Gender</label>
+                        <select id="lc_gender" name="lc_gender" required aria-required="true" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                            <option value="1" selected>Male</option>
+                            <option value="0">Female</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Risk Factors -->
+            <div>
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="material-symbols-outlined text-primary text-xl" aria-hidden="true">warning</span>
+                    <h4 class="text-sm font-bold uppercase tracking-wider text-slate-400">Risk Factors</h4>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label for="lc_smoking" class="text-xs font-semibold text-slate-600">Smoking</label>
+                        <select id="lc_smoking" name="lc_smoking" required aria-required="true" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                            <option value="0" selected>No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label for="lc_yellow_fingers" class="text-xs font-semibold text-slate-600">Yellow Fingers</label>
+                        <select id="lc_yellow_fingers" name="lc_yellow_fingers" required aria-required="true" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                            <option value="0" selected>No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label for="lc_chronic_disease" class="text-xs font-semibold text-slate-600">Chronic Disease</label>
+                        <select id="lc_chronic_disease" name="lc_chronic_disease" required aria-required="true" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                            <option value="0" selected>No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Symptoms -->
+            <div>
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="material-symbols-outlined text-primary text-xl" aria-hidden="true">symptoms</span>
+                    <h4 class="text-sm font-bold uppercase tracking-wider text-slate-400">Symptoms</h4>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label for="lc_fatigue" class="text-xs font-semibold text-slate-600">Fatigue</label>
+                        <select id="lc_fatigue" name="lc_fatigue" required aria-required="true" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                            <option value="0" selected>No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label for="lc_wheezing" class="text-xs font-semibold text-slate-600">Wheezing</label>
+                        <select id="lc_wheezing" name="lc_wheezing" required aria-required="true" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                            <option value="0" selected>No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label for="lc_shortness_of_breath" class="text-xs font-semibold text-slate-600">Shortness of Breath</label>
+                        <select id="lc_shortness_of_breath" name="lc_shortness_of_breath" required aria-required="true" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
+                            <option value="0" selected>No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="p-6 bg-slate-50 flex justify-end">
+            <button type="submit" aria-label="Generate AI Prediction for Lung Cancer" class="bg-violet-600 hover:bg-violet-700 text-white px-8 py-2.5 rounded-lg font-bold text-sm shadow-lg shadow-violet-600/20 transition-all flex items-center gap-2">
+                <span id="lung-spinner" class="htmx-indicator material-symbols-outlined text-lg animate-spin" aria-hidden="true">progress_activity</span>
+                <span class="htmx-hide-on-request material-symbols-outlined text-lg" aria-hidden="true">bolt</span>
+                Generate AI Prediction
+            </button>
+        </div>
+    </section>
+    </form>
+</div>
