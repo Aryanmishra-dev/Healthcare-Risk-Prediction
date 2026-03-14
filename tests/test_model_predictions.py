@@ -13,17 +13,38 @@ import pytest
 
 from fastapi_backend.model_loader import (
     load_models,
-    predict_diabetes,
-    predict_heart_disease,
-    predict_lung_cancer,
     build_diabetes_features,
+    _sync_predict_diabetes,
+    _sync_predict_heart,
+    _sync_predict_lung,
 )
+
+from app.main import app
+
+def predict_diabetes(**kwargs):
+    m = app.state.models.get("diabetes_model")
+    c = app.state.models.get("diabetes_calibrator")
+    return _sync_predict_diabetes(m, c, **kwargs)
+
+def predict_heart_disease(**kwargs):
+    m = app.state.models.get("heart_model")
+    c = app.state.models.get("heart_calibrator")
+    f = app.state.models.get("heart_features")
+    return _sync_predict_heart(m, c, f, **kwargs)
+
+def predict_lung_cancer(**kwargs):
+    m = app.state.models.get("lung_model")
+    s = app.state.models.get("lung_scaler")
+    f = app.state.models.get("lung_features")
+    c = app.state.models.get("lung_calibrator")
+    return _sync_predict_lung(m, s, f, c, **kwargs)
 
 
 @pytest.fixture(scope="module", autouse=True)
 def _load():
     """Load all models once for the entire test module."""
-    load_models()
+    from app.main import app
+    load_models(app)
 
 
 # ── Model Artefact Files ──────────────────────────────────────────────────

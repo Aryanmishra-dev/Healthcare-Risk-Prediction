@@ -133,6 +133,21 @@ print(f"    {df['diabetes'].value_counts().to_dict()}")
 df.to_csv(os.path.join(DATA_PROC, "brfss_diabetes_clean.csv"), index=False)
 print(f"  Saved clean CSV to data_processed/")
 
+import pandera as pa
+diabetes_schema = pa.DataFrameSchema({
+    "diabetes": pa.Column(float, checks=pa.Check.isin([0, 1])),
+    "bmi": pa.Column(float, checks=pa.Check.ge(0)),
+    "age_group": pa.Column(float, checks=pa.Check.in_range(1, 14)),
+    "high_bp": pa.Column(float, checks=pa.Check.isin([0, 1])),
+    "smoker": pa.Column(float, checks=pa.Check.isin([0, 1])),
+    "high_cholesterol": pa.Column(float, checks=pa.Check.isin([0, 1])),
+    "physical_activity": pa.Column(float, checks=pa.Check.isin([0, 1])),
+    "general_health": pa.Column(float, checks=pa.Check.in_range(1, 5)),
+    "mental_health": pa.Column(float, checks=pa.Check.in_range(0, 30))
+})
+df = diabetes_schema.validate(df)
+print("  Pandera Schema Validation Passed.")
+
 # ══════════════════════════════════════════════════════════════════════════
 # STEP 3: Feature engineering
 # ══════════════════════════════════════════════════════════════════════════

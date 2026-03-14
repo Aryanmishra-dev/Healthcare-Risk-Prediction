@@ -12,6 +12,9 @@ services:
       - RATE_LIMIT_PER_MINUTE=60
       - CORS_ORIGINS=https://yourdomain.com
       - TRUSTED_HOSTS=yourdomain.com,www.yourdomain.com,localhost
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
     volumes:
       - ./models:/app/models:ro
     restart: unless-stopped
@@ -39,6 +42,21 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
+
+  # ── Redis (caching and rate limiting) ────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: redis-cache
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   # ── Nginx reverse proxy (public-facing) ──────────────────────────────
   nginx:

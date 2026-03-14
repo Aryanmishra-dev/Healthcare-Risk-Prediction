@@ -67,6 +67,15 @@ Healthcare_risk_prediction/
 │   └── ssl/
 │       └── README.md                  # SSL certificate setup guide (Let's Encrypt)
 │
+├── docs/
+│   ├── adr/                           # Architecture Decision Records
+│   └── model_cards/                   # Google-style Model Cards
+│
+├── infrastructure/
+│   ├── main.tf                        # Terraform ECS/Fargate placeholders
+│   ├── variables.tf                   # Terraform variables
+│   └── outputs.tf                     # Terraform outputs
+│
 ├── monitoring/
 │   ├── prometheus.yml                 # Prometheus scrape configuration
 │   ├── grafana_dashboard.json         # Grafana dashboard (latency, error rate, throughput)
@@ -82,7 +91,7 @@ Healthcare_risk_prediction/
 │
 ├── notebooks/
 │   ├── brfss_cleaning.ipynb           # Diabetes: cleaning → training → SHAP
-│   ├── train_heart_disease_model.ipynb  # Heart disease pipeline
+│   ├── train_heart_disease_model.py   # Heart disease pipeline
 │   └── train_lung_cancer_model.py     # Lung cancer pipeline
 │
 ├── utils/
@@ -102,6 +111,8 @@ Healthcare_risk_prediction/
 ├── requirements-dev.txt               # Dev/test dependencies (pytest, locust, flake8)
 ├── retrain.py                         # One-shot retraining script with MLflow tracking
 ├── start.sh                           # One-command local dev startup (127.0.0.1 only)
+├── CHANGELOG.md                       # Project version history
+├── CONTRIBUTING.md                    # Contribution guidelines
 └── README.md
 ```
 
@@ -364,6 +375,7 @@ User Browser
 | Capability | Implementation | Details |
 |---|---|---|
 | **Reverse Proxy** | Nginx | SSL termination, rate limiting, security headers, static file serving |
+| **Infrastructure as Code** | Terraform | Placeholders for ECS/Fargate deployment and resource provisioning |
 | **Automated Testing** | pytest | 170 tests, 88% coverage, model + API + security + infra |
 | **CI/CD** | GitHub Actions | Lint → Test (matrix 3.12/3.13) → Security audit → Docker build + smoke test |
 | **Containerisation** | Docker | Multi-stage build, non-root user, health check, resource limits |
@@ -389,8 +401,10 @@ User Browser
 | ML | XGBoost 3.2, scikit-learn 1.8, SHAP 0.51 |
 | Data | pandas 3.0, NumPy 2.x, pyreadstat |
 | API | FastAPI 0.135, Uvicorn 0.41, Pydantic 2.12 |
+| Caching/Rate Limiting | Redis + aioredis |
 | UI | HTMX 1.9, Jinja2 3.1, Tailwind CSS (CDN) |
 | Reverse Proxy | Nginx 1.27 (Alpine) |
+| Infrastructure | Terraform |
 | Logging | structlog 24.x |
 | Monitoring | Prometheus + Grafana (auto-provisioned), prometheus-fastapi-instrumentator 7.x |
 | Containerisation | Docker (multi-stage), Docker Compose |
@@ -437,7 +451,9 @@ User Browser
 ### Application Layer
 - **TrustedHostMiddleware** — rejects requests with spoofed `Host` headers
 - **X-Request-ID** — unique tracing ID on every request (auto-generated or client-provided)
-- **App-level rate limiting** — 60 req/min per IP (uses `X-Forwarded-For` behind Nginx)
+- **App-level rate limiting** — 60 req/min per IP backed by Redis (uses `X-Forwarded-For` behind Nginx)
+- **CSRF Token Protection** — Secure `X-CSRFToken` verification specifically for HTMX form submissions
+- **API Key Authentication** — Protected REST endpoints requiring `X-API-Key` headers
 - **CORS** — restricted to configured production domain (configurable via `CORS_ORIGINS`)
 - **Input validation** — Pydantic schemas with bounded fields on all endpoints
 - **Dependency auditing** — `pip-audit` in CI pipeline

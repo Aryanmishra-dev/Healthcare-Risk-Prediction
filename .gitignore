@@ -91,3 +91,5 @@ nginx/ssl/*.crt
 # Monitoring data volumes
 prometheus_data/
 grafana_data/
+# Root data directory
+data/

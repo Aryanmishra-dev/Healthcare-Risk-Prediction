@@ -21,6 +21,12 @@ tailwind.config = {
         },
     },
 }
+document.addEventListener("htmx:configRequest", function(evt) {
+    let match = document.cookie.match(new RegExp('(^| )' + 'csrf_token' + '=([^;]+)'));
+    if (match) {
+        evt.detail.headers['X-CSRFToken'] = match[2];
+    }
+});
 </script>
 <style>
 body { font-family: 'Inter', sans-serif; }
