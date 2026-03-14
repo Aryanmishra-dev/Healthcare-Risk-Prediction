@@ -19,3 +19,4 @@ redis
 fastapi-cache2[redis]
 fastapi-limiter~=0.1.6
 SQLAlchemy~=2.0.0
+gunicorn>=21.0.0
