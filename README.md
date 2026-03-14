@@ -1,8 +1,8 @@
 # Healthcare Risk Prediction — End-to-End ML Pipeline
 
-A production-grade machine learning system for predicting **diabetes**, **heart disease**, and **lung cancer** risk from patient health indicators. Built with FastAPI, HTMX, XGBoost, and a full MLOps stack.
+A production-grade machine learning system for predicting **diabetes**, **heart disease**, and **lung cancer** risk from patient health indicators. Built with FastAPI, HTMX, XGBoost, and a full MLOps stack — secured behind Nginx with HTTPS, rate limiting, and monitoring.
 
-> **Status:** Three models live — containerised deployment with monitoring, versioned APIs, and CI/CD. App v3.0.0.
+> **Status:** Three models live — production-grade Nginx reverse proxy, HTTPS, containerised deployment with monitoring, versioned APIs, and CI/CD. App v3.0.0.
 
 ---
 
@@ -61,9 +61,16 @@ Healthcare_risk_prediction/
 │   ├── mlflow_config.py               # MLflow experiment tracking configuration
 │   └── calibrate_lung_model.py        # Generates lung cancer isotonic calibrator
 │
+├── nginx/
+│   ├── nginx.conf                     # Production Nginx (SSL, rate limiting, security headers)
+│   ├── nginx.dev.conf                 # Development Nginx (HTTP-only reverse proxy)
+│   └── ssl/
+│       └── README.md                  # SSL certificate setup guide (Let's Encrypt)
+│
 ├── monitoring/
 │   ├── prometheus.yml                 # Prometheus scrape configuration
-│   └── grafana_dashboard.json         # Grafana dashboard (latency, error rate, throughput)
+│   ├── grafana_dashboard.json         # Grafana dashboard (latency, error rate, throughput)
+│   └── grafana/provisioning/          # Auto-provisioned Grafana datasources & dashboards
 │
 ├── tests/
 │   ├── test_api.py                    # API + HTMX + rate-limiting + CORS tests
@@ -86,13 +93,15 @@ Healthcare_risk_prediction/
 │
 ├── .github/workflows/ci.yml          # GitHub Actions CI (lint, test matrix, security, Docker)
 ├── Dockerfile                         # Multi-stage build, non-root user, health check
-├── docker-compose.yml                 # App + optional Prometheus monitoring
+├── docker-compose.yml                 # App + Nginx + Prometheus + Grafana
+├── deploy.sh                          # Production deployment script (SSL validation, health checks)
+├── SECURITY.md                        # Security architecture documentation & deployment checklist
 ├── dvc.yaml                           # DVC pipeline stages (data → train → evaluate)
 ├── pyproject.toml                     # pytest + coverage configuration
 ├── requirements.txt                   # Production dependencies
 ├── requirements-dev.txt               # Dev/test dependencies (pytest, locust, flake8)
 ├── retrain.py                         # One-shot retraining script with MLflow tracking
-├── start.sh                           # One-command server startup script
+├── start.sh                           # One-command local dev startup (127.0.0.1 only)
 └── README.md
 ```
 
@@ -185,7 +194,8 @@ XGBoost config: `n_estimators=800, max_depth=6, lr=0.03, subsample=0.8, colsampl
 
 | Endpoint | Description |
 |---|---|
-| `GET /healthz` | Liveness/readiness probe |
+| `GET /healthz` | Liveness probe |
+| `GET /api/v1/health/ready` | Readiness probe (confirms models loaded) |
 | `GET /metrics` | Prometheus metrics (request rate, latency, error rate) |
 | `GET /api/docs` | Swagger UI |
 
@@ -223,29 +233,33 @@ pip install -r requirements.txt
 
 ### Run the Server
 
-**Option 1 — One-command startup:**
+**Option 1 — Local development (one-command):**
 ```bash
 bash start.sh
+# Binds to 127.0.0.1:8000 (not publicly accessible)
 ```
 
 **Option 2 — Manual:**
 ```bash
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --host 127.0.0.1 --reload --port 8000
 ```
 
-**Option 3 — Docker:**
+**Option 3 — Docker with Nginx reverse proxy (production):**
 ```bash
-docker compose up --build
+./deploy.sh                        # HTTPS via Nginx on ports 80/443
+./deploy.sh --with-monitoring      # + Prometheus + Grafana
 ```
 
-**Option 4 — Docker with Prometheus monitoring:**
+**Option 4 — Docker development (HTTP + Nginx):**
 ```bash
-docker compose --profile monitoring up --build
+docker compose --profile dev up --build
 ```
 
-Open http://127.0.0.1:8000 in your browser.  
-Swagger API docs: http://127.0.0.1:8000/api/docs  
-Prometheus metrics: http://127.0.0.1:8000/metrics
+Development: http://localhost:8000  
+Production: https://localhost (behind Nginx)  
+Swagger API docs: `/api/docs`  
+Prometheus: http://localhost:9090 (with `--with-monitoring`)  
+Grafana: http://localhost:3000 (admin / healthpredict)
 
 ### Train Models
 
@@ -275,7 +289,7 @@ python scripts/model_registry.py info      # print model metadata
 ### Run Tests
 ```bash
 pip install -r requirements-dev.txt
-pytest                                     # 161 tests, 88% coverage
+pytest                                     # 170 tests, 88% coverage
 ```
 
 ### Load Testing
@@ -294,33 +308,53 @@ python app/risk_assistant.py --ui          # Gradio web UI (requires: pip instal
 
 ## System Architecture
 
+### Production Architecture
+
 ```
-User Browser (http://localhost:8000)
+User Browser
       │
-      ▼
-FastAPI + HTMX UI (single server)
-      │
-      ├── HTMX forms   → POST /predict/{disease}         → HTML fragment
-      ├── Legacy API    → POST /api/predict*              → JSON response
-      ├── Versioned API → POST /api/v1/predict/{disease}  → JSON response
-      ├── Explain API   → POST /api/v1/explain/{disease}  → JSON + SHAP values
-      ├── Health        → GET /healthz                    → liveness probe
-      └── Metrics       → GET /metrics                    → Prometheus scrape
-      │
-      ▼
-ML Models (loaded at startup)
-      ├── diabetes_xgboost.pkl    + isotonic_calibrator.pkl  + SHAP TreeExplainer
-      ├── heart_disease_xgboost.pkl + heart_disease_calibrator.pkl + SHAP TreeExplainer
-      └── lung_cancer_model.pkl   + lung_cancer_calibrator.pkl + SHAP LinearExplainer
-      │
-      ▼
-Infrastructure
-      ├── Prometheus + Grafana          (monitoring/alerting)
-      ├── MLflow                        (experiment tracking)
-      ├── DVC                           (data & pipeline versioning)
-      ├── Model Registry                (version, metrics, SHA-256 integrity)
-      ├── Feature Store                 (centralised feature definitions)
-      └── A/B Testing Framework         (champion vs challenger routing)
+      ▼ HTTPS (443)
+┌──────────────────────────────────────┐
+│  Nginx Reverse Proxy                 │
+│  • SSL termination (TLSv1.2+)       │
+│  • Rate limiting (10r/s predict)     │
+│  • Security headers (HSTS, CSP, …)  │
+│  • Request size limit (2MB)          │
+│  • Static file serving + gzip       │
+│  • /metrics blocked externally      │
+└──────────────┬───────────────────────┘
+               │ (Docker internal network)
+               ▼
+┌──────────────────────────────────────┐
+│  FastAPI + HTMX (port 8000)         │
+│  • TrustedHostMiddleware            │
+│  • X-Request-ID tracing             │
+│  • App-level rate limiting          │
+│  • Structured JSON logging          │
+│  • Prometheus /metrics              │
+│  │                                   │
+│  ├── HTMX UI    → /predict/*        │
+│  ├── API v1     → /api/v1/predict/* │
+│  ├── Explain    → /api/v1/explain/* │
+│  └── Health     → /healthz, /ready  │
+└──────────────┬───────────────────────┘
+               ▼
+┌──────────────────────────────────────┐
+│  ML Models (loaded at startup)       │
+│  ├── Diabetes  (XGBoost + SHAP)     │
+│  ├── Heart     (XGBoost + SHAP)     │
+│  └── Lung      (LogReg  + SHAP)     │
+└──────────────────────────────────────┘
+               ▼
+┌──────────────────────────────────────┐
+│  Infrastructure                      │
+│  ├── Prometheus + Grafana (monitoring)│
+│  ├── MLflow (experiment tracking)    │
+│  ├── DVC (data versioning)           │
+│  ├── Model Registry (SHA-256 hashes) │
+│  ├── Feature Store (definitions)     │
+│  └── A/B Testing (traffic routing)   │
+└──────────────────────────────────────┘
 ```
 
 ---
@@ -329,16 +363,17 @@ Infrastructure
 
 | Capability | Implementation | Details |
 |---|---|---|
-| **Automated Testing** | pytest | 161 tests, 88% coverage, model + API + infra |
+| **Reverse Proxy** | Nginx | SSL termination, rate limiting, security headers, static file serving |
+| **Automated Testing** | pytest | 170 tests, 88% coverage, model + API + security + infra |
 | **CI/CD** | GitHub Actions | Lint → Test (matrix 3.12/3.13) → Security audit → Docker build + smoke test |
 | **Containerisation** | Docker | Multi-stage build, non-root user, health check, resource limits |
-| **Structured Logging** | structlog | JSON output (prod), console (dev), request-level tracing |
+| **Structured Logging** | structlog | JSON output (prod), console (dev), request-ID tracing |
 | **API Versioning** | `/api/v1/` | Versioned endpoints; legacy routes preserved for backwards compatibility |
 | **Model Calibration** | Isotonic regression | All 3 models return calibrated probabilities |
 | **Explainability** | SHAP | Per-prediction feature attributions via `/api/v1/explain/*` endpoints |
 | **Model Versioning** | Model registry | `model_registry.json` — version, metrics, SHA-256 hash verification |
 | **Experiment Tracking** | MLflow | Parameters, metrics, and artifacts logged during retraining |
-| **Monitoring** | Prometheus + Grafana | `/metrics` endpoint, latency histograms, error rates, request counts |
+| **Monitoring** | Prometheus + Grafana | Auto-provisioned dashboards, latency histograms, error rates, request counts |
 | **Data Versioning** | DVC | Pipeline stages for data processing + model training |
 | **Load Testing** | Locust | 7 weighted user scenarios covering all endpoints |
 | **A/B Testing** | Custom framework | Deterministic hash-based traffic routing, result comparison |
@@ -355,8 +390,9 @@ Infrastructure
 | Data | pandas 3.0, NumPy 2.x, pyreadstat |
 | API | FastAPI 0.135, Uvicorn 0.41, Pydantic 2.12 |
 | UI | HTMX 1.9, Jinja2 3.1, Tailwind CSS (CDN) |
+| Reverse Proxy | Nginx 1.27 (Alpine) |
 | Logging | structlog 24.x |
-| Monitoring | prometheus-fastapi-instrumentator 7.x |
+| Monitoring | Prometheus + Grafana (auto-provisioned), prometheus-fastapi-instrumentator 7.x |
 | Containerisation | Docker (multi-stage), Docker Compose |
 | CI/CD | GitHub Actions (lint, test matrix, security, Docker) |
 | Testing | pytest 8.x, pytest-cov, Locust 2.x |
@@ -381,11 +417,29 @@ Infrastructure
 
 ## Security
 
-- **Rate limiting** — 60 requests/minute per IP (configurable via `RATE_LIMIT_PER_MINUTE` env var)
-- **CORS** — restricted to localhost origins by default (configurable via `CORS_ORIGINS` env var)
-- **Input validation** — Pydantic schemas on all endpoints
+> For full security architecture details and deployment checklist, see [`SECURITY.md`](SECURITY.md).
+
+### Nginx Layer
+- **HTTPS / SSL** — TLSv1.2+ with Let's Encrypt (HTTP → HTTPS redirect)
+- **Rate limiting** — 10 req/s on `/predict`, 20 req/s on `/api` (Nginx-level)
+- **Security headers** — HSTS, X-Frame-Options, X-Content-Type-Options, X-XSS-Protection, CSP, Referrer-Policy, Permissions-Policy
+- **Request size limit** — 2MB max payload (`client_max_body_size`)
+- **Metrics access control** — `/metrics` endpoint restricted to internal Docker IPs
+- **Server version hidden** — `server_tokens off`
+- **Dotfile blocking** — `.env`, `.git`, etc. blocked via location rule
+
+### Docker / Network Layer
+- **Port isolation** — FastAPI port 8000 **not published** to host (internal Docker network only)
 - **Non-root container** — Docker runs as `appuser` (UID 1000)
 - **Read-only filesystem** — Docker Compose mounts app as read-only
+- **Resource limits** — CPU (2.0) and memory (1G) caps
+
+### Application Layer
+- **TrustedHostMiddleware** — rejects requests with spoofed `Host` headers
+- **X-Request-ID** — unique tracing ID on every request (auto-generated or client-provided)
+- **App-level rate limiting** — 60 req/min per IP (uses `X-Forwarded-For` behind Nginx)
+- **CORS** — restricted to configured production domain (configurable via `CORS_ORIGINS`)
+- **Input validation** — Pydantic schemas with bounded fields on all endpoints
 - **Dependency auditing** — `pip-audit` in CI pipeline
 - **No secrets in registry** — SHA-256 hashes stripped from public `/api/v1/models` response
 
@@ -395,8 +449,9 @@ Infrastructure
 
 | Variable | Default | Description |
 |---|---|---|
-| `RATE_LIMIT_PER_MINUTE` | `60` | Max requests per IP per minute |
-| `CORS_ORIGINS` | `http://localhost:3000,...` | Comma-separated allowed origins |
+| `CORS_ORIGINS` | `https://yourdomain.com,...` | Comma-separated allowed CORS origins |
+| `TRUSTED_HOSTS` | `localhost,127.0.0.1,yourdomain.com` | Allowed `Host` header values |
+| `RATE_LIMIT_PER_MINUTE` | `60` | Max requests per IP per minute (app-level) |
 | `APP_ENV` | `development` | `production` for JSON log output |
 | `LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
 | `MLFLOW_TRACKING_URI` | `file://mlruns` | MLflow tracking server URI |
