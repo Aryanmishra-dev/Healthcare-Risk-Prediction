@@ -55,7 +55,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:8000/api || exit 1
 
 CMD ["gunicorn", "app.main:app", \
-     "-w", "4", \
+     "-w", "1", \
      "-k", "uvicorn.workers.UvicornWorker", \
      "-b", "0.0.0.0:8000", \
      "--timeout", "15", \
