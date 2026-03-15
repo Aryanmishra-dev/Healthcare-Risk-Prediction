@@ -13,7 +13,7 @@ import uuid
 from collections import defaultdict
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Form, Request
+from fastapi import FastAPI, Form, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
@@ -32,6 +32,16 @@ from fastapi_cache.backends.redis import RedisBackend
 from fastapi_cache.decorator import cache
 from fastapi_limiter import FastAPILimiter
 from fastapi_limiter.depends import RateLimiter
+
+class OptionalRateLimiter:
+    def __init__(self, times: int, seconds: int):
+        self.limiter = RateLimiter(times=times, seconds=seconds)
+    async def __call__(self, request: Request, response: Response):
+        if hasattr(FastAPILimiter, "redis") and FastAPILimiter.redis is not None:
+            try:
+                await self.limiter(request, response)
+            except Exception:
+                pass
 
 from app.database import get_db, PredictionAuditLog
 
@@ -98,11 +108,14 @@ async def lifespan(app: FastAPI):
     redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
     try:
         redis_client = aioredis.from_url(redis_url, encoding="utf-8", decode_responses=True)
+        await redis_client.ping()
         FastAPICache.init(RedisBackend(redis_client), prefix="healthpredict-cache")
         await FastAPILimiter.init(redis_client)
         logger.info("redis_connected", url=redis_url)
     except Exception as e:
-        logger.warning("redis_connection_failed", error=str(e))
+        logger.warning("redis_connection_failed", error=str(e), fallback="in_memory")
+        from fastapi_cache.backends.inmemory import InMemoryBackend
+        FastAPICache.init(InMemoryBackend(), prefix="healthpredict-cache")
         
     load_models(app)
     load_explainers()
@@ -257,7 +270,7 @@ def readiness(request: Request):
 #  HTMX Prediction Endpoints (return HTML fragments)
 # ══════════════════════════════════════════════════════════════════════════
 
-@app.post("/predict/diabetes", dependencies=[Depends(RateLimiter(times=RATE_LIMIT, seconds=60)), Depends(verify_csrf_token)])
+@app.post("/predict/diabetes", dependencies=[Depends(OptionalRateLimiter(times=RATE_LIMIT, seconds=60)), Depends(verify_csrf_token)])
 @cache(expire=3600)
 async def predict_diabetes_htmx(
     request: Request,
@@ -312,7 +325,7 @@ async def predict_diabetes_htmx(
         })
 
 
-@app.post("/predict/heart", dependencies=[Depends(RateLimiter(times=RATE_LIMIT, seconds=60)), Depends(verify_csrf_token)])
+@app.post("/predict/heart", dependencies=[Depends(OptionalRateLimiter(times=RATE_LIMIT, seconds=60)), Depends(verify_csrf_token)])
 @cache(expire=3600)
 async def predict_heart_htmx(
     request: Request,
@@ -385,7 +398,7 @@ async def predict_heart_htmx(
         })
 
 
-@app.post("/predict/lung", dependencies=[Depends(RateLimiter(times=RATE_LIMIT, seconds=60)), Depends(verify_csrf_token)])
+@app.post("/predict/lung", dependencies=[Depends(OptionalRateLimiter(times=RATE_LIMIT, seconds=60)), Depends(verify_csrf_token)])
 @cache(expire=3600)
 async def predict_lung_htmx(
     request: Request,
@@ -453,7 +466,7 @@ def api_root():
     }
 
 
-@app.post("/api/predict", response_model=PredictionResponse, dependencies=[Depends(RateLimiter(times=RATE_LIMIT, seconds=60))])
+@app.post("/api/predict", response_model=PredictionResponse, dependencies=[Depends(OptionalRateLimiter(times=RATE_LIMIT, seconds=60))])
 async def api_predict_diabetes(request: Request, data: PredictionRequest):
     """Predict diabetes risk (JSON API)."""
     result = await predict(request=request,
@@ -469,7 +482,7 @@ async def api_predict_diabetes(request: Request, data: PredictionRequest):
     return PredictionResponse(**result)
 
 
-@app.post("/api/predict-heart", response_model=PredictionResponse, dependencies=[Depends(RateLimiter(times=RATE_LIMIT, seconds=60))])
+@app.post("/api/predict-heart", response_model=PredictionResponse, dependencies=[Depends(OptionalRateLimiter(times=RATE_LIMIT, seconds=60))])
 async def api_predict_heart(request: Request, data: HeartDiseasePredictionRequest):
     """Predict heart disease risk (JSON API)."""
     result = await predict_heart_disease(request=request,
@@ -491,7 +504,7 @@ async def api_predict_heart(request: Request, data: HeartDiseasePredictionReques
     return PredictionResponse(**result)
 
 
-@app.post("/api/predict-lung", response_model=PredictionResponse, dependencies=[Depends(RateLimiter(times=RATE_LIMIT, seconds=60))])
+@app.post("/api/predict-lung", response_model=PredictionResponse, dependencies=[Depends(OptionalRateLimiter(times=RATE_LIMIT, seconds=60))])
 async def api_predict_lung(request: Request, data: LungCancerPredictionRequest):
     """Predict lung cancer risk (JSON API)."""
     result = await predict_lung_cancer(request=request,
