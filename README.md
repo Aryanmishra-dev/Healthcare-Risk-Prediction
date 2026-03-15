@@ -4,6 +4,10 @@ A production-grade machine learning system for predicting **diabetes**, **heart 
 
 > **Status:** Three models live — production-grade Nginx reverse proxy, HTTPS, containerised deployment with monitoring, versioned APIs, and CI/CD. App v3.0.0.
 
+### Recent Updates
+- Integrated an AI **Virtual Doctor Speech Engine**, reading out predictions with an automated native **Male Hindi** Text-to-Speech (TTS) translation.
+- Enhanced version control hygiene by strictly ignoring tracking stores (`mlruns/`), infrastructure state (`.terraform/`), linter caches (`.mypy_cache/`, `.ruff_cache/`), and disposable images (`image.png`).
+
 ---
 
 ## Models at a Glance
@@ -166,6 +170,14 @@ XGBoost config: `n_estimators=800, max_depth=6, lr=0.03, subsample=0.8, colsampl
 - Isotonic calibration for probability adjustment
 - SHAP LinearExplainer for per-prediction explanations
 - Multi-model comparison (Logistic Regression, RF, SVM, KNN, Naive Bayes, GBM, XGBoost) with GridSearchCV tuning
+
+---
+
+## User Interface Highlights
+
+- **HTMX & Tailwind CSS**: Fast, reactive, single-page application experience without heavy frontend frameworks.
+- **Virtual Doctor Speech Engine**: An integrated AI Text-to-Speech (TTS) feature that reads out prediction results in a **Male Hindi voice** using native web speech APIs. Provides localized spoken insights to enhance patient accessibility.
+- **Dynamic SHAP Visualisations**: Real-time display of model explainability visualizations.
 
 ---
 
