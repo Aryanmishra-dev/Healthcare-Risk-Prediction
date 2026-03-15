@@ -135,18 +135,19 @@
 
     function loadVoices() {
         var voices = synthesis.getVoices();
-        var enVoices = voices.filter(function(v) {
-            return v.lang.indexOf("en") !== -1;
+        var hiVoices = voices.filter(function(v) {
+            return v.lang.indexOf("hi") !== -1;
         });
-        voiceObj = enVoices.find(function(v) {
+        voiceObj = hiVoices.find(function(v) {
             var n = v.name.toLowerCase();
             return n.indexOf("male") !== -1 && n.indexOf("female") === -1;
-        }) || enVoices.find(function(v) {
+        }) || hiVoices.find(function(v) {
             var n = v.name.toLowerCase();
             return (n.indexOf("google") !== -1 || n.indexOf("premium") !== -1) && n.indexOf("female") === -1;
-        }) || enVoices.find(function(v) {
-            return v.lang.indexOf("en-US") !== -1 || v.lang.indexOf("en-GB") !== -1;
-        }) || voices[0] || null;
+        }) || hiVoices.find(function(v) {
+            var n = v.name.toLowerCase();
+            return n.indexOf("female") === -1;
+        }) || hiVoices[0] || null;
     }
 
     if (synthesis.onvoiceschanged !== undefined) {
@@ -180,13 +181,13 @@
         var disease = widget.getAttribute('data-dr-disease') || 'this condition';
         var risk    = widget.getAttribute('data-dr-risk') || 'moderate';
 
-        var message = 'Hello. I have reviewed your clinical parameters from the HealthPredict AI engine. '
-            + 'Based on our predictive models, your probability for ' + disease
-            + ' is currently assessed as ' + risk + '. '
-            + 'Please remember this is a statistical estimate based on population data to help guide us, not a definitive medical diagnosis. '
-            + 'Let us arrange a follow-up consultation to discuss these insights and formulate a preventative care plan.';
+        var message = 'नमस्ते। मैंने हेल्थ प्रेडिक्ट एआई इंजन से आपके क्लिनिकल मापदंडों की समीक्षा की है। '
+            + 'हमारे प्रेडिक्टिव मॉडल के आधार पर, ' + disease + ' के लिए आपकी संभावना वर्तमान में ' + risk + ' आंकी गई है। '
+            + 'कृपया याद रखें कि यह हमें मार्गदर्शन करने के लिए जनसंख्या डेटा पर आधारित एक सांख्यिकीय अनुमान है, कोई निश्चित चिकित्सा निदान नहीं। '
+            + 'आइए इन जानकारियों पर चर्चा करने और एक निवारक देखभाल योजना बनाने के लिए एक फॉलो-अप परामर्श की व्यवस्था करें।';
 
         var utterance = new SpeechSynthesisUtterance(message);
+        utterance.lang = 'hi-IN';
         if (voiceObj) utterance.voice = voiceObj;
         utterance.rate  = 0.92;
         utterance.pitch = 0.75;

@@ -93,3 +93,27 @@ prometheus_data/
 grafana_data/
 # Root data directory
 data/
+image.png
+
+# MLflow
+mlruns/
+mlruns.db
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Additional Type Checking & Linting
+.mypy_cache/
+.ruff_cache/
