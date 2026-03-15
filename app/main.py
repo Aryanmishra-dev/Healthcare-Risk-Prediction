@@ -145,7 +145,7 @@ app.add_middleware(
 # ── Trusted Host middleware (reject spoofed Host headers) ─────────────
 TRUSTED_HOSTS = os.environ.get(
     "TRUSTED_HOSTS",
-    "localhost,127.0.0.1,yourdomain.com,www.yourdomain.com,testserver",
+    "localhost,127.0.0.1,yourdomain.com,www.yourdomain.com,testserver,*",
 ).split(",")
 
 app.add_middleware(
