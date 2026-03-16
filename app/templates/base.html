@@ -139,6 +139,27 @@ body { font-family: 'Inter', sans-serif; }
     transition: all 0.2s;
 }
 .dr-play-btn:hover { background: #0369a1; }
+
+/* ── Upload Drop Zone ──────────────────────────────────── */
+.upload-drop-zone {
+    border: 2px dashed #cbd5e1;
+    border-radius: 0.75rem;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    background: #f8fafc;
+}
+.upload-drop-zone:hover {
+    border-color: #0284c5;
+    background: rgba(2,132,197,0.04);
+}
+.upload-drop-zone.drag-over {
+    border-color: #0284c5;
+    background: rgba(2,132,197,0.08);
+    box-shadow: 0 0 0 4px rgba(2,132,197,0.1);
+    transform: scale(1.01);
+}
 </style>
 {% block extra_head %}{% endblock %}
 </head>

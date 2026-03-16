@@ -1,0 +1,183 @@
+<!-- Document Upload Widget — Drag-and-Drop + HTMX -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+    <div class="p-5 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary text-xl">upload_file</span>
+            <h3 class="text-base font-bold text-slate-900">Upload Medical Report</h3>
+        </div>
+        <p class="text-xs text-slate-500 mt-1">Upload a PDF or image of a medical report to auto-fill the form below.</p>
+    </div>
+
+    <div class="p-5">
+        <form id="doc-upload-form-{{ widget_id }}"
+              hx-post="/api/v1/document/upload"
+              hx-encoding="multipart/form-data"
+              hx-target="#upload-result-{{ widget_id }}"
+              hx-swap="innerHTML"
+              hx-indicator="#upload-spinner-{{ widget_id }}">
+
+            <!-- Drop Zone -->
+            <div id="drop-zone-{{ widget_id }}" class="upload-drop-zone">
+                <div class="flex flex-col items-center gap-3 pointer-events-none">
+                    <div class="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-primary text-3xl">cloud_upload</span>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-sm font-semibold text-slate-700">Drag &amp; drop your medical report here</p>
+                        <p class="text-xs text-slate-400 mt-1">or click to browse · PDF, JPG, PNG · Max 5 MB</p>
+                    </div>
+                    <div id="drop-zone-file-name-{{ widget_id }}" class="hidden text-xs font-medium text-primary bg-primary/10 px-3 py-1.5 rounded-full"></div>
+                </div>
+            </div>
+
+            <input type="file" id="doc-file-input-{{ widget_id }}" name="file" accept=".pdf,.jpg,.jpeg,.png" class="hidden">
+
+            <div class="flex items-center justify-between mt-4">
+                <div id="upload-spinner-{{ widget_id }}" class="htmx-indicator flex items-center gap-2 text-xs text-primary font-medium">
+                    <span class="material-symbols-outlined text-base animate-spin">progress_activity</span>
+                    Processing document…
+                </div>
+                <button type="submit" id="upload-btn-{{ widget_id }}" disabled
+                        class="bg-primary/80 hover:bg-primary text-white px-5 py-2 rounded-lg font-bold text-sm shadow transition-all flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+                    <span class="material-symbols-outlined text-base">document_scanner</span>
+                    Extract Features
+                </button>
+            </div>
+        </form>
+
+        <!-- Result / status area -->
+        <div id="upload-result-{{ widget_id }}" class="mt-3"></div>
+    </div>
+</div>
+
+<script>
+(function() {
+    var wid = '{{ widget_id }}';
+    var dz = document.getElementById('drop-zone-' + wid);
+    var input = document.getElementById('doc-file-input-' + wid);
+    var btn = document.getElementById('upload-btn-' + wid);
+    var label = document.getElementById('drop-zone-file-name-' + wid);
+
+    if (!dz || !input) return;
+
+    /* ── Drag-and-Drop Logic ── */
+    dz.addEventListener('click', function() { input.click(); });
+
+    ['dragenter','dragover'].forEach(function(evt) {
+        dz.addEventListener(evt, function(e) { e.preventDefault(); dz.classList.add('drag-over'); });
+    });
+    ['dragleave','drop'].forEach(function(evt) {
+        dz.addEventListener(evt, function(e) { e.preventDefault(); dz.classList.remove('drag-over'); });
+    });
+
+    dz.addEventListener('drop', function(e) {
+        var files = e.dataTransfer.files;
+        if (files.length > 0) {
+            input.files = files;
+            onFileSelected(input);
+        }
+    });
+
+    input.addEventListener('change', function() { onFileSelected(input); });
+
+    function onFileSelected(targetInput) {
+        if (targetInput.files && targetInput.files.length > 0) {
+            var f = targetInput.files[0];
+            label.textContent = f.name + ' (' + (f.size / 1024 / 1024).toFixed(2) + ' MB)';
+            label.classList.remove('hidden');
+            btn.disabled = false;
+        } else {
+            label.classList.add('hidden');
+            btn.disabled = true;
+        }
+    }
+
+    /* ── Auto-populate forms ── */
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+        if (evt.detail.target.id !== 'upload-result-' + wid) return;
+
+        var raw = evt.detail.target.textContent;
+        try { var data = JSON.parse(raw); } catch(e) { return; }
+
+        if (data.error) {
+            var errHtml = '<div class="p-3 bg-red-50 border border-red-200 rounded-lg animate-fade-up">'
+                + '<div class="flex items-center gap-2 mb-2">'
+                + '<span class="material-symbols-outlined text-red-600 text-lg">error</span>'
+                + '<span class="text-sm font-bold text-red-800">Processing Failed</span>'
+                + '</div><p class="text-[12px] text-red-700">' + data.error + '</p></div>';
+            evt.detail.target.innerHTML = errHtml;
+            return;
+        }
+        if (data.warning) {
+            var warnHtml = '<div class="p-3 bg-amber-50 border border-amber-200 rounded-lg animate-fade-up">'
+                + '<div class="flex items-center gap-2 mb-2">'
+                + '<span class="material-symbols-outlined text-amber-600 text-lg">warning</span>'
+                + '<span class="text-sm font-bold text-amber-800">Notice</span>'
+                + '</div><p class="text-[12px] text-amber-700">' + data.warning + '</p></div>';
+            evt.detail.target.innerHTML = warnHtml;
+            return;
+        }
+        if (!data.mapped_features) return;
+
+        var found = Object.entries(data.entities || {}).filter(function(e) { return e[1] !== null; });
+        var html = '<div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg animate-fade-up">'
+            + '<div class="flex items-center gap-2 mb-2">'
+            + '<span class="material-symbols-outlined text-emerald-600 text-lg">check_circle</span>'
+            + '<span class="text-sm font-bold text-emerald-800">Extracted ' + found.length + ' clinical context points</span>'
+            + '</div><div class="flex flex-wrap gap-1.5">';
+        found.forEach(function(e) {
+            html += '<span class="text-[11px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">'
+                + e[0].replace(/_/g,' ') + ': ' + e[1] + '</span>';
+        });
+        html += '</div><p class="text-[11px] text-slate-500 mt-2">Active form fields have been auto-populated with matched values. Review before predicting.</p></div>';
+        evt.detail.target.innerHTML = html;
+
+        /* Only fill the specific form for this widget's tab */
+        if (wid === 'diabetes' && data.mapped_features.diabetes) {
+            var d = data.mapped_features.diabetes;
+            setVal('diab_age', d.age);
+            setVal('diab_bmi', d.bmi);
+            setVal('diab_bp', d.bp);
+            setVal('diab_cholesterol', d.cholesterol);
+            setVal('diab_smoker', d.smoker);
+            setVal('diab_activity', d.activity);
+            setVal('diab_health', d.health);
+            setVal('diab_mental', d.mental);
+        } else if (wid === 'heart' && data.mapped_features.heart) {
+            var h = data.mapped_features.heart;
+            setVal('heart_age', h.hd_age);
+            setVal('heart_sex', h.hd_sex);
+            setVal('heart_bmi', h.hd_bmi);
+            setVal('heart_bp', h.hd_high_bp);
+            setVal('heart_chol', h.hd_high_chol);
+            setVal('heart_smoker', h.hd_smoker);
+            setVal('heart_activity', h.hd_phys_activity);
+            setVal('heart_fruits', h.hd_fruits);
+            setVal('heart_veggies', h.hd_veggies);
+            setVal('heart_drinker', h.hd_heavy_drinker);
+            setVal('heart_health', h.hd_gen_health);
+            setVal('heart_mental', h.hd_ment_health);
+            setVal('heart_physical', h.hd_phys_health);
+            setVal('heart_diabetes', h.hd_diabetes);
+        } else if (wid === 'lung' && data.mapped_features.lung) {
+            var l = data.mapped_features.lung;
+            setVal('lung_age', l.lc_age);
+            setVal('lung_gender', l.lc_gender);
+            setVal('lung_smoking', l.lc_smoking);
+            setVal('lung_yellow', l.lc_yellow_fingers);
+            setVal('lung_chronic', l.lc_chronic_disease);
+            setVal('lung_fatigue', l.lc_fatigue);
+            setVal('lung_wheezing', l.lc_wheezing);
+            setVal('lung_breath', l.lc_shortness_of_breath);
+        }
+    });
+
+    function setVal(id, val) {
+        var el = document.getElementById(id);
+        if (el && val !== undefined && val !== null) {
+            el.value = val;
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    }
+})();
+</script>
