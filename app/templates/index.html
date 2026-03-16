@@ -36,19 +36,7 @@
             </a>
         </nav>
     </div>
-    <div class="space-y-3">
-        <div class="p-3 bg-primary/5 rounded-xl border border-primary/10">
-            <div class="flex items-center gap-2 mb-2">
-                <span class="material-symbols-outlined text-primary text-sm">memory</span>
-                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Model Status</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span class="text-xs font-semibold text-slate-700">XGBoost + Isotonic Cal.</span>
-            </div>
-            <p class="text-[10px] text-slate-400 mt-1">BRFSS 2015 CDC Survey Data</p>
-        </div>
-    </div>
+
 </aside>
 
 <!-- Main Content Area -->
@@ -76,6 +64,8 @@
 
         <!-- ══════════════ DIABETES SECTION ══════════════ -->
         <div class="section-panel active" id="section-diabetes">
+            {% set widget_id = 'diabetes' %}
+            {% include "partials/upload_widget.html" %}
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
                 <!-- Left: Form -->
@@ -91,6 +81,8 @@
 
         <!-- ══════════════ HEART DISEASE SECTION ══════════════ -->
         <div class="section-panel" id="section-heart">
+            {% set widget_id = 'heart' %}
+            {% include "partials/upload_widget.html" %}
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
                 <!-- Left: Form -->
@@ -106,6 +98,8 @@
 
         <!-- ══════════════ LUNG CANCER SECTION ══════════════ -->
         <div class="section-panel" id="section-lung">
+            {% set widget_id = 'lung' %}
+            {% include "partials/upload_widget.html" %}
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
                 <!-- Left: Form -->
@@ -135,19 +129,8 @@
 
     function loadVoices() {
         var voices = synthesis.getVoices();
-        var hiVoices = voices.filter(function(v) {
-            return v.lang.indexOf("hi") !== -1;
-        });
-        voiceObj = hiVoices.find(function(v) {
-            var n = v.name.toLowerCase();
-            return n.indexOf("male") !== -1 && n.indexOf("female") === -1;
-        }) || hiVoices.find(function(v) {
-            var n = v.name.toLowerCase();
-            return (n.indexOf("google") !== -1 || n.indexOf("premium") !== -1) && n.indexOf("female") === -1;
-        }) || hiVoices.find(function(v) {
-            var n = v.name.toLowerCase();
-            return n.indexOf("female") === -1;
-        }) || hiVoices[0] || null;
+        var hiVoices = voices.filter(function(v) { return v.lang.indexOf("hi") !== -1; });
+        voiceObj = hiVoices[0] || voices[0];
     }
 
     if (synthesis.onvoiceschanged !== undefined) {
@@ -189,8 +172,8 @@
         var utterance = new SpeechSynthesisUtterance(message);
         utterance.lang = 'hi-IN';
         if (voiceObj) utterance.voice = voiceObj;
-        utterance.rate  = 0.92;
-        utterance.pitch = 0.75;
+        utterance.rate  = 0.9;
+        utterance.pitch = 1.0;
 
         utterance.onstart = function () {
             avatar.classList.add('speaking');
@@ -219,16 +202,7 @@
         synthesis.speak(utterance);
     };
 
-    /* Auto-play doctor speech when HTMX swaps in a result */
-    document.body.addEventListener('htmx:afterSwap', function (evt) {
-        var widget = evt.detail.target.querySelector('.doctor-widget');
-        if (widget) {
-            var btn = widget.querySelector('.dr-play-btn');
-            if (btn) {
-                setTimeout(function () { window._drSpeak(btn); }, 600);
-            }
-        }
-    });
+    /* Auto-play doctor speech disabled per user request - user must click button to hear voice */
 })();
 
 /* ── Tab Switching ────────────────────────────────────── */

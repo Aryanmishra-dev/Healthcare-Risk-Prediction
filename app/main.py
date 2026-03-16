@@ -65,6 +65,7 @@ from fastapi_backend.shap_explainer import (
     explain_lung,
 )
 from app.logging_config import setup_logging, get_logger
+from app.routes.upload import router as upload_router
 from prometheus_fastapi_instrumentator import Instrumentator
 from prometheus_client import Histogram
 
@@ -223,6 +224,20 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     return JSONResponse(
         status_code=422,
         content={"detail": exc.errors(), "body": exc.body},
+    )
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Handle general HTTP exceptions cleanly for HTMX clients."""
+    if request.headers.get("hx-request") == "true":
+        return templates.TemplateResponse("partials/error.html", {
+            "request": request,
+            "error": exc.detail
+        }, status_code=200)
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers=getattr(exc, "headers", None)
     )
 
 
@@ -709,4 +724,12 @@ async def v1_explain_lung(request: Request, data: LungCancerPredictionRequest, d
 
 
 # ── Mount v1 router (after all routes are defined) ────────────────────────
+app.include_router(
+    upload_router,
+    prefix="/api/v1",
+    dependencies=[
+        Depends(verify_csrf_token),
+        Depends(OptionalRateLimiter(times=RATE_LIMIT, seconds=60))
+    ]
+)
 app.include_router(v1)

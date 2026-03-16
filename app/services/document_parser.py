@@ -1,0 +1,76 @@
+"""
+Document parsing layer for the medical document AI pipeline.
+
+Extracts raw text from uploaded medical reports.
+Supports:
+  - PDF files via PyMuPDF (fitz)
+  - Image files (JPG, JPEG, PNG) via pytesseract OCR
+"""
+
+import io
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def parse_pdf(file_bytes: bytes) -> str:
+    """
+    Extract text from a PDF file.
+
+    Uses PyMuPDF (fitz) to iterate all pages and concatenate text.
+    """
+    import fitz  # PyMuPDF
+
+    text_parts: list[str] = []
+    with fitz.open(stream=file_bytes, filetype="pdf") as doc:
+        for page_num, page in enumerate(doc):
+            page_text = page.get_text("text")
+            if page_text.strip():
+                text_parts.append(page_text)
+            logger.debug("pdf_page_extracted", extra={"page": page_num, "chars": len(page_text)})
+
+    raw_text = "\n".join(text_parts).strip()
+    if not raw_text:
+        logger.warning("pdf_no_text_extracted")
+    return raw_text
+
+
+def parse_image(file_bytes: bytes) -> str:
+    """
+    Extract text from an image file using OCR (Tesseract).
+
+    Uses pytesseract with Pillow for image handling.
+    """
+    from PIL import Image
+    import pytesseract
+
+    image = Image.open(io.BytesIO(file_bytes))
+
+    # Convert to RGB if necessary (e.g. RGBA PNGs)
+    if image.mode not in ("L", "RGB"):
+        image = image.convert("RGB")
+
+    raw_text = pytesseract.image_to_string(image).strip()
+    if not raw_text:
+        logger.warning("ocr_no_text_extracted")
+    return raw_text
+
+
+def parse_document(file_bytes: bytes, mime_type: str) -> str:
+    """
+    Top-level dispatcher — choose the right parser based on MIME type.
+
+    Returns:
+        Raw extracted text from the document.
+
+    Raises:
+        ValueError: If the MIME type is not supported.
+    """
+    mime_type = mime_type.lower()
+
+    if mime_type == "application/pdf":
+        return parse_pdf(file_bytes)
+    elif mime_type in ("image/jpeg", "image/jpg", "image/png"):
+        return parse_image(file_bytes)
+    else:
+        raise ValueError(f"Unsupported document type for parsing: {mime_type}")
