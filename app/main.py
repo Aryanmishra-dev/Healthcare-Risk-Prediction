@@ -75,8 +75,17 @@ logger = get_logger(__name__)
 API_KEY_NAME = "X-API-Key"
 api_key_header = API_KEY_NAME
 
+import secrets
+
 def get_api_key(api_key: str = Depends(APIKeyHeader(name=API_KEY_NAME, auto_error=False))):
-    expected_api_key = os.environ.get("API_KEY", "healthpredict_dev_key_2026")
+    expected_api_key = os.environ.get("API_KEY")
+    if not expected_api_key:
+        if os.environ.get("APP_ENV") == "production":
+            # Strict fallback that changes per run if not provided in production
+            expected_api_key = secrets.token_hex(32)
+        else:
+            expected_api_key = "healthpredict_dev_key_2026"
+            
     if not api_key or api_key != expected_api_key:
         raise HTTPException(
             status_code=401,
@@ -159,7 +168,7 @@ app.add_middleware(
 # ── Trusted Host middleware (reject spoofed Host headers) ─────────────
 TRUSTED_HOSTS = os.environ.get(
     "TRUSTED_HOSTS",
-    "localhost,127.0.0.1,yourdomain.com,www.yourdomain.com,testserver,*",
+    "localhost,127.0.0.1,yourdomain.com,www.yourdomain.com,testserver",
 ).split(",")
 
 app.add_middleware(
@@ -250,8 +259,8 @@ def index(request: Request):
     """Render the main prediction page."""
     response = templates.TemplateResponse("index.html", {"request": request})
     if "csrf_token" not in request.cookies:
-        import secrets
-        response.set_cookie(key="csrf_token", value=secrets.token_hex(32), httponly=False, samesite="lax")
+        is_prod = os.environ.get("APP_ENV") == "production"
+        response.set_cookie(key="csrf_token", value=secrets.token_hex(32), httponly=False, samesite="lax", secure=is_prod)
     return response
 
 def verify_csrf_token(request: Request, csrf_token: str = Cookie(default=None)):
@@ -556,10 +565,10 @@ def v1_root():
 def v1_model_registry():
     """Return model registry metadata (versions, metrics, status)."""
     import json
-    registry_path = os.path.join(
+    registry_path = os.path.abspath(os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         "models", "model_registry.json",
-    )
+    ))
     with open(registry_path) as f:
         registry = json.load(f)
     # Return only safe metadata — strip sha256 hashes from public API
