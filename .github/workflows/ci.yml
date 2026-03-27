@@ -77,7 +77,9 @@ jobs:
           python-version: "3.13"
           cache: pip
       - name: Install pip-audit
-        run: pip install pip-audit
+        run: |
+          pip install --upgrade pip
+          pip install pip-audit
       - name: Audit dependencies for vulnerabilities
         run: pip-audit -r requirements.txt
 
