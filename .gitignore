@@ -117,3 +117,9 @@ terraform.rc
 # Additional Type Checking & Linting
 .mypy_cache/
 .ruff_cache/
+
+# Runtime output and CI artifacts
+*.out
+dump.rdb
+bandit_report.json
+coverage.xml

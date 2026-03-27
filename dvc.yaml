@@ -6,22 +6,22 @@
 
 stages:
   process_data:
-    cmd: python retrain.py
+    cmd: python scripts/retrain.py
     deps:
-      - data_raw/LLCP2015.XPT
-      - retrain.py
+      - data/raw/LLCP2015.XPT
+      - scripts/retrain.py
       - utils/feature_engineering.py
     outs:
-      - data_processed/brfss_diabetes_clean.csv
+      - data/processed/brfss_diabetes_clean.csv
     metrics:
       - models/model_registry.json:
           cache: false
 
   train_diabetes:
-    cmd: python retrain.py
+    cmd: python scripts/retrain.py
     deps:
-      - data_processed/brfss_diabetes_clean.csv
-      - retrain.py
+      - data/processed/brfss_diabetes_clean.csv
+      - scripts/retrain.py
     outs:
       - models/diabetes_xgboost.pkl
       - models/isotonic_calibrator.pkl
@@ -30,7 +30,7 @@ stages:
   train_heart:
     cmd: python notebooks/train_heart_disease_model.py
     deps:
-      - data_raw/LLCP2015.XPT
+      - data/raw/LLCP2015.XPT
       - notebooks/train_heart_disease_model.py
     outs:
       - models/heart_disease_xgboost.pkl
