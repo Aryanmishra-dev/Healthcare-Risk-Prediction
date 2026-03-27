@@ -2,7 +2,7 @@ services:
   # ── FastAPI application (internal only — NOT exposed to internet) ─────
   web:
     build: .
-    image: healthpredict-ai:latest
+    image: aryanmdev/healthpredict-ai:latest
     container_name: healthpredict
     # Port is NOT published externally — only accessible via Nginx
     expose:
@@ -13,10 +13,13 @@ services:
       - CORS_ORIGINS=https://yourdomain.com
       - TRUSTED_HOSTS=yourdomain.com,www.yourdomain.com,localhost
       - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://admin:REDACTED@db:5432/healthcare_audit
     depends_on:
       - redis
+      - db
     volumes:
       - ./models:/app/models:ro
+      - ./data:/app/data:rw
     restart: unless-stopped
     read_only: true
     tmpfs:
@@ -42,6 +45,27 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
+
+  # ── PostgreSQL Database (Audit Logs) ─────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    container_name: postgres-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: REDACTED
+      POSTGRES_DB: healthcare_audit
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d healthcare_audit"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # ── Redis (caching and rate limiting) ────────────────────────────────
   redis:
@@ -147,3 +171,4 @@ networks:
 volumes:
   prometheus_data:
   grafana_data:
+  postgres_data:

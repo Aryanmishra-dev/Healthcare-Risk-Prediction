@@ -1,0 +1,6 @@
+apiVersion: v2
+name: healthpredict
+description: A Helm chart for deploying the HealthPredict ML API on Kubernetes
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

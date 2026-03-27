@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "healthpredict.fullname" . }}-config
+data:
+  APP_ENV: "production"
+  RATE_LIMIT_PER_MINUTE: "120"
+  CORS_ORIGINS: "*"
+  REDIS_URL: "redis://{{ .Values.redis.host }}:{{ .Values.redis.port }}/0"
+  {{- if .Values.s3ModelBucket }}
+  S3_MODEL_BUCKET: {{ .Values.s3ModelBucket | quote }}
+  {{- end }}

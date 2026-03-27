@@ -27,9 +27,10 @@ except ImportError:
     print("MLflow not installed — skipping experiment tracking.")
 
 # ── Paths ─────────────────────────────────────────────────────────────────
-ROOT = os.path.dirname(os.path.abspath(__file__))
-DATA_RAW = os.path.join(ROOT, "data_raw")
-DATA_PROC = os.path.join(ROOT, "data_processed")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(ROOT)
+DATA_RAW = os.path.join(ROOT, "data", "raw")
+DATA_PROC = os.path.join(ROOT, "data", "processed")
 MODEL_DIR = os.path.join(ROOT, "models")
 os.makedirs(DATA_RAW, exist_ok=True)
 os.makedirs(DATA_PROC, exist_ok=True)

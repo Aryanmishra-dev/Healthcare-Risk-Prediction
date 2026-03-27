@@ -9,7 +9,7 @@ import numpy as np
 import warnings
 warnings.filterwarnings("ignore")
 
-df = pd.read_sas("../data_raw/LLCP2015.XPT")
+df = pd.read_sas("../data/raw/LLCP2015.XPT")
 print(f"Raw data shape: {df.shape}")
 print(f"Columns: {df.shape[1]}")
 print(f"Rows: {df.shape[0]:,}")

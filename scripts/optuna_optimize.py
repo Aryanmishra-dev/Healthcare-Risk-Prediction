@@ -13,7 +13,7 @@ from xgboost import XGBClassifier
 from sklearn.model_selection import train_test_split, cross_val_score
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_PROC = os.path.join(ROOT, "data_processed")
+DATA_PROC = os.path.join(ROOT, "data", "processed")
 os.makedirs(DATA_PROC, exist_ok=True)
 
 def objective(trial):

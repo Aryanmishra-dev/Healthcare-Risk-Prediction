@@ -15,9 +15,33 @@ from fastapi import Request, HTTPException
 
 logger = logging.getLogger(__name__)
 
-# ── Paths ──────────────────────────────────────────────────────────────────
+# ── Paths & S3 Initialization ──────────────────────────────────────────────
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MODEL_DIR = os.path.join(ROOT, "models")
+
+S3_MODEL_BUCKET = os.environ.get("S3_MODEL_BUCKET")
+if S3_MODEL_BUCKET:
+    import boto3
+    MODEL_DIR = "/tmp/healthcare_models"
+    os.makedirs(MODEL_DIR, exist_ok=True)
+    try:
+        s3 = boto3.client('s3')
+        logger.info(f"Downloading models from S3 bucket: {S3_MODEL_BUCKET}")
+        expected_keys = [
+            "diabetes_xgboost.pkl", "isotonic_calibrator.pkl", "shap_explainer.pkl",
+            "heart_disease_xgboost.pkl", "heart_disease_calibrator.pkl", "heart_disease_features.pkl",
+            "lung_cancer_model.pkl", "lung_cancer_scaler.pkl", "lung_cancer_features.pkl", "lung_cancer_calibrator.pkl",
+            "model_registry.json"
+        ]
+        for key in expected_keys:
+            target_path = os.path.join(MODEL_DIR, key)
+            if not os.path.exists(target_path):
+                logger.info(f"Downloading {key}...")
+                s3.download_file(S3_MODEL_BUCKET, key, target_path)
+    except Exception as e:
+        logger.error(f"Failed to download models from S3: {e}")
+        MODEL_DIR = os.path.join(ROOT, "models")
+else:
+    MODEL_DIR = os.path.join(ROOT, "models")
 
 # ── Module-level model singletons ─────────────────────────────────────────
 _diabetes_model = None

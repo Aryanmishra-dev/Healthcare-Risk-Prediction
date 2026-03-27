@@ -1,0 +1,28 @@
+replicaCount: 3
+
+image:
+  repository: aryanmdev/healthpredict-ai
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 80
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+redis:
+  host: "healthpredict-redis-master"
+  port: 6379
