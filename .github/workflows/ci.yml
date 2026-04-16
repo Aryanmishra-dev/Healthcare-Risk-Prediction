@@ -2,9 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
   pull_request:
-    branches: [main, master]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -76,12 +74,16 @@ jobs:
         with:
           python-version: "3.13"
           cache: pip
-      - name: Install pip-audit
+      - name: Install security scanners
         run: |
           pip install --upgrade pip
-          pip install pip-audit
-      - name: Audit dependencies for vulnerabilities
+          pip install bandit pip-audit
+      - name: Run Bandit static security scan
+        run: bandit -r app fastapi_backend scripts utils -x tests,notebooks
+      - name: Audit runtime dependencies for vulnerabilities
         run: pip-audit -r requirements.txt
+      - name: Audit development dependencies for vulnerabilities
+        run: pip-audit -r requirements-dev.txt
 
   docker:
     runs-on: ubuntu-latest
