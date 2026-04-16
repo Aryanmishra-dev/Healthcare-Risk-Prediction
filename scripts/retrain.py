@@ -13,8 +13,10 @@ import os
 import sys
 import io
 import zipfile
+from urllib.parse import urlparse
 import numpy as np
 import pandas as pd
+import requests
 
 # ── Optional MLflow tracking ──────────────────────────────────────────────
 try:
@@ -38,18 +40,34 @@ os.makedirs(MODEL_DIR, exist_ok=True)
 
 XPT_PATH = os.path.join(DATA_RAW, "LLCP2015.XPT")
 
+
+def _download_file_https(url: str, destination: str) -> None:
+    """Download a file only from approved HTTPS hosts with request timeouts."""
+    parsed = urlparse(url)
+    if parsed.scheme.lower() != "https":
+        raise ValueError("Only HTTPS downloads are allowed.")
+
+    allowed_hosts = {"www.cdc.gov", "cdc.gov"}
+    if parsed.netloc.lower() not in allowed_hosts:
+        raise ValueError(f"Download host is not allowed: {parsed.netloc}")
+
+    with requests.get(url, stream=True, timeout=(5, 120)) as response:
+        response.raise_for_status()
+        with open(destination, "wb") as out_file:
+            for chunk in response.iter_content(chunk_size=1024 * 1024):
+                if chunk:
+                    out_file.write(chunk)
+
 # ══════════════════════════════════════════════════════════════════════════
 # STEP 1: Download BRFSS 2015 data if not present
 # ══════════════════════════════════════════════════════════════════════════
 if not os.path.exists(XPT_PATH):
-    import urllib.request
-
     url = "https://www.cdc.gov/brfss/annual_data/2015/files/LLCP2015XPT.zip"
     zip_path = os.path.join(DATA_RAW, "LLCP2015XPT.zip")
 
     print(f"Downloading BRFSS 2015 data from CDC...")
     print(f"  URL: {url}")
-    urllib.request.urlretrieve(url, zip_path)
+    _download_file_https(url, zip_path)
     print(f"  Downloaded: {os.path.getsize(zip_path) / 1024 / 1024:.1f} MB")
 
     print("  Extracting...")

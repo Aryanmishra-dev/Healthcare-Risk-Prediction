@@ -40,8 +40,8 @@ class OptionalRateLimiter:
         if hasattr(FastAPILimiter, "redis") and FastAPILimiter.redis is not None:
             try:
                 await self.limiter(request, response)
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning("optional_rate_limiter_failed", error=str(exc))
 
 from app.database import get_db, PredictionAuditLog
 

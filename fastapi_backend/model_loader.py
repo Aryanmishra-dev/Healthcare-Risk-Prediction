@@ -8,6 +8,7 @@ Each disease has its own load/predict functions.
 import logging
 import os
 import asyncio
+import tempfile
 import joblib
 import numpy as np
 import pandas as pd
@@ -21,7 +22,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 S3_MODEL_BUCKET = os.environ.get("S3_MODEL_BUCKET")
 if S3_MODEL_BUCKET:
     import boto3
-    MODEL_DIR = "/tmp/healthcare_models"
+    MODEL_DIR = os.path.join(tempfile.gettempdir(), "healthcare_models")
     os.makedirs(MODEL_DIR, exist_ok=True)
     try:
         s3 = boto3.client('s3')
