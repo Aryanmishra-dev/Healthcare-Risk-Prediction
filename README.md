@@ -1,50 +1,186 @@
 # Healthcare Risk Prediction
 
-An end-to-end, production-grade Machine Learning system designed to predict the risk of **Diabetes**, **Heart Disease**, and **Lung Cancer** based on patient health indicators. 
+Unified FastAPI application for predicting risk of diabetes, heart disease, and lung cancer from patient health indicators.
 
-## What is the Project?
-This project is a unified health risk assessment platform. It takes patient telemetry (like BMI, blood pressure, smoking status, and general health metrics) and uses machine learning to provide instant risk probabilities for three major diseases. It features a fast, responsive web interface and a localized AI "Virtual Doctor" that dictates results via text-to-speech.
+The project includes:
 
-## What We Achieved
-- **High-Accuracy Models**: Deployed three separate models achieving strong predictive power (Diabetes ROC-AUC: 0.87, Heart Disease ROC-AUC: 0.85, Lung Cancer ROC-AUC: 0.97).
-- **Explainable AI**: Integrated SHAP (SHapley Additive exPlanations) so doctors and patients can see *exactly* which health factors drove their specific prediction.
-- **Production-Ready MLOps**: Built an enterprise-grade backend with FastAPI, secured behind an Nginx reverse proxy with HTTPS, CSRF protection, and Redis-backed rate limiting.
-- **Accessibility**: Integrated native web speech APIs to read out clinical predictions to patients.
+- HTMX-based web UI
+- JSON APIs (legacy and versioned)
+- SHAP explainability endpoints
+- Document upload and clinical entity extraction pipeline
+- Audit logging, rate limiting, CSRF checks, and Prometheus metrics
 
-## The Datasets We Used
-- **Diabetes & Heart Disease**: Derived from the massive **CDC BRFSS 2015 dataset** (Behavioral Risk Factor Surveillance System), utilizing over 400,000 real-world patient records.
-- **Lung Cancer**: Trained on a specialized clinical survey dataset encompassing key respiratory indicators (wheezing, shortness of breath, chronic fatigue).
+## Core Capabilities
+
+- Multi-model prediction: diabetes, heart disease, lung cancer
+- Versioned API under `/api/v1` with API key authentication
+- Legacy JSON API under `/api/*` without API key requirement
+- SHAP explanations for all three disease models
+- Document ingestion endpoint at `/api/v1/document/upload` (PDF/JPG/JPEG/PNG, max 5 MB)
+- Model loading from local `models/` or optional S3 bucket (`S3_MODEL_BUCKET`)
 
 ## Tech Stack
-- **Machine Learning**: XGBoost, Scikit-Learn, SHAP, Isotonic Regression (for probability calibration)
-- **Backend & API**: FastAPI, Pydantic, Python 3.12+
-- **Frontend**: HTMX, Tailwind CSS, Vanilla JS
-- **Infrastructure & MLOps**: Docker, Nginx, Redis, Prometheus/Grafana (Monitoring), DVC (Data Versioning), GitHub Actions (CI/CD)
 
-## Challenges We Faced
-- **Data Imbalance**: Medical datasets are fiercely imbalanced (e.g., heavily skewed toward healthy patients). We tackled this using computed `scale_pos_weight` and Isotonic Regression so the models return realistic real-world risk percentages rather than uncalibrated raw scores.
-- **Architecture Complexity**: Merging three different models into one cohesive API without blocking the event loop. We designed concurrent, asynchronous wrappers and a unified model loader to handle inference efficiently.
-- **Security vs. Speed**: Maintaining a sub-100ms response time while passing the request through HTTPS, an Nginx reverse proxy, a Redis rate limiter, and a SHAP explainer matrix.
+- Backend: FastAPI, Pydantic, SQLAlchemy
+- ML: XGBoost, scikit-learn, SHAP
+- Data: pandas, numpy
+- Infra: Docker, Nginx, Kubernetes Helm, Terraform
+- Monitoring: Prometheus and Grafana
+- CI: GitHub Actions (lint, tests, security scans, Docker build)
 
----
+## Local Development
 
-### Quick Start
-Want to run this locally? 
+### Prerequisites
+
+- Python 3.12+
+- macOS/Linux shell (examples below use bash/zsh)
+
+### 1. Create and activate an isolated environment
+
 ```bash
-# 1. Install dependencies
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-
-# 2. Start the local server
-bash start.sh
+python -m pip install --upgrade pip
+python -m pip install -r requirements-dev.txt
 ```
-Visit `http://127.0.0.1:8000` to interact with the web UI.
 
----
+### 2. Run the unified app
 
-### Enterprise Deployment (PostgreSQL, AWS S3, Kubernetes)
-For Fortune 500 scale, the infrastructure is architected via Terraform and Kubernetes Helm Charts:
-- **Terraform:** Navigate to `infrastructure/` and run `terraform apply` to provision a distributed AWS EKS Cluster, an RDS PostgreSQL Database, and an S3 Bucket.
-- **S3 Model Storage:** Upload models to your cloud blob via `python scripts/upload_models_to_s3.py --bucket <your-bucket>`. The FastAPI backend will pull them into active memory dynamically at boot if `S3_MODEL_BUCKET` is set in your environment.
-- **Kubernetes:** Deploy the completely distributed application utilizing Helm: `helm install healthpredict ./kubernetes/healthpredict`
+```bash
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+Open:
+
+- UI: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+- API root: [http://127.0.0.1:8000/api](http://127.0.0.1:8000/api)
+- OpenAPI docs: [http://127.0.0.1:8000/api/docs](http://127.0.0.1:8000/api/docs)
+
+Note: `start.sh` exists for an alternate local workflow and currently expects a local environment at `.venv-1`.
+
+## API Overview
+
+### Public endpoints (no API key)
+
+- `GET /api`
+- `POST /api/predict`
+- `POST /api/predict-heart`
+- `POST /api/predict-lung`
+- `GET /healthz`
+- `GET /api/v1/health/ready`
+
+### Versioned endpoints (require `X-API-Key`)
+
+- `GET /api/v1/`
+- `GET /api/v1/models`
+- `POST /api/v1/predict/diabetes`
+- `POST /api/v1/predict/heart`
+- `POST /api/v1/predict/lung`
+- `POST /api/v1/explain/diabetes`
+- `POST /api/v1/explain/heart`
+- `POST /api/v1/explain/lung`
+
+Development default API key fallback:
+
+- If `API_KEY` is not set and `APP_ENV` is not `production`, the app accepts:
+  - `X-API-Key: healthpredict_dev_key_2026`
+
+### HTMX prediction endpoints (CSRF-protected)
+
+- `POST /predict/diabetes`
+- `POST /predict/heart`
+- `POST /predict/lung`
+
+These endpoints require:
+
+- `csrf_token` cookie
+- matching `X-CSRFToken` header
+
+## Example Requests
+
+### Legacy JSON prediction
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/predict" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "age": 7,
+    "bmi": 29.4,
+    "bp": 1,
+    "cholesterol": 1,
+    "smoker": 0,
+    "activity": 1,
+    "health": 3,
+    "mental": 2
+  }'
+```
+
+### Versioned API prediction (with API key)
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/v1/predict/diabetes" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: healthpredict_dev_key_2026" \
+  -d '{
+    "age": 7,
+    "bmi": 29.4,
+    "bp": 1,
+    "cholesterol": 1,
+    "smoker": 0,
+    "activity": 1,
+    "health": 3,
+    "mental": 2
+  }'
+```
+
+## Security and Quality Checks
+
+Run locally from your active `.venv`:
+
+```bash
+python -m pytest -q
+python -m bandit -r app fastapi_backend scripts utils -x tests,notebooks
+python -m pip_audit -r requirements.txt
+python -m pip_audit -r requirements-dev.txt
+```
+
+## CI Pipeline
+
+The workflow at `.github/workflows/ci.yml` runs on every push and pull request:
+
+- Lint job (flake8)
+- Test job (Python 3.12 and 3.13, with coverage artifacts)
+- Security job:
+  - Bandit static scan
+  - pip-audit for runtime dependencies
+  - pip-audit for development dependencies
+- Docker image build verification
+
+## Configuration
+
+Common environment variables:
+
+- `APP_ENV` (`development` or `production`)
+- `API_KEY` (required in production)
+- `REDIS_URL` (default: `redis://localhost:6379/0`)
+- `RATE_LIMIT_PER_MINUTE` (default: `60`)
+- `CORS_ORIGINS` (comma-separated)
+- `TRUSTED_HOSTS` (comma-separated)
+- `DATABASE_URL` (Postgres URL, otherwise SQLite fallback)
+- `S3_MODEL_BUCKET` (optional model source)
+
+## Repository Layout
+
+- `app/`: unified FastAPI app, templates, routes, services
+- `fastapi_backend/`: model schemas/loaders and prediction logic
+- `models/`: trained model artifacts and model registry
+- `tests/`: API, integration, and infrastructure tests
+- `scripts/`: retraining and MLOps helper scripts
+- `.github/workflows/`: CI pipeline definitions
+
+## Deployment Notes
+
+- Docker files: `Dockerfile`, `docker-compose.yml`
+- Nginx configs: `nginx/`
+- Kubernetes chart: `kubernetes/healthpredict/`
+- Terraform IaC: `infrastructure/`
