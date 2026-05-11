@@ -1,42 +1,51 @@
 # Healthcare Risk Prediction
 
-Unified FastAPI application for predicting risk of diabetes, heart disease, and lung cancer from patient health indicators.
+An end-to-end Machine Learning, Web, and MLOps ecosystem to predict the risk of diabetes, heart disease, and lung cancer from patient health indicators.
 
-The project includes:
+##  What We've Accomplished So Far
 
-- HTMX-based web UI
-- JSON APIs (legacy and versioned)
-- SHAP explainability endpoints
-- Document upload and clinical entity extraction pipeline
-- Audit logging, rate limiting, CSRF checks, and Prometheus metrics
+This project has evolved from basic machine learning notebooks to a robust, production-ready system. Here is a summary of our progress:
 
-## Core Capabilities
+### 1. Advanced Machine Learning Pipeline & Fairness
+- **Multi-Model Inference:** Successfully trained, optimized, and deployed models for predicting **Diabetes**, **Heart Disease**, and **Lung Cancer** risks.
+- **Model Explainability:** Integrated **SHAP** (SHapley Additive exPlanations) values to interpret model predictions for users, providing essential transparency.
+- **Fairness & Calibration:** Applied advanced evaluation techniques, including algorithmic fairness evaluations (`fairness_eval.py`) and model calibration (`calibrate_lung_model.py`) to reduce inherent bias.
+- **MLOps Integration:** Implemented continuous integration (CI) pipelines, **MLflow** for experiment tracking, and **DVC** for data & model version control.
 
-- Multi-model prediction: diabetes, heart disease, lung cancer
-- Versioned API under `/api/v1` with API key authentication
-- Legacy JSON API under `/api/*` without API key requirement
-- SHAP explanations for all three disease models
-- Document ingestion endpoint at `/api/v1/document/upload` (PDF/JPG/JPEG/PNG, max 5 MB)
-- Model loading from local `models/` or optional S3 bucket (`S3_MODEL_BUCKET`)
+### 2. Full-Stack Web Application (FastAPI & HTMX)
+- Built a unified **FastAPI** backend supporting both structured JSON APIs (`/api/v1`) and an interactive server-rendered Web UI.
+- Developed a dynamic front-end using **HTMX**, delivering a seamless single-page app-like experience.
+- Implemented **A/B Testing** capabilities (`app/ab_testing.py`) to systematically deploy, compare UI variants, and measure user engagement.
 
-## Tech Stack
+### 3. NLP & AI Integrations
+- **Medical Document Parser:** Created a seamless document ingestion pipeline (handling PDFs and Images) using Natural Language Processing (NLP) to extract clinical entities automatically.
+- **AI Risk Assistant:** Integrated an LLM-powered chatbot to interactively help users understand their health metrics, risk factors, and overall predictions.
 
-- Backend: FastAPI, Pydantic, SQLAlchemy
-- ML: XGBoost, scikit-learn, SHAP
-- Data: pandas, numpy
-- Infra: Docker, Nginx, Kubernetes Helm, Terraform
-- Monitoring: Prometheus and Grafana
-- CI: GitHub Actions (lint, tests, security scans, Docker build)
+### 4. Enterprise-Grade Security & Monitoring
+- **Robust Security:** Integrated API keys, CSRF protection, Audit Logging, and Rate Limiting. Established security workflows covering `bandit` (SAST) and `pip-audit` for dependency vulnerabilities.
+- **Infrastructure & Deployment:** Fully containerized via **Docker** & **Docker Compose**. Created **Terraform** configuration for cloud infrastructure and **Kubernetes** Helm charts for orchestrated deployment.
+- **Observability:** Added full telemetry support with **Prometheus** metrics and customized **Grafana** dashboards for live monitoring.
 
-## Local Development
+---
+
+##  Tech Stack
+
+- **Backend:** Python 3.12+, FastAPI, Pydantic, SQLAlchemy
+- **Machine Learning:** XGBoost, scikit-learn, SHAP, Python, pandas
+- **Frontend / NLP:** HTMX, Medical NLP parsing, Contextual Chatbot
+- **DevOps & Infra:** Docker, Nginx, Kubernetes, Terraform, MLflow, DVC
+- **Monitoring:** Prometheus, Grafana
+
+---
+
+##  Local Development Quickstart
 
 ### Prerequisites
-
 - Python 3.12+
 - macOS/Linux shell (examples below use bash/zsh)
+- (Optional) Docker & docker-compose
 
-### 1. Create and activate an isolated environment
-
+### 1. Setup Virtual Environment
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
@@ -44,99 +53,41 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements-dev.txt
 ```
 
-### 2. Run the unified app
-
+### 2. Run the Unified Application
 ```bash
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
-
 Open:
+- **Web UI:** [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+- **API Root:** [http://127.0.0.1:8000/api](http://127.0.0.1:8000/api)
+- **API Docs (Swagger):** [http://127.0.0.1:8000/api/docs](http://127.0.0.1:8000/api/docs)
 
-- UI: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
-- API root: [http://127.0.0.1:8000/api](http://127.0.0.1:8000/api)
-- OpenAPI docs: [http://127.0.0.1:8000/api/docs](http://127.0.0.1:8000/api/docs)
+*(Note: `start.sh` or `docker-compose up` are also available as alternate workflows).*
 
-Note: `start.sh` exists for an alternate local workflow and currently expects a local environment at `.venv-1`.
+---
 
-## API Overview
+##  API Overview
 
-### Public endpoints (no API key)
+### Versioned Endpoints (Requires `X-API-Key`)
+*Base URL: `/api/v1`*
+- `GET /` - API version info
+- `GET /models` - List available models
+- `POST /predict/{disease}` - Inference for Diabetes, Heart Disease, or Lung Cancer
+- `POST /explain/{disease}` - SHAP Explanations
+- `POST /document/upload` - Clinical feature extraction pipeline
 
-- `GET /api`
+*Development API Key:* If `API_KEY` isn't set and `APP_ENV` is not `production`, you can use `X-API-Key: healthpredict_dev_key_2026`.
+
+### Public/Legacy Endpoints (No API key needed)
 - `POST /api/predict`
-- `POST /api/predict-heart`
-- `POST /api/predict-lung`
 - `GET /healthz`
-- `GET /api/v1/health/ready`
+- HTMX prediction endpoints: `POST /predict/{disease}` (Requires CSRF tokens)
 
-### Versioned endpoints (require `X-API-Key`)
+---
 
-- `GET /api/v1/`
-- `GET /api/v1/models`
-- `POST /api/v1/predict/diabetes`
-- `POST /api/v1/predict/heart`
-- `POST /api/v1/predict/lung`
-- `POST /api/v1/explain/diabetes`
-- `POST /api/v1/explain/heart`
-- `POST /api/v1/explain/lung`
+##  Security & Quality Checks
 
-Development default API key fallback:
-
-- If `API_KEY` is not set and `APP_ENV` is not `production`, the app accepts:
-  - `X-API-Key: healthpredict_dev_key_2026`
-
-### HTMX prediction endpoints (CSRF-protected)
-
-- `POST /predict/diabetes`
-- `POST /predict/heart`
-- `POST /predict/lung`
-
-These endpoints require:
-
-- `csrf_token` cookie
-- matching `X-CSRFToken` header
-
-## Example Requests
-
-### Legacy JSON prediction
-
-```bash
-curl -X POST "http://127.0.0.1:8000/api/predict" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "age": 7,
-    "bmi": 29.4,
-    "bp": 1,
-    "cholesterol": 1,
-    "smoker": 0,
-    "activity": 1,
-    "health": 3,
-    "mental": 2
-  }'
-```
-
-### Versioned API prediction (with API key)
-
-```bash
-curl -X POST "http://127.0.0.1:8000/api/v1/predict/diabetes" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: healthpredict_dev_key_2026" \
-  -d '{
-    "age": 7,
-    "bmi": 29.4,
-    "bp": 1,
-    "cholesterol": 1,
-    "smoker": 0,
-    "activity": 1,
-    "health": 3,
-    "mental": 2
-  }'
-```
-
-## Security and Quality Checks
-
-Run locally from your active `.venv`:
-
+Run local checks in your active `.venv`:
 ```bash
 python -m pytest -q
 python -m bandit -r app fastapi_backend scripts utils -x tests,notebooks
@@ -144,43 +95,15 @@ python -m pip_audit -r requirements.txt
 python -m pip_audit -r requirements-dev.txt
 ```
 
-## CI Pipeline
+---
 
-The workflow at `.github/workflows/ci.yml` runs on every push and pull request:
+## 🏗 Repository Layout
 
-- Lint job (flake8)
-- Test job (Python 3.12 and 3.13, with coverage artifacts)
-- Security job:
-  - Bandit static scan
-  - pip-audit for runtime dependencies
-  - pip-audit for development dependencies
-- Docker image build verification
-
-## Configuration
-
-Common environment variables:
-
-- `APP_ENV` (`development` or `production`)
-- `API_KEY` (required in production)
-- `REDIS_URL` (default: `redis://localhost:6379/0`)
-- `RATE_LIMIT_PER_MINUTE` (default: `60`)
-- `CORS_ORIGINS` (comma-separated)
-- `TRUSTED_HOSTS` (comma-separated)
-- `DATABASE_URL` (Postgres URL, otherwise SQLite fallback)
-- `S3_MODEL_BUCKET` (optional model source)
-
-## Repository Layout
-
-- `app/`: unified FastAPI app, templates, routes, services
-- `fastapi_backend/`: model schemas/loaders and prediction logic
-- `models/`: trained model artifacts and model registry
-- `tests/`: API, integration, and infrastructure tests
-- `scripts/`: retraining and MLOps helper scripts
-- `.github/workflows/`: CI pipeline definitions
-
-## Deployment Notes
-
-- Docker files: `Dockerfile`, `docker-compose.yml`
-- Nginx configs: `nginx/`
-- Kubernetes chart: `kubernetes/healthpredict/`
-- Terraform IaC: `infrastructure/`
+- `app/` - Main FastAPI app, HTMX templates, application routes, models, LLM assistant, and A/B testing framework.
+- `fastapi_backend/` - Legacy logic, model schemas/loaders, and SHAP explainers.
+- `feature_store/` - Data ingestion mapping and clinical entity NLP processing.
+- `data/` & `models/` - Structured datasets and compiled/trained model artifacts.
+- `notebooks/` - Research, exploratory data analysis, and initial pipeline prototypes.
+- `scripts/` - CI/CD operations, retraining, fairness evaluation, Model Registry, and calibration jobs.
+- `infrastructure/` & `kubernetes/` - Terraform IaC and K8s Helm charts for cloud rollout.
+- `monitoring/` - Configuration for Prometheus metrics and Grafana.
