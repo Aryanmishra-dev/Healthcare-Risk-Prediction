@@ -25,7 +25,7 @@
       "status": "production"
     },
     "heart_disease_xgboost": {
-      "version": "1.0.0",
+      "version": "1.0.1",
       "algorithm": "XGBoost",
       "task": "binary_classification",
       "target": "Heart Disease (BRFSS 2015)",
@@ -42,8 +42,8 @@
         "calibration": "isotonic"
       },
       "sha256": {
-        "heart_disease_xgboost.pkl": "32e86b68108e47c14369cb535119ce61b6cc168d06fbdecebee8da3a4998040d",
-        "heart_disease_calibrator.pkl": "a6ed2961b76ea94b5f4e6ae75b1272a7108f795e77072d242ec162c349202869"
+        "heart_disease_xgboost.pkl": "011b69049106c15e0ff4e76b47a6a58c0407ee1b82076f957cb2d1c26ce1730e",
+        "heart_disease_calibrator.pkl": "4501c0bb2c64281c4e3a0e5d24306596c3b512f2c3ad69ea5d575cd9c5e5ef9d"
       },
       "status": "production"
     },
