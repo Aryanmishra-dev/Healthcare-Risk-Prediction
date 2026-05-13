@@ -1,69 +1,71 @@
 {% extends "base.html" %}
 
 {% block body %}
-<div class="flex h-screen overflow-hidden">
+<div class="flex h-screen flex-col overflow-hidden">
 
-<!-- Mobile Overlay -->
-<div id="sidebar-overlay" class="fixed inset-0 bg-black/40 z-40" onclick="closeSidebar()"></div>
-
-<!-- Sidebar -->
-<aside id="sidebar" class="w-64 flex-shrink-0 border-r border-slate-200 bg-white flex flex-col justify-between p-4">
-    <div class="flex flex-col gap-8">
-        <div class="flex items-center gap-3 px-2">
-            <div class="bg-primary rounded-lg p-1.5 text-white">
-                <span class="material-symbols-outlined text-2xl">monitoring</span>
+    <!-- Header -->
+    <header class="border-b border-slate-200 bg-white z-10">
+        <div class="h-14 md:h-16 max-w-7xl mx-auto flex items-center justify-between px-4 md:px-8">
+            <div class="flex items-center gap-3">
+                <div class="bg-primary rounded-lg p-1.5 text-white">
+                    <span class="material-symbols-outlined text-2xl">monitoring</span>
+                </div>
+                <div class="flex flex-col">
+                    <h1 class="text-slate-900 text-base font-bold leading-none">HealthPredict AI</h1>
+                    <p id="header-title" class="text-primary text-[10px] uppercase font-bold tracking-wider">Risk Assessment</p>
+                </div>
+                <div class="hidden md:block h-4 w-[1px] bg-slate-300 ml-1"></div>
+                <span class="hidden md:inline text-xs text-slate-400 font-medium">AI-powered clinical risk prediction</span>
             </div>
-            <div class="flex flex-col">
-                <h1 class="text-slate-900 text-base font-bold leading-none">HealthPredict AI</h1>
-                <p class="text-primary text-[10px] uppercase font-bold tracking-wider">Risk Assessment</p>
+            <div class="flex items-center gap-3">
+                <div class="h-4 w-[1px] bg-slate-300 mx-1 hidden sm:block"></div>
+                <div class="size-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs">AI</div>
             </div>
         </div>
-        <nav class="flex flex-col gap-1">
-            <a id="nav-diabetes" href="#" onclick="switchTab('diabetes');return false"
-               class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary transition-colors">
-                <span class="material-symbols-outlined text-[20px]">water_drop</span>
-                <span class="text-sm font-bold">Diabetes Risk</span>
-            </a>
-            <a id="nav-heart" href="#" onclick="switchTab('heart');return false"
-               class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors">
-                <span class="material-symbols-outlined text-[20px]">favorite</span>
-                <span class="text-sm font-medium">Heart Disease Risk</span>
-            </a>
-            <a id="nav-lung" href="#" onclick="switchTab('lung');return false"
-               class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors">
-                <span class="material-symbols-outlined text-[20px]">pulmonology</span>
-                <span class="text-sm font-medium">Lung Cancer Risk</span>
-            </a>
-        </nav>
-    </div>
+    </header>
 
-</aside>
+    <!-- Top Navigation -->
+    <nav class="border-b border-slate-200 bg-white z-10">
+        <div class="max-w-7xl mx-auto px-4 md:px-8">
+            <div class="flex items-center gap-2 overflow-x-auto hide-scrollbar py-2.5">
+                <a id="nav-home" href="/" onclick="switchTab('home');return false"
+                   class="nav-link flex flex-shrink-0 items-center gap-2.5 px-3 py-2 rounded-lg bg-primary/10 text-primary shadow-sm transition-colors whitespace-nowrap">
+                    <span class="material-symbols-outlined text-[20px]">home</span>
+                    <span class="text-sm font-bold">Home</span>
+                </a>
+                <a id="nav-diabetes" href="/diabetes" onclick="switchTab('diabetes');return false"
+                   class="nav-link flex flex-shrink-0 items-center gap-2.5 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors whitespace-nowrap">
+                    <span class="material-symbols-outlined text-[20px]">water_drop</span>
+                    <span class="text-sm font-medium">Diabetes Risk</span>
+                </a>
+                <a id="nav-heart" href="/heart-disease" onclick="switchTab('heart');return false"
+                   class="nav-link flex flex-shrink-0 items-center gap-2.5 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors whitespace-nowrap">
+                    <span class="material-symbols-outlined text-[20px]">favorite</span>
+                    <span class="text-sm font-medium">Heart Disease Risk</span>
+                </a>
+                <a id="nav-lung" href="/lung-cancer" onclick="switchTab('lung');return false"
+                   class="nav-link flex flex-shrink-0 items-center gap-2.5 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors whitespace-nowrap">
+                    <span class="material-symbols-outlined text-[20px]">pulmonology</span>
+                    <span class="text-sm font-medium">Lung Cancer Risk</span>
+                </a>
+            </div>
+        </div>
+    </nav>
 
 <!-- Main Content Area -->
 <main class="flex-1 flex flex-col overflow-hidden">
 
-    <!-- Header -->
-    <header class="h-14 md:h-16 border-b border-slate-200 bg-white flex items-center justify-between px-4 md:px-8 z-10">
-        <div class="flex items-center gap-3 md:gap-4">
-            <button id="menu-btn" class="md:hidden p-1 -ml-1 text-slate-600" onclick="toggleSidebar()">
-                <span class="material-symbols-outlined text-2xl">menu</span>
-            </button>
-            <h2 id="header-title" class="text-slate-900 text-base md:text-lg font-bold">Diabetes Risk Assessment</h2>
-            <div class="hidden sm:block h-4 w-[1px] bg-slate-300"></div>
-            <span class="hidden sm:inline text-xs text-slate-400 font-medium">AI-powered clinical risk prediction</span>
-        </div>
-        <div class="flex items-center gap-3">
-            <div class="h-4 w-[1px] bg-slate-300 mx-1 hidden sm:block"></div>
-            <div class="size-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs">AI</div>
-        </div>
-    </header>
-
     <!-- Scrollable Content -->
-    <div class="flex-1 overflow-y-auto p-4 md:p-8 hide-scrollbar bg-background-light">
+    <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 hide-scrollbar bg-background-light scroll-smooth">
         <div class="max-w-7xl mx-auto">
 
+        <!-- ══════════════ HOME SECTION ══════════════ -->
+        <div class="section-panel active" id="section-home">
+            {% include "partials/home.html" %}
+        </div>
+
         <!-- ══════════════ DIABETES SECTION ══════════════ -->
-        <div class="section-panel active" id="section-diabetes">
+        <div class="section-panel" id="section-diabetes">
             {% set widget_id = 'diabetes' %}
             {% include "partials/upload_widget.html" %}
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -207,15 +209,25 @@
 
 /* ── Tab Switching ────────────────────────────────────── */
 function toggleSidebar() {
-    document.getElementById('sidebar').classList.toggle('open');
-    document.getElementById('sidebar-overlay').classList.toggle('active');
 }
 function closeSidebar() {
-    document.getElementById('sidebar').classList.remove('open');
-    document.getElementById('sidebar-overlay').classList.remove('active');
 }
 
-function switchTab(tab) {
+var tabPaths = {
+    'home': '/',
+    'diabetes': '/diabetes',
+    'heart': '/heart-disease',
+    'lung': '/lung-cancer'
+};
+
+var pathTabs = {
+    '/': 'home',
+    '/diabetes': 'diabetes',
+    '/heart-disease': 'heart',
+    '/lung-cancer': 'lung'
+};
+
+function switchTab(tab, skipHistory) {
     // Stop any in-progress speech when switching tabs
     if (window.speechSynthesis.speaking) { window.speechSynthesis.cancel(); }
 
@@ -223,20 +235,47 @@ function switchTab(tab) {
     document.getElementById('section-' + tab).classList.add('active');
 
     document.querySelectorAll('.nav-link').forEach(function(a) {
-        a.className = 'nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors';
+        a.className = 'nav-link flex flex-shrink-0 items-center gap-2.5 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors whitespace-nowrap';
         a.querySelector('span:last-child').className = 'text-sm font-medium';
     });
     var active = document.getElementById('nav-' + tab);
-    active.className = 'nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary transition-colors';
+    active.className = 'nav-link flex flex-shrink-0 items-center gap-2.5 px-3 py-2 rounded-lg bg-primary/10 text-primary shadow-sm transition-colors whitespace-nowrap';
     active.querySelector('span:last-child').className = 'text-sm font-bold';
 
     var titles = {
+        'home': 'Risk Assessment',
         'diabetes': 'Diabetes Risk Assessment',
         'heart': 'Heart Disease Risk Assessment',
         'lung': 'Lung Cancer Risk Assessment'
     };
     document.getElementById('header-title').textContent = titles[tab] || tab;
+    if (!skipHistory && window.history && tabPaths[tab] && window.location.pathname !== tabPaths[tab]) {
+        window.history.pushState({ tab: tab }, '', tabPaths[tab]);
+    }
     closeSidebar();
 }
+
+function scrollToSection(id) {
+    if (!document.getElementById('section-home').classList.contains('active')) {
+        switchTab('home');
+    }
+    window.setTimeout(function() {
+        var target = document.getElementById(id);
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, 50);
+}
+
+window.addEventListener('popstate', function() {
+    switchTab(pathTabs[window.location.pathname] || 'home', true);
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    switchTab('{{ initial_tab|default("home") }}', true);
+    if (window.location.hash === '#how-it-works') {
+        scrollToSection('how-it-works');
+    }
+});
 </script>
 {% endblock %}
