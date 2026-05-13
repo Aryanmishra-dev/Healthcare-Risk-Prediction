@@ -254,14 +254,38 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 #  UI Pages
 # ══════════════════════════════════════════════════════════════════════════
 
-@app.get("/")
-def index(request: Request):
-    """Render the main prediction page."""
-    response = templates.TemplateResponse("index.html", {"request": request})
+def _render_index(request: Request, initial_tab: str = "home"):
+    """Render the main UI shell with the requested tab selected."""
+    response = templates.TemplateResponse("index.html", {"request": request, "initial_tab": initial_tab})
     if "csrf_token" not in request.cookies:
         is_prod = os.environ.get("APP_ENV") == "production"
         response.set_cookie(key="csrf_token", value=secrets.token_hex(32), httponly=False, samesite="lax", secure=is_prod)
     return response
+
+
+@app.get("/")
+def index(request: Request):
+    """Render the Home landing page."""
+    return _render_index(request, "home")
+
+
+@app.get("/diabetes")
+def diabetes_page(request: Request):
+    """Render the Diabetes risk assessment page."""
+    return _render_index(request, "diabetes")
+
+
+@app.get("/heart-disease")
+def heart_disease_page(request: Request):
+    """Render the Heart Disease risk assessment page."""
+    return _render_index(request, "heart")
+
+
+@app.get("/lung-cancer")
+def lung_cancer_page(request: Request):
+    """Render the Lung Cancer risk assessment page."""
+    return _render_index(request, "lung")
+
 
 def verify_csrf_token(request: Request, csrf_token: str = Cookie(default=None)):
     if not csrf_token:
