@@ -97,7 +97,7 @@ python -m pip_audit -r requirements-dev.txt
 
 ---
 
-## 🏗 Repository Layout
+## Repository Layout
 
 - `app/` - Main FastAPI app, HTMX templates, application routes, models, LLM assistant, and A/B testing framework.
 - `fastapi_backend/` - Legacy logic, model schemas/loaders, and SHAP explainers.
