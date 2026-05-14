@@ -1,4 +1,4 @@
-# Python
+# Python artifacts
 __pycache__/
 *.pyc
 *.pyo
@@ -11,37 +11,64 @@ build/
 
 # Virtual environments
 .venv/
-.venv-*/
-env/
 venv/
+env/
 ENV/
+.venv-*/
 
-# Notebook checkpoints
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Jupyter
 .ipynb_checkpoints/
+notebooks/*_plots/
 
-# macOS
+# Model binaries
+*.pkl
+*.h5
+*.joblib
+*.pt
+*.onnx
+!models/.gitkeep
+
+# Data and generated results
+data/*
+!data/.gitkeep
+results/diabetes/
+results/heart_disease/
+results/lung_cancer/
+results/all_metrics.csv
+!results/.gitkeep
+survey_lung_cancer.csv
+image.png
+
+# Test artifacts
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+.tox/
+.nox/
+coverage.xml
+
+# OS files
 .DS_Store
 .AppleDouble
 .LSOverride
 ._*
-
-# Windows
 Thumbs.db
 ehthumbs.db
 Desktop.ini
-
-# Linux
 *~
 .directory
 
-# Large data files (raw SAS ~1.1 GB)
+# Large raw data directories
 data_raw/*
 !data_raw/README.md
 data_processed/*
 !data_processed/README.md
-
-# Model artifacts — track the models/ directory
-# (pkl files are small enough to commit: ~1.3 MB total)
 
 # IDE / editor
 .vscode/
@@ -51,25 +78,9 @@ data_processed/*
 *.sublime-project
 *.sublime-workspace
 
-# Environment variables / secrets
-.env
-.env.*
-!.env.example
-
 # Logs
 *.log
 logs/
-
-# Coverage / testing
-htmlcov/
-.coverage
-.coverage.*
-.pytest_cache/
-.tox/
-.nox/
-
-# Jupyter / notebook outputs
-notebooks/*_plots/
 
 # Django
 db.sqlite3
@@ -80,8 +91,6 @@ media/
 # Distribution / packaging
 *.tar.gz
 *.zip
-#data
-survey_lung_cancer.csv
 
 # SSL certificates (never commit!)
 nginx/ssl/*.pem
@@ -91,9 +100,6 @@ nginx/ssl/*.crt
 # Monitoring data volumes
 prometheus_data/
 grafana_data/
-# Root data directory
-data/
-image.png
 
 # MLflow
 mlruns/
@@ -122,4 +128,3 @@ terraform.rc
 *.out
 dump.rdb
 bandit_report.json
-coverage.xml
