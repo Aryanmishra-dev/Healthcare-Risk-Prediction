@@ -40,6 +40,12 @@ body { font-family: 'Inter', sans-serif; }
 .htmx-request .htmx-indicator { display: inline-flex; }
 .htmx-request .htmx-hide-on-request { display: none; }
 
+/* ── Scroll mask for horizontal nav ──────────────────────── */
+.mask-edges {
+    -webkit-mask-image: linear-gradient(to right, transparent, black 12px, black calc(100% - 12px), transparent);
+    mask-image: linear-gradient(to right, transparent, black 12px, black calc(100% - 12px), transparent);
+}
+
 /* ── Virtual Doctor Animation ─────────────────────────── */
 .doctor-widget {
     background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%);
