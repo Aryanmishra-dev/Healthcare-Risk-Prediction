@@ -269,6 +269,12 @@ def index(request: Request):
     return _render_index(request, "home")
 
 
+@app.get("/about")
+def about_page(request: Request):
+    """Render the About page."""
+    return _render_index(request, "about")
+
+
 @app.get("/diabetes")
 def diabetes_page(request: Request):
     """Render the Diabetes risk assessment page."""
