@@ -4,10 +4,9 @@ addopts = [
     "-v",
     "--tb=short",
     "--strict-markers",
-    "--cov=app",
-    "--cov=fastapi_backend",
-    "--cov=utils",
-    "--cov=feature_store",
+    "--cov=backend.app",
+    "--cov=ml",
+    "--cov=shared",
     "--cov-report=term-missing",
     "--cov-report=html:htmlcov",
     "--cov-fail-under=80",
@@ -17,10 +16,10 @@ addopts = [
 branch = true
 omit = [
     "*/tests/*",
-    "*/notebooks/*",
-    "retrain.py",
-    "app/risk_assistant.py",
-    "fastapi_backend/main.py",
+    "*/ml/experiments/*",
+    "ml/pipelines/training/train.py",
+    "ml/pipelines/inference/risk_assistant.py",
+    "backend/app/api/legacy_main.py",
 ]
 
 [tool.coverage.report]

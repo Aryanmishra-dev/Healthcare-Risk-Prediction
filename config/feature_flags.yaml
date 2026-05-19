@@ -1,0 +1,5 @@
+features:
+  document_upload: true
+  shap_explanations: true
+  virtual_doctor_audio: true
+  ab_testing: false

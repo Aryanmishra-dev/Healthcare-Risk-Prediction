@@ -1,0 +1,10 @@
+{
+  "name": "healthcare-risk-prediction-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "lint": "echo \"HTMX/Jinja frontend is linted through backend template checks\""
+  },
+  "dependencies": {}
+}

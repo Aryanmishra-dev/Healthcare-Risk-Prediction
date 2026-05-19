@@ -2,3 +2,4 @@
 /cache
 /tmp
 /lock
+/config.local
