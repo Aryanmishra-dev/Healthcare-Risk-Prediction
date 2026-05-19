@@ -20,10 +20,15 @@ ENV/
 .env
 .env.*
 !.env.example
+!config/.env.example
+!config/.env.development
+!config/.env.staging
+!config/.env.production
 
 # Jupyter
 .ipynb_checkpoints/
-notebooks/*_plots/
+ml/experiments/*_plots/
+ml/experiments/lung_cancer_plots/
 
 # Model binaries
 *.pkl
@@ -31,17 +36,25 @@ notebooks/*_plots/
 *.joblib
 *.pt
 *.onnx
-!models/.gitkeep
+*.npz
+!ml/models/.gitkeep
+!ml/models/__init__.py
 
 # Data and generated results
-data/*
-!data/.gitkeep
-results/diabetes/
-results/heart_disease/
-results/lung_cancer/
-results/all_metrics.csv
-!results/.gitkeep
-survey_lung_cancer.csv
+data/raw/*
+data/interim/*
+data/processed/*
+data/external/*
+data/schemas/*
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+!data/external/.gitkeep
+!data/schemas/.gitkeep
+ml/pipelines/evaluation/results/*
+!ml/pipelines/evaluation/results/.gitkeep
+!ml/pipelines/evaluation/results/__init__.py
+data/raw/survey_lung_cancer.csv
 image.png
 
 # Test artifacts
@@ -63,12 +76,6 @@ ehthumbs.db
 Desktop.ini
 *~
 .directory
-
-# Large raw data directories
-data_raw/*
-!data_raw/README.md
-data_processed/*
-!data_processed/README.md
 
 # IDE / editor
 .vscode/
@@ -93,9 +100,9 @@ media/
 *.zip
 
 # SSL certificates (never commit!)
-nginx/ssl/*.pem
-nginx/ssl/*.key
-nginx/ssl/*.crt
+deployment/nginx/ssl/*.pem
+deployment/nginx/ssl/*.key
+deployment/nginx/ssl/*.crt
 
 # Monitoring data volumes
 prometheus_data/

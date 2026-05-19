@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Docker and Docker Compose setup.
 - Prometheus and Grafana for monitoring and observability.
 - CSRF Token protection for HTMX endpoints.
-- Basic Terraform placeholders in `/infrastructure/` for ECS deployment.
+- Basic Terraform placeholders in `deployment/infrastructure/` for ECS deployment.
 - Initial Architecture Decision Records (ADRs) and Model Cards.
 
 ### Fixed

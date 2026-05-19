@@ -79,14 +79,14 @@ User Browser
 
 ### Deployment Checklist
 
-- [ ] Replace `yourdomain.com` in `docker-compose.yml` and `nginx/nginx.conf`
-- [ ] Set up SSL certificates (see `nginx/ssl/README.md`)
+- [ ] Replace `yourdomain.com` in `deployment/docker/docker-compose.yml` and `deployment/nginx/nginx.conf`
+- [ ] Set up SSL certificates (see `deployment/nginx/ssl/README.md`)
 - [ ] Configure firewall to block port 8000 externally
 - [ ] Set `APP_ENV=production` in environment
 - [ ] Update `CORS_ORIGINS` to your actual domain
 - [ ] Update `TRUSTED_HOSTS` to your actual domain
 - [ ] Review Grafana default password and change it
-- [ ] Run `./deploy.sh --with-monitoring` to start all services
+- [ ] Run `./deployment/scripts/deploy.sh --with-monitoring` to start all services
 
 ## Quick Start
 
@@ -95,8 +95,8 @@ User Browser
 docker compose --profile dev up -d
 
 # Production (HTTPS)
-./deploy.sh
+./deployment/scripts/deploy.sh
 
 # Production + Monitoring
-./deploy.sh --with-monitoring
+./deployment/scripts/deploy.sh --with-monitoring
 ```
