@@ -1,0 +1,94 @@
+<div class="animate-fade-up space-y-6" x-data="sessionsPage()" x-init="init()">
+
+  <div class="flex items-center justify-between flex-wrap gap-4">
+    <div>
+      <h2 class="text-xl font-black text-slate-900">Active Sessions</h2>
+      <p class="text-sm text-slate-500 mt-1">All devices currently logged in to your account.</p>
+    </div>
+    <button onclick="document.querySelector('[x-data]').__x.$data.revokeAll()"
+      class="flex items-center gap-2 bg-rose-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-rose-600 transition-colors shadow-sm">
+      <span class="material-symbols-outlined text-[18px]">logout</span>
+      Logout All Devices
+    </button>
+  </div>
+
+  <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-slate-50 border-b border-slate-100">
+            <th class="px-6 py-3 text-left font-semibold text-slate-600 uppercase text-xs tracking-wider">Device</th>
+            <th class="px-6 py-3 text-left font-semibold text-slate-600 uppercase text-xs tracking-wider">IP Address</th>
+            <th class="px-6 py-3 text-left font-semibold text-slate-600 uppercase text-xs tracking-wider">Last Active</th>
+            <th class="px-6 py-3 text-left font-semibold text-slate-600 uppercase text-xs tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="sessions-tbody">
+          <tr><td colspan="4" class="px-6 py-12 text-center text-slate-400">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+function sessionsPage() {
+  return {
+    token: null,
+    sessions: [],
+    async init() {
+      this.token = localStorage.getItem('access_token');
+      if (!this.token) { window.location.href = '/'; return; }
+      await this.load();
+    },
+    async load() {
+      const res = await fetch('/auth/sessions', { headers: { 'Authorization': 'Bearer ' + this.token } });
+      if (res.status === 401) { localStorage.removeItem('access_token'); window.location.href = '/'; return; }
+      this.sessions = await res.json();
+      const tbody = document.getElementById('sessions-tbody');
+      if (!this.sessions.length) {
+        tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-12 text-center text-slate-400">
+          <span class="material-symbols-outlined text-[40px] block mb-2">devices</span>
+          No active sessions found.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = this.sessions.map(s => `
+        <tr class="border-b border-slate-50 hover:bg-slate-50/60 transition-colors">
+          <td class="px-6 py-4">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-slate-400 text-[24px]">devices</span>
+              <div>
+                <p class="font-medium text-slate-900 text-xs max-w-[200px] truncate" title="${s.device_info || 'Unknown device'}">${s.device_info || 'Unknown device'}</p>
+                <p class="text-xs text-emerald-600 font-semibold">${s.is_active ? '● Active' : '○ Inactive'}</p>
+              </div>
+            </div>
+          </td>
+          <td class="px-6 py-4 text-slate-500 font-mono text-xs">${s.ip_address || '—'}</td>
+          <td class="px-6 py-4 text-slate-500 text-xs">${s.last_accessed ? new Date(s.last_accessed).toLocaleString() : '—'}</td>
+          <td class="px-6 py-4">
+            <button onclick="sessionsPage_revoke('${s.id}')"
+              class="text-rose-500 text-sm font-semibold hover:underline flex items-center gap-1">
+              <span class="material-symbols-outlined text-[16px]">block</span> Revoke
+            </button>
+          </td>
+        </tr>`).join('');
+    },
+    async revoke(sessionId) {
+      if (!confirm('Revoke this session?')) return;
+      await fetch('/auth/sessions/' + sessionId, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + this.token } });
+      await this.load();
+    },
+    async revokeAll() {
+      if (!confirm('Logout from all devices? You will be logged out here too.')) return;
+      for (const s of this.sessions) {
+        await fetch('/auth/sessions/' + s.id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + this.token } });
+      }
+      localStorage.removeItem('access_token');
+      window.location.href = '/';
+    }
+  }
+}
+window.sessionsPage_revoke = (id) => {
+  document.querySelector('[x-data]').__x.$data.revoke(id);
+};
+</script>

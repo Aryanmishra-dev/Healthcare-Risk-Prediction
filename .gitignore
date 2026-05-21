@@ -135,3 +135,4 @@ terraform.rc
 *.out
 dump.rdb
 bandit_report.json
+healthcare.db

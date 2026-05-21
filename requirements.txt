@@ -1,0 +1,11 @@
+sqlalchemy
+alembic
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+slowapi
+email-validator
+python-dotenv
+httpx
+pytest-asyncio
+aiosqlite

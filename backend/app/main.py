@@ -11,6 +11,7 @@ import json
 import os
 import secrets
 import uuid
+import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -23,7 +24,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi import Depends, HTTPException, Cookie
 from fastapi.exceptions import RequestValidationError
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from redis import asyncio as aioredis
 from fastapi_cache import FastAPICache
@@ -43,8 +44,6 @@ class OptionalRateLimiter:
                 logger.warning("optional_rate_limiter_failed", error=str(exc))
 
 from backend.app.api.dependencies import get_api_key
-from backend.app.db.session import get_db
-from backend.app.models.prediction import PredictionAuditLog
 from backend.app.schemas.prediction import (
     PredictionRequest,
     PredictionResponse,
@@ -97,22 +96,14 @@ async def lifespan(app: FastAPI):
     setup_logging()
     logger.info("application_startup", version="3.0.0")
     
-    # Initialize Redis CACHE and LIMITER
-    redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-    try:
-        redis_client = aioredis.from_url(redis_url, encoding="utf-8", decode_responses=True)
-        await redis_client.ping()
-        FastAPICache.init(RedisBackend(redis_client), prefix="healthpredict-cache")
-        await FastAPILimiter.init(redis_client)
-        logger.info("redis_connected", url=redis_url)
-    except Exception as e:
-        logger.warning("redis_connection_failed", error=str(e), fallback="in_memory")
-        from fastapi_cache.backends.inmemory import InMemoryBackend
-        FastAPICache.init(InMemoryBackend(), prefix="healthpredict-cache")
+    # Initialize in-memory cache since we removed Redis database
+    from fastapi_cache.backends.inmemory import InMemoryBackend
+    FastAPICache.init(InMemoryBackend(), prefix="healthpredict-cache")
         
-    load_models(app)
-    load_explainers()
-    logger.info("models_loaded")
+    app.state.models = {}
+    asyncio.create_task(asyncio.to_thread(load_models, app))
+    asyncio.create_task(asyncio.to_thread(load_explainers))
+    logger.info("models_loading_in_background")
     yield
     logger.info("application_shutdown")
 
@@ -125,6 +116,8 @@ app = FastAPI(
     docs_url="/api/docs",
     openapi_url="/api/openapi.json",
 )
+
+
 
 # ── Templates & Static ────────────────────────────────────────────────────
 templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
@@ -164,33 +157,8 @@ Instrumentator(
 ).instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
 
 
-# ── Request-ID middleware (traceability) ───────────────────────────────
-@app.middleware("http")
-async def request_id_middleware(request: Request, call_next):
-    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
-    request.state.request_id = request_id
-    response = await call_next(request)
-    response.headers["X-Request-ID"] = request_id
-    return response
+# Removed old request_id_middleware since SecurityHeadersMiddleware handles it.
 
-
-# ── Helper ─────────────────────────────────────────────────────────────────
-def log_prediction_to_db(db: Session, request: Request, model_name: str, payload: dict, risk_pct: float, risk_level: str, source: str):
-    """Log prediction result and inputs to the audit database."""
-    try:
-        log_entry = PredictionAuditLog(
-            request_id=getattr(request.state, "request_id", "-"),
-            client_ip=request.client.host if request.client else "unknown",
-            disease_model=model_name,
-            input_features=json.dumps(payload),
-            risk_percentage=risk_pct,
-            risk_level=risk_level,
-            source=source
-        )
-        db.add(log_entry)
-        db.commit()
-    except Exception as e:
-        logger.error("audit_log_failed", error=str(e), model=model_name)
 
 
 def _clamp(value, lo, hi):
@@ -256,6 +224,18 @@ def about_page(request: Request):
     return _render_index(request, "about")
 
 
+@app.get("/login")
+def login_page(request: Request):
+    """Render the Login page."""
+    return _render_index(request, "login")
+
+
+@app.get("/register")
+def register_page(request: Request):
+    """Render the Register page."""
+    return _render_index(request, "register")
+
+
 @app.get("/diabetes")
 def diabetes_page(request: Request):
     """Render the Diabetes risk assessment page."""
@@ -273,6 +253,25 @@ def lung_cancer_page(request: Request):
     """Render the Lung Cancer risk assessment page."""
     return _render_index(request, "lung")
 
+@app.get("/dashboard")
+def dashboard_page(request: Request):
+    return _render_index(request, "dashboard")
+
+@app.get("/dashboard/uploads")
+def dashboard_uploads_page(request: Request):
+    return _render_index(request, "dashboard_uploads")
+
+@app.get("/dashboard/history")
+def dashboard_history_page(request: Request):
+    return _render_index(request, "dashboard_history")
+
+@app.get("/dashboard/sessions")
+def dashboard_sessions_page(request: Request):
+    return _render_index(request, "dashboard_sessions")
+
+@app.get("/dashboard/profile")
+def dashboard_profile_page(request: Request):
+    return _render_index(request, "dashboard_profile")
 
 def verify_csrf_token(request: Request, csrf_token: str = Cookie(default=None)):
     if not csrf_token:
@@ -316,8 +315,7 @@ async def predict_diabetes_htmx(
     smoker: float = Form(0),
     activity: float = Form(1),
     health: float = Form(3),
-    mental: float = Form(0),
-    db: Session = Depends(get_db)
+    mental: float = Form(0)
 ):
     """Handle diabetes prediction form via HTMX."""
     try:
@@ -344,7 +342,6 @@ async def predict_diabetes_htmx(
         pct = float(result["risk_percentage"])
         
         # Log to DB and Prometheus
-        log_prediction_to_db(db, request, "diabetes", payload, pct, result["risk_level"], "htmx")
         PREDICTION_PROB_METRIC.labels(model_name="diabetes").observe(pct / 100.0)
 
         return templates.TemplateResponse("partials/diabetes_result.html", {
@@ -377,8 +374,7 @@ async def predict_heart_htmx(
     hd_gen_health: int = Form(3),
     hd_ment_health: int = Form(0),
     hd_phys_health: int = Form(0),
-    hd_diabetes: int = Form(0),
-    db: Session = Depends(get_db)
+    hd_diabetes: int = Form(0)
 ):
     """Handle heart disease prediction form via HTMX."""
     try:
@@ -417,7 +413,6 @@ async def predict_heart_htmx(
         pct = float(result["risk_percentage"])
 
         # Log to DB and Prometheus
-        log_prediction_to_db(db, request, "heart_disease", payload, pct, result["risk_level"], "htmx")
         PREDICTION_PROB_METRIC.labels(model_name="heart_disease").observe(pct / 100.0)
 
         return templates.TemplateResponse("partials/heart_result.html", {
@@ -444,8 +439,7 @@ async def predict_lung_htmx(
     lc_chronic_disease: int = Form(0),
     lc_fatigue: int = Form(0),
     lc_wheezing: int = Form(0),
-    lc_shortness_of_breath: int = Form(0),
-    db: Session = Depends(get_db)
+    lc_shortness_of_breath: int = Form(0)
 ):
     """Handle lung cancer prediction form via HTMX."""
     try:
@@ -472,7 +466,6 @@ async def predict_lung_htmx(
         pct = float(result["risk_percentage"])
 
         # Log to DB and Prometheus
-        log_prediction_to_db(db, request, "lung_cancer", payload, pct, result["risk_level"], "htmx")
         PREDICTION_PROB_METRIC.labels(model_name="lung_cancer").observe(pct / 100.0)
 
         return templates.TemplateResponse("partials/lung_result.html", {
@@ -591,7 +584,7 @@ def v1_model_registry():
 
 
 @v1.post("/predict/diabetes", response_model=PredictionResponse)
-async def v1_predict_diabetes(request: Request, data: PredictionRequest, db: Session = Depends(get_db)):
+async def v1_predict_diabetes(request: Request, data: PredictionRequest):
 
     """Predict diabetes risk (v1)."""
     result = await predict(request=request,
@@ -602,14 +595,14 @@ async def v1_predict_diabetes(request: Request, data: PredictionRequest, db: Ses
     )
     
     # Log to DB and Prometheus
-    log_prediction_to_db(db, request, "diabetes", data.model_dump(), result["risk_percentage"], result["risk_level"], "api_v1")
+    await log_prediction_to_db(db, request, "diabetes", data.model_dump(), result["risk_percentage"], result["risk_level"], "api_v1", None)
     PREDICTION_PROB_METRIC.labels(model_name="diabetes").observe(result["risk_percentage"] / 100.0)
 
     return PredictionResponse(**result)
 
 
 @v1.post("/predict/heart", response_model=PredictionResponse)
-async def v1_predict_heart(request: Request, data: HeartDiseasePredictionRequest, db: Session = Depends(get_db)):
+async def v1_predict_heart(request: Request, data: HeartDiseasePredictionRequest):
 
     """Predict heart disease risk (v1)."""
     result = await predict_heart_disease(request=request,
@@ -623,14 +616,14 @@ async def v1_predict_heart(request: Request, data: HeartDiseasePredictionRequest
     )
     
     # Log to DB and Prometheus
-    log_prediction_to_db(db, request, "heart_disease", data.model_dump(), result["risk_percentage"], result["risk_level"], "api_v1")
+    await log_prediction_to_db(db, request, "heart_disease", data.model_dump(), result["risk_percentage"], result["risk_level"], "api_v1", None)
     PREDICTION_PROB_METRIC.labels(model_name="heart_disease").observe(result["risk_percentage"] / 100.0)
 
     return PredictionResponse(**result)
 
 
 @v1.post("/predict/lung", response_model=PredictionResponse)
-async def v1_predict_lung(request: Request, data: LungCancerPredictionRequest, db: Session = Depends(get_db)):
+async def v1_predict_lung(request: Request, data: LungCancerPredictionRequest):
 
     """Predict lung cancer risk (v1)."""
     result = await predict_lung_cancer(request=request,
@@ -642,7 +635,7 @@ async def v1_predict_lung(request: Request, data: LungCancerPredictionRequest, d
     )
     
     # Log to DB and Prometheus
-    log_prediction_to_db(db, request, "lung_cancer", data.model_dump(), result["risk_percentage"], result["risk_level"], "api_v1")
+    await log_prediction_to_db(db, request, "lung_cancer", data.model_dump(), result["risk_percentage"], result["risk_level"], "api_v1", None)
     PREDICTION_PROB_METRIC.labels(model_name="lung_cancer").observe(result["risk_percentage"] / 100.0)
 
     return PredictionResponse(**result)
@@ -653,7 +646,7 @@ async def v1_predict_lung(request: Request, data: LungCancerPredictionRequest, d
 # ══════════════════════════════════════════════════════════════════════════
 
 @v1.post("/explain/diabetes")
-async def v1_explain_diabetes(request: Request, data: PredictionRequest, db: Session = Depends(get_db)):
+async def v1_explain_diabetes(request: Request, data: PredictionRequest):
     """Return SHAP feature importances for a diabetes prediction."""
     df = build_diabetes_features(
         age_group=data.age, bmi=data.bmi, high_bp=data.bp,
@@ -669,14 +662,14 @@ async def v1_explain_diabetes(request: Request, data: PredictionRequest, db: Ses
     )
     
     # Output logging (less rigorous for explanations, but good-to-have)
-    log_prediction_to_db(db, request, "diabetes", data.model_dump(), result["risk_percentage"], result["risk_level"], "api_v1_explain")
+    await log_prediction_to_db(db, request, "diabetes", data.model_dump(), result["risk_percentage"], result["risk_level"], "api_v1_explain", None)
 
     shap_data = explain_diabetes(df)
     return {**result, "explanation": shap_data}
 
 
 @v1.post("/explain/heart")
-async def v1_explain_heart(request: Request, data: HeartDiseasePredictionRequest, db: Session = Depends(get_db)):
+async def v1_explain_heart(request: Request, data: HeartDiseasePredictionRequest):
     """Return SHAP feature importances for a heart disease prediction."""
     import pandas as pd, numpy as np
     row = {
@@ -702,14 +695,14 @@ async def v1_explain_heart(request: Request, data: HeartDiseasePredictionRequest
     )
     
     # Output logging (less rigorous for explanations, but good-to-have)
-    log_prediction_to_db(db, request, "heart_disease", data.model_dump(), result["risk_percentage"], result["risk_level"], "api_v1_explain")
+    await log_prediction_to_db(db, request, "heart_disease", data.model_dump(), result["risk_percentage"], result["risk_level"], "api_v1_explain", None)
 
     shap_data = explain_heart(df)
     return {**result, "explanation": shap_data}
 
 
 @v1.post("/explain/lung")
-async def v1_explain_lung(request: Request, data: LungCancerPredictionRequest, db: Session = Depends(get_db)):
+async def v1_explain_lung(request: Request, data: LungCancerPredictionRequest):
     """Return SHAP feature importances for a lung cancer prediction."""
     import pandas as pd, numpy as np
     row = {
@@ -732,7 +725,7 @@ async def v1_explain_lung(request: Request, data: LungCancerPredictionRequest, d
     )
     
     # Output logging (less rigorous for explanations, but good-to-have)
-    log_prediction_to_db(db, request, "lung_cancer", data.model_dump(), result["risk_percentage"], result["risk_level"], "api_v1_explain")
+    await log_prediction_to_db(db, request, "lung_cancer", data.model_dump(), result["risk_percentage"], result["risk_level"], "api_v1_explain", None)
 
     shap_data = explain_lung(df)
     return {**result, "explanation": shap_data}

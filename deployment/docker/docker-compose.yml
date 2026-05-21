@@ -15,7 +15,11 @@ services:
       - CORS_ORIGINS=https://yourdomain.com
       - TRUSTED_HOSTS=yourdomain.com,www.yourdomain.com,localhost
       - REDIS_URL=redis://redis:6379/0
-      - DATABASE_URL=postgresql://admin:REDACTED@db:5432/healthcare_audit
+      - DATABASE_URL=postgresql+asyncpg://admin:REDACTED@db:5432/healthcare_audit
+      - SYNC_DATABASE_URL=postgresql://admin:REDACTED@db:5432/healthcare_audit
+      - SECRET_KEY=replace_me_with_a_secure_random_string
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
     depends_on:
       - redis
       - db
