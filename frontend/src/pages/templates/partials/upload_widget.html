@@ -43,6 +43,15 @@
                     Extract Features
                 </button>
             </div>
+            
+            <div class="mt-4 border-t border-slate-100 pt-4 flex flex-col items-center gap-3">
+                <p class="text-xs text-slate-500 font-medium">Or dictate your clinical parameters using Voice AI</p>
+                <button type="button" id="voice-btn-{{ widget_id }}" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-5 py-2.5 rounded-full font-bold text-sm shadow-sm transition-all flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg" id="voice-icon-{{ widget_id }}">mic</span>
+                    <span id="voice-text-{{ widget_id }}">Start Voice Dictation</span>
+                </button>
+                <div id="voice-status-{{ widget_id }}" class="text-[11px] text-slate-400 hidden"></div>
+            </div>
         </form>
 
         <!-- Result / status area -->
@@ -90,6 +99,140 @@
             label.classList.add('hidden');
             btn.disabled = true;
         }
+    }
+
+    /* ── Voice Assistant STT Logic ── */
+    var voiceBtn = document.getElementById('voice-btn-' + wid);
+    var voiceIcon = document.getElementById('voice-icon-' + wid);
+    var voiceText = document.getElementById('voice-text-' + wid);
+    var voiceStatus = document.getElementById('voice-status-' + wid);
+    var recognition = null;
+    var isRecording = false;
+
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+
+        var finalTranscript = '';
+        var restartTimer = null;
+
+        recognition.onstart = function() {
+            isRecording = true;
+            voiceBtn.classList.remove('bg-indigo-50', 'text-indigo-700', 'border-indigo-200');
+            voiceBtn.classList.add('bg-red-50', 'text-red-700', 'border-red-200', 'animate-pulse');
+            voiceIcon.textContent = 'stop_circle';
+            voiceText.textContent = 'Listening...';
+            voiceStatus.classList.remove('hidden');
+            voiceStatus.textContent = 'Speak your clinical parameters...';
+            finalTranscript = '';
+            
+            // Safety timeout to prevent infinite recording
+            clearTimeout(restartTimer);
+            restartTimer = setTimeout(function() {
+                if(isRecording) stopRecording();
+            }, 60000); // 60s max
+        };
+
+        recognition.onerror = function(event) {
+            console.error('Speech recognition error', event.error);
+            if (event.error === 'not-allowed') {
+                voiceStatus.textContent = 'Microphone permission denied. Please allow access.';
+                voiceStatus.classList.add('text-red-500');
+                stopRecording(false);
+            } else if (event.error === 'network') {
+                voiceStatus.textContent = 'Network error. Please try again.';
+                stopRecording(false);
+            } else if (event.error === 'no-speech') {
+                // Ignore no-speech, just wait
+            } else {
+                voiceStatus.textContent = 'Audio stream dropped. Attempting recovery...';
+            }
+        };
+
+        recognition.onend = function() {
+            if (isRecording) {
+                // Unexpected drop, try to recover
+                recognition.start();
+            }
+        };
+
+        recognition.onresult = function(event) {
+            var interimTranscript = '';
+            for (var i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript + ' ';
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+            }
+            voiceStatus.textContent = (finalTranscript + interimTranscript).substring(0, 50) + '...';
+        };
+
+        function stopRecording(submit = true) {
+            isRecording = false;
+            clearTimeout(restartTimer);
+            recognition.stop();
+            voiceBtn.classList.add('bg-indigo-50', 'text-indigo-700', 'border-indigo-200');
+            voiceBtn.classList.remove('bg-red-50', 'text-red-700', 'border-red-200', 'animate-pulse');
+            voiceIcon.textContent = 'mic';
+            voiceText.textContent = 'Start Voice Dictation';
+            
+            if (submit && finalTranscript.trim().length > 0) {
+                voiceStatus.textContent = 'Processing voice data...';
+                voiceStatus.classList.remove('text-red-500');
+                submitVoiceData(finalTranscript);
+            } else if (!submit) {
+                // Keep error message
+            } else {
+                voiceStatus.textContent = 'No speech detected.';
+                setTimeout(function(){ voiceStatus.classList.add('hidden'); }, 3000);
+            }
+        }
+
+        voiceBtn.addEventListener('click', function() {
+            if (isRecording) {
+                stopRecording(true);
+            } else {
+                try {
+                    recognition.start();
+                } catch(e) {
+                    voiceStatus.classList.remove('hidden');
+                    voiceStatus.textContent = 'Error starting mic. ' + e.message;
+                    voiceStatus.classList.add('text-red-500');
+                }
+            }
+        });
+
+    } else {
+        voiceBtn.style.display = 'none';
+    }
+
+    function submitVoiceData(text) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/v1/document/text', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        
+        // Use HTMX csrf logic if available
+        var match = document.cookie.match(new RegExp('(^| )csrf_token=([^;]+)'));
+        if (match) xhr.setRequestHeader('X-CSRFToken', match[2]);
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                voiceStatus.textContent = 'Voice processing complete.';
+                setTimeout(function(){ voiceStatus.classList.add('hidden'); }, 3000);
+                
+                var resultDiv = document.getElementById('upload-result-' + wid);
+                resultDiv.innerHTML = xhr.responseText;
+                // Trigger HTMX afterSwap manually to run auto-populate
+                document.body.dispatchEvent(new CustomEvent('htmx:afterSwap', {
+                    detail: { target: resultDiv }
+                }));
+            }
+        };
+        xhr.send(JSON.stringify({ text: text }));
     }
 
     /* ── Auto-populate forms ── */

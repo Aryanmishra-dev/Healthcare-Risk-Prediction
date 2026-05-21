@@ -18,8 +18,12 @@ def parse_pdf(file_bytes: bytes) -> str:
     Extract text from a PDF file.
 
     Uses PyMuPDF (fitz) to iterate all pages and concatenate text.
+    If no text is found (e.g., scanned PDF), falls back to OCR.
     """
     import fitz  # PyMuPDF
+    import pytesseract
+    from PIL import Image
+    import io
 
     text_parts: list[str] = []
     with fitz.open(stream=file_bytes, filetype="pdf") as doc:
@@ -29,9 +33,23 @@ def parse_pdf(file_bytes: bytes) -> str:
                 text_parts.append(page_text)
             logger.debug("pdf_page_extracted", extra={"page": page_num, "chars": len(page_text)})
 
-    raw_text = "\n".join(text_parts).strip()
+        raw_text = "\n".join(text_parts).strip()
+        
+        # Fallback to OCR if it's a scanned PDF
+        if not raw_text:
+            logger.info("pdf_no_text_extracted_falling_back_to_ocr")
+            ocr_text_parts = []
+            for page_num, page in enumerate(doc):
+                pix = page.get_pixmap(dpi=150)
+                img = Image.open(io.BytesIO(pix.tobytes("png")))
+                page_text = pytesseract.image_to_string(img)
+                if page_text.strip():
+                    ocr_text_parts.append(page_text)
+            raw_text = "\n".join(ocr_text_parts).strip()
+
     if not raw_text:
-        logger.warning("pdf_no_text_extracted")
+        logger.warning("pdf_no_text_extracted_even_with_ocr")
+        
     return raw_text
 
 

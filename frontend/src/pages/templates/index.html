@@ -259,7 +259,10 @@ function switchTab(tab, skipHistory) {
         'heart': 'Heart Disease Risk Assessment',
         'lung': 'Lung Cancer Risk Assessment'
     };
-    document.getElementById('header-title').textContent = titles[tab] || tab;
+    var ht = document.getElementById('header-title');
+    if (ht) {
+        ht.textContent = titles[tab] || tab;
+    }
     if (!skipHistory && window.history && tabPaths[tab] && window.location.pathname !== tabPaths[tab]) {
         window.history.pushState({ tab: tab }, '', tabPaths[tab]);
     }

@@ -177,16 +177,43 @@ class TestMedicalNLP:
         entities = extract_clinical_entities(text)
         assert entities["gender"] == "female"
 
+    def test_extract_blood_group(self):
+        text = "Blood group: O+"
+        entities = extract_clinical_entities(text)
+        assert entities["blood_group"] == "O+"
+        
+    def test_extract_blood_group_negative(self):
+        text = "Type: AB negative"
+        entities = extract_clinical_entities(text)
+        assert entities["blood_group"] == "AB-"
+
+    def test_extract_medical_history(self):
+        text = "Medical history: Patient has a history of asthma.\nDiagnosis:"
+        entities = extract_clinical_entities(text)
+        assert entities["medical_history"] == "Patient has a history of asthma."
+
+    def test_extract_diagnosis(self):
+        text = "Diagnosis: Type 2 Diabetes Mellitus\nMedications:"
+        entities = extract_clinical_entities(text)
+        assert entities["diagnosis"] == "Type 2 Diabetes Mellitus"
+
+    def test_extract_medications(self):
+        text = "Medications: Metformin 500mg BID\n"
+        entities = extract_clinical_entities(text)
+        assert entities["medications"] == "Metformin 500mg BID"
+
     def test_extract_none_values(self):
         text = "The weather is sunny today."
         entities = extract_clinical_entities(text)
         assert entities["bmi"] is None
         assert entities["blood_pressure"] is None
+        assert entities["blood_group"] is None
 
     def test_full_medical_report(self):
         """Test extraction from a realistic medical report snippet."""
         text = """
         Patient: John Doe, 58 years old, Male
+        Blood Type: A+
         BMI: 31.2
         Blood Pressure: 145/92 (elevated)
         Cholesterol: 255 mg/dL
@@ -194,10 +221,20 @@ class TestMedicalNLP:
         Physical activity: sedentary
         General health: fair
         Mental health: 8 days of poor mental health in past 30 days
+        
+        Medical History:
+        Hypertension, hyperlipidemia.
+        
+        Diagnosis:
+        Coronary artery disease.
+        
+        Medications:
+        Lisinopril, Atorvastatin.
         """
         entities = extract_clinical_entities(text)
         assert entities["age"] == 58
         assert entities["gender"] == "male"
+        assert entities["blood_group"] == "A+"
         assert entities["bmi"] == 31.2
         assert entities["blood_pressure"] == "high"
         assert entities["cholesterol"] == "high"
@@ -205,6 +242,9 @@ class TestMedicalNLP:
         assert entities["physical_activity"] == "inactive"
         assert entities["general_health"] == 4
         assert entities["mental_health"] == 8
+        assert entities["medical_history"] == "Hypertension, hyperlipidemia."
+        assert entities["diagnosis"] == "Coronary artery disease."
+        assert entities["medications"] == "Lisinopril, Atorvastatin."
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -263,7 +303,8 @@ class TestFeatureMapper:
         entities = {k: None for k in [
             "bmi", "blood_pressure", "cholesterol", "smoking",
             "physical_activity", "general_health", "mental_health",
-            "age", "gender",
+            "age", "gender", "blood_group", "medical_history",
+            "diagnosis", "medications"
         ]}
         d = map_to_diabetes_features(entities)
         assert d == {}
