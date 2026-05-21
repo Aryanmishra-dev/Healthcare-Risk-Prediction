@@ -42,13 +42,17 @@
                     <span class="material-symbols-outlined text-[20px]">pulmonology</span>
                     <span class="text-sm {% if initial_tab == 'lung' %}font-bold{% else %}font-medium{% endif %}">Lung Cancer Risk</span>
                 </a>
+                <a id="nav-dashboard" href="/dashboard" onclick="switchTab('dashboard');return false"
+                   x-show="isLoggedIn" x-cloak
+                   class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'dashboard' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
+                    <span class="material-symbols-outlined text-[20px]">dashboard</span>
+                    <span class="text-sm {% if initial_tab == 'dashboard' %}font-bold{% else %}font-medium{% endif %}">Dashboard</span>
+                </a>
                 </nav>
             </div>
 
             <!-- Right: Profile -->
-            <div class="flex-shrink-0 flex items-center pl-2 border-l border-slate-200">
-                <div class="size-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-black text-xs shadow-sm shadow-primary/10">AI</div>
-            </div>
+
         </div>
     </header>
 
@@ -120,6 +124,8 @@
             </div>
         </div>
 
+
+
         </div>
     </div>
 </main>
@@ -135,12 +141,18 @@
     var voiceObj = null;
 
     function loadVoices() {
-        var voices = synthesis.getVoices();
-        var hiVoices = voices.filter(function(v) { return v.lang.indexOf("hi") !== -1; });
-        voiceObj = hiVoices[0] || voices[0];
+        if (!synthesis) return;
+        try {
+            var voices = synthesis.getVoices() || [];
+            var hiVoices = voices.filter(function(v) { return v.lang && v.lang.indexOf("hi") !== -1; });
+            voiceObj = hiVoices[0] || voices[0];
+            synthesis.onvoiceschanged = null; // Always clear to prevent infinite loops
+        } catch (e) {
+            console.error("Speech API error:", e);
+        }
     }
 
-    if (synthesis.onvoiceschanged !== undefined) {
+    if (synthesis && synthesis.onvoiceschanged !== undefined) {
         synthesis.onvoiceschanged = loadVoices;
     }
     loadVoices();
@@ -236,20 +248,24 @@ var pathTabs = {
 
 function switchTab(tab, skipHistory) {
     // Stop any in-progress speech when switching tabs
-    if (window.speechSynthesis.speaking) { window.speechSynthesis.cancel(); }
+    if (window.speechSynthesis && window.speechSynthesis.speaking) { 
+        try { window.speechSynthesis.cancel(); } catch(e) {}
+    }
 
     document.querySelectorAll('.section-panel').forEach(function(s) { s.classList.remove('active'); });
     document.getElementById('section-' + tab).classList.add('active');
 
     document.querySelectorAll('.nav-link').forEach(function(a) {
         a.className = 'nav-link flex items-center gap-2 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors whitespace-nowrap';
-        a.querySelector('span:last-child').className = 'text-sm font-medium';
+        var span = a.querySelector('span:last-child');
+        if (span) span.className = 'text-sm font-medium';
     });
     
     var active = document.getElementById('nav-' + tab);
     if (active) {
         active.className = 'nav-link flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 text-primary shadow-sm transition-colors whitespace-nowrap';
-        active.querySelector('span:last-child').className = 'text-sm font-bold';
+        var activeSpan = active.querySelector('span:last-child');
+        if (activeSpan) activeSpan.className = 'text-sm font-bold';
     }
 
     var titles = {

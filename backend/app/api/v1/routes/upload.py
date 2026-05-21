@@ -41,6 +41,11 @@ async def extract_from_text(payload: TextExtractionRequest):
         "entities_found": sum(1 for v in entities.values() if v is not None),
     })
 
+
+    
+    
+    
+
     return {
         "raw_text": raw_text[:2000],
         "entities": entities,
@@ -53,7 +58,7 @@ async def extract_from_text(payload: TextExtractionRequest):
 async def upload_document(
     request: Request,
     response: Response,
-    file: UploadFile = File(..., description="Medical report (PDF, JPG, JPEG, or PNG, ≤ 5 MB)"),
+    file: UploadFile = File(..., description="Medical report (PDF, JPG, JPEG, or PNG, ≤ 5 MB)")
 ):
     """
     Upload a medical report and extract clinical features.
@@ -106,6 +111,11 @@ async def upload_document(
     logger.info("document_pipeline_complete", extra={
         "entities_found": sum(1 for v in entities.values() if v is not None),
     })
+
+
+    
+    
+    
 
     return {
         "raw_text": raw_text[:2000],  # truncate for response size

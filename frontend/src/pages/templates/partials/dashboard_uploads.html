@@ -1,0 +1,117 @@
+<div class="animate-fade-up space-y-6" x-data="uploadsPage()" x-init="init()">
+
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-xl font-black text-slate-900">Upload History</h2>
+      <p class="text-sm text-slate-500 mt-1">All your medical document uploads and their linked predictions.</p>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-slate-50 border-b border-slate-100">
+            <th class="px-6 py-3 text-left font-semibold text-slate-600 uppercase text-xs tracking-wider">#</th>
+            <th class="px-6 py-3 text-left font-semibold text-slate-600 uppercase text-xs tracking-wider">Filename</th>
+            <th class="px-6 py-3 text-left font-semibold text-slate-600 uppercase text-xs tracking-wider">Date</th>
+            <th class="px-6 py-3 text-left font-semibold text-slate-600 uppercase text-xs tracking-wider">Status</th>
+            <th class="px-6 py-3 text-left font-semibold text-slate-600 uppercase text-xs tracking-wider">Predictions</th>
+            <th class="px-6 py-3 text-left font-semibold text-slate-600 uppercase text-xs tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="uploads-tbody">
+          <tr>
+            <td colspan="6" class="px-6 py-12 text-center text-slate-400">
+              <span class="material-symbols-outlined text-[40px] block mb-2">cloud_upload</span>
+              Loading uploads…
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Expand Detail Panel -->
+  <div id="upload-detail-panel" class="hidden bg-white rounded-xl border border-primary/30 shadow-sm p-6">
+    <h3 class="font-bold text-slate-900 mb-4">Linked Predictions</h3>
+    <div id="upload-detail-content" class="space-y-3"></div>
+  </div>
+</div>
+
+<script>
+function uploadsPage() {
+  return {
+    token: null,
+    async init() {
+      this.token = localStorage.getItem('access_token');
+      if (!this.token) { window.location.href = '/'; return; }
+      await this.load();
+    },
+    async load() {
+      const res = await fetch('/auth/uploads', { headers: { 'Authorization': 'Bearer ' + this.token } });
+      if (res.status === 401) { localStorage.removeItem('access_token'); window.location.href = '/'; return; }
+      const items = await res.json();
+      const tbody = document.getElementById('uploads-tbody');
+      if (!items.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-slate-400">
+          <span class="material-symbols-outlined text-[40px] block mb-2">cloud_upload</span>
+          No uploads yet. Upload a medical document to get started.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = items.map(u => `
+        <tr class="border-b border-slate-50 hover:bg-slate-50/60 transition-colors">
+          <td class="px-6 py-4 font-bold text-primary">#${u.upload_number}</td>
+          <td class="px-6 py-4 font-medium text-slate-900 max-w-[200px] truncate" title="${u.filename}">${u.filename}</td>
+          <td class="px-6 py-4 text-slate-500">${new Date(u.uploaded_at).toLocaleDateString()}</td>
+          <td class="px-6 py-4">
+            <span class="px-2.5 py-1 rounded-full text-xs font-bold ${
+              u.status === 'done' ? 'bg-emerald-100 text-emerald-700' :
+              u.status === 'failed' ? 'bg-rose-100 text-rose-700' :
+              'bg-amber-100 text-amber-700'
+            }">${u.status?.toUpperCase()}</span>
+          </td>
+          <td class="px-6 py-4 text-slate-700">${u.prediction_count}</td>
+          <td class="px-6 py-4">
+            <button onclick="uploadsPage_expand('${u.id}')"
+              class="text-primary text-sm font-semibold hover:underline flex items-center gap-1">
+              <span class="material-symbols-outlined text-[16px]">expand_more</span> View
+            </button>
+          </td>
+        </tr>`).join('');
+    },
+    async expand(uploadId) {
+      const panel = document.getElementById('upload-detail-panel');
+      const content = document.getElementById('upload-detail-content');
+      panel.classList.remove('hidden');
+      content.innerHTML = '<p class="text-slate-400 text-sm">Loading…</p>';
+      const res = await fetch(`/auth/uploads/${uploadId}`, { headers: { 'Authorization': 'Bearer ' + this.token } });
+      const d = await res.json();
+      if (!d.predictions?.length) {
+        content.innerHTML = '<p class="text-slate-400 text-sm">No predictions linked to this upload.</p>';
+        return;
+      }
+      content.innerHTML = d.predictions.map(p => `
+        <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+          <div>
+            <p class="font-semibold text-slate-900 capitalize">${p.disease_type?.replace('_',' ')}</p>
+            <p class="text-xs text-slate-400">${new Date(p.created_at).toLocaleString()}</p>
+          </div>
+          <span class="px-3 py-1 rounded-full text-xs font-bold ${
+            p.risk_level === 'high' ? 'bg-rose-100 text-rose-700' :
+            p.risk_level === 'medium' ? 'bg-amber-100 text-amber-700' :
+            'bg-emerald-100 text-emerald-700'
+          }">${p.risk_level?.toUpperCase()} · ${p.risk_score}%</span>
+        </div>`).join('');
+    }
+  }
+}
+window._uploadsInst = null;
+document.addEventListener('DOMContentLoaded', () => {
+  // Alpine will handle init; expose expand globally
+  window.uploadsPage_expand = (id) => {
+    document.querySelector('[x-data]').__x.$data.expand(id);
+  };
+});
+</script>

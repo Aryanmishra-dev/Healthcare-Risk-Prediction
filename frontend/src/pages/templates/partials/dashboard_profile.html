@@ -1,0 +1,113 @@
+<div class="animate-fade-up space-y-6" x-data="profilePage()" x-init="init()">
+
+  <div>
+    <h2 class="text-xl font-black text-slate-900">My Profile</h2>
+    <p class="text-sm text-slate-500 mt-1">Manage your account details and password.</p>
+  </div>
+
+  <!-- Profile Info -->
+  <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-6 space-y-5">
+    <div class="flex items-center gap-4">
+      <div class="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center font-black text-2xl shadow-inner">
+        <span id="profile-avatar-letter">?</span>
+      </div>
+      <div>
+        <p class="text-xl font-black text-slate-900" id="profile-name-display">—</p>
+        <p class="text-sm text-slate-500" id="profile-email-display">—</p>
+        <p class="text-xs text-slate-400 mt-1">Member since <span id="profile-since">—</span></p>
+      </div>
+    </div>
+
+    <hr class="border-slate-100"/>
+
+    <!-- Edit Name -->
+    <div>
+      <h3 class="font-bold text-slate-800 mb-3">Update Name</h3>
+      <form id="name-form" class="flex gap-3 flex-wrap" onsubmit="document.querySelector('[x-data]').__x.$data.updateName(event)">
+        <input id="new-full-name" type="text" placeholder="Full name"
+          class="flex-1 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none min-w-[180px]"/>
+        <button type="submit"
+          class="bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-sky-700 transition-colors">
+          Save Name
+        </button>
+      </form>
+      <p id="name-msg" class="text-xs mt-2 hidden"></p>
+    </div>
+
+    <hr class="border-slate-100"/>
+
+    <!-- Change Password -->
+    <div>
+      <h3 class="font-bold text-slate-800 mb-3">Change Password</h3>
+      <form id="pass-form" class="space-y-3" onsubmit="document.querySelector('[x-data]').__x.$data.updatePassword(event)">
+        <input id="new-password" type="password" placeholder="New password (min 8 chars, 1 uppercase, 1 number)"
+          class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"/>
+        <input id="confirm-password" type="password" placeholder="Confirm new password"
+          class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"/>
+        <button type="submit"
+          class="bg-rose-500 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-rose-600 transition-colors">
+          Change Password
+        </button>
+      </form>
+      <p id="pass-msg" class="text-xs mt-2 hidden"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+function profilePage() {
+  return {
+    token: null,
+    async init() {
+      this.token = localStorage.getItem('access_token');
+      if (!this.token) { window.location.href = '/'; return; }
+      await this.load();
+    },
+    async load() {
+      const res = await fetch('/auth/me', { headers: { 'Authorization': 'Bearer ' + this.token } });
+      if (res.status === 401) { localStorage.removeItem('access_token'); window.location.href = '/'; return; }
+      const u = await res.json();
+      document.getElementById('profile-name-display').textContent = u.full_name || 'No name set';
+      document.getElementById('profile-email-display').textContent = u.email;
+      document.getElementById('profile-avatar-letter').textContent = (u.full_name || u.email || '?')[0].toUpperCase();
+      document.getElementById('new-full-name').value = u.full_name || '';
+      document.getElementById('profile-since').textContent = new Date(u.created_at).toLocaleDateString();
+    },
+    showMsg(id, text, isError) {
+      const el = document.getElementById(id);
+      el.textContent = text;
+      el.className = 'text-xs mt-2 ' + (isError ? 'text-rose-500' : 'text-emerald-600');
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 4000);
+    },
+    async updateName(e) {
+      e.preventDefault();
+      const name = document.getElementById('new-full-name').value.trim();
+      if (!name) return this.showMsg('name-msg', 'Please enter a name.', true);
+      const res = await fetch('/auth/me', {
+        method: 'PATCH',
+        headers: { 'Authorization': 'Bearer ' + this.token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ full_name: name })
+      });
+      if (res.ok) { await this.load(); this.showMsg('name-msg', 'Name updated successfully!', false); }
+      else this.showMsg('name-msg', 'Failed to update name.', true);
+    },
+    async updatePassword(e) {
+      e.preventDefault();
+      const pwd = document.getElementById('new-password').value;
+      const confirm = document.getElementById('confirm-password').value;
+      if (pwd !== confirm) return this.showMsg('pass-msg', 'Passwords do not match.', true);
+      if (pwd.length < 8) return this.showMsg('pass-msg', 'Password must be at least 8 characters.', true);
+      if (!/[A-Z]/.test(pwd)) return this.showMsg('pass-msg', 'Must contain an uppercase letter.', true);
+      if (!/[0-9]/.test(pwd)) return this.showMsg('pass-msg', 'Must contain a number.', true);
+      const res = await fetch('/auth/me', {
+        method: 'PATCH',
+        headers: { 'Authorization': 'Bearer ' + this.token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pwd })
+      });
+      if (res.ok) { document.getElementById('pass-form').reset(); this.showMsg('pass-msg', 'Password changed!', false); }
+      else this.showMsg('pass-msg', 'Failed to update password.', true);
+    }
+  }
+}
+</script>

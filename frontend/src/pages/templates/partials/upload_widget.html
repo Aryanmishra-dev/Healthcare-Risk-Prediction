@@ -148,14 +148,19 @@
             } else if (event.error === 'no-speech') {
                 // Ignore no-speech, just wait
             } else {
-                voiceStatus.textContent = 'Audio stream dropped. Attempting recovery...';
+                voiceStatus.textContent = 'Audio stream dropped. Error: ' + event.error;
+                stopRecording(false);
             }
         };
 
         recognition.onend = function() {
             if (isRecording) {
-                // Unexpected drop, try to recover
-                recognition.start();
+                // Unexpected drop, but do not infinitely loop immediately.
+                // It is safer to just stop and let the user try again.
+                stopRecording(false);
+                voiceStatus.textContent = 'Voice recognition stopped unexpectedly.';
+                voiceStatus.classList.remove('hidden');
+                voiceStatus.classList.add('text-red-500');
             }
         };
 
