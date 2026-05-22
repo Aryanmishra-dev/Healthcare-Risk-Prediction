@@ -43,8 +43,6 @@ COPY shared/ ./shared/
 COPY config/ ./config/
 COPY data/ ./data/
 COPY monitoring/ ./monitoring/
-COPY alembic.ini ./
-COPY alembic/ ./alembic/
 
 # Own the app directory
 RUN chown -R appuser:appuser /app
@@ -57,4 +55,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:8000/api || exit 1
 
-CMD sh -c "alembic upgrade head && gunicorn backend.app.main:app -w 1 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000 --timeout 15 --keep-alive 30 --access-logfile - --error-logfile -"
+CMD ["gunicorn", "backend.app.main:app", "-w", "1", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--timeout", "15", "--keep-alive", "30", "--access-logfile", "-", "--error-logfile", "-"]
