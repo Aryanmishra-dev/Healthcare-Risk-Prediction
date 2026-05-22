@@ -3,7 +3,7 @@ services:
   web:
     build:
       context: ../..
-      dockerfile: backend/Dockerfile.backend
+      dockerfile: deployment/Dockerfile
     image: aryanmdev/healthpredict-ai:latest
     container_name: healthpredict
     # Port is NOT published externally — only accessible via Nginx
