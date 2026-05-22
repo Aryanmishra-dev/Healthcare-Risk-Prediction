@@ -51,12 +51,12 @@ from backend.app.schemas.prediction import (
     LungCancerPredictionRequest,
 )
 from backend.app.services.model_loader import (
-    load_models,
     predict,
     predict_heart_disease,
     predict_lung_cancer,
     build_diabetes_features,
 )
+from backend.app.services.model_manager import model_manager
 from backend.app.services.shap_explainer import (
     load_explainers,
     explain_diabetes,
@@ -65,6 +65,8 @@ from backend.app.services.shap_explainer import (
 )
 from backend.app.core.logging import setup_logging, get_logger
 from backend.app.api.v1.routes.upload import router as upload_router
+from backend.app.api.v1.routes.health import router as health_router
+from backend.app.middleware.timing import TimingMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 from prometheus_client import Histogram
 
@@ -101,7 +103,10 @@ async def lifespan(app: FastAPI):
     FastAPICache.init(InMemoryBackend(), prefix="healthpredict-cache")
         
     app.state.models = {}
-    asyncio.create_task(asyncio.to_thread(load_models, app))
+    
+    # Background model warmup using ModelManager
+    asyncio.create_task(model_manager.load_all_models())
+    
     asyncio.create_task(asyncio.to_thread(load_explainers))
     logger.info("models_loading_in_background")
     yield
@@ -126,10 +131,14 @@ if STATIC_DIR.is_dir():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 # ── CORS ───────────────────────────────────────────────────────────────────
-ALLOWED_ORIGINS = os.environ.get(
-    "CORS_ORIGINS",
-    "https://yourdomain.com,http://localhost:8000,http://127.0.0.1:8000",
-).split(",")
+_IS_PROD = os.environ.get("APP_ENV") == "production"
+if _IS_PROD:
+    ALLOWED_ORIGINS = os.environ.get("CORS_ORIGINS", "https://yourdomain.com").split(",")
+else:
+    ALLOWED_ORIGINS = os.environ.get(
+        "CORS_ORIGINS",
+        "https://yourdomain.com,http://localhost:8000,http://127.0.0.1:8000",
+    ).split(",")
 
 app.add_middleware(
     CORSMiddleware,
@@ -138,6 +147,9 @@ app.add_middleware(
     allow_headers=["Content-Type", "Accept", "HX-Request"],
     allow_credentials=False,
 )
+
+# Add Timing Middleware for request timing and error logging
+app.add_middleware(TimingMiddleware)
 
 # ── Trusted Host middleware (reject spoofed Host headers) ─────────────
 TRUSTED_HOSTS = os.environ.get(
@@ -291,8 +303,9 @@ def healthz():
 @app.get("/api/v1/health/ready")
 def readiness(request: Request):
     """Readiness probe — confirms models are loaded and app is ready."""
-    models_loaded = request.app.state.models.get("diabetes_model") is not None
-    if not models_loaded:
+    status = model_manager.get_health_status()
+    models_ready = any(m["status"] == "ready" for m in status["models"].values())
+    if not models_ready:
         return JSONResponse(
             status_code=503,
             content={"status": "not_ready", "reason": "models not loaded"},
@@ -741,3 +754,4 @@ app.include_router(
     ]
 )
 app.include_router(v1)
+app.include_router(health_router)

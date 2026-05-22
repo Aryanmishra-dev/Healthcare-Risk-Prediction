@@ -35,17 +35,14 @@ RUN groupadd --gid 1000 appuser && \
 WORKDIR /app
 ENV PYTHONPATH=/app
 
-# Copy application code
-COPY backend/ ./backend/
-COPY frontend/ ./frontend/
-COPY ml/ ./ml/
-COPY shared/ ./shared/
-COPY config/ ./config/
-COPY data/ ./data/
-COPY monitoring/ ./monitoring/
-
-# Own the app directory
-RUN chown -R appuser:appuser /app
+# Copy application code securely
+COPY --chown=appuser:appuser backend/ ./backend/
+COPY --chown=appuser:appuser frontend/ ./frontend/
+COPY --chown=appuser:appuser ml/ ./ml/
+COPY --chown=appuser:appuser shared/ ./shared/
+COPY --chown=appuser:appuser config/ ./config/
+COPY --chown=appuser:appuser data/ ./data/
+COPY --chown=appuser:appuser monitoring/ ./monitoring/
 
 USER appuser
 
@@ -53,6 +50,6 @@ EXPOSE 8000
 
 # Health check using curl
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:8000/api || exit 1
+    CMD curl -f http://localhost:8000/health || exit 1
 
-CMD ["gunicorn", "backend.app.main:app", "-w", "1", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--timeout", "15", "--keep-alive", "30", "--access-logfile", "-", "--error-logfile", "-"]
+CMD ["gunicorn", "backend.app.main:app", "-w", "1", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--timeout", "120", "--keep-alive", "30", "--access-logfile", "-", "--error-logfile", "-"]

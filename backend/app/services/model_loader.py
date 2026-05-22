@@ -1,164 +1,42 @@
 """
-Model loading and prediction logic for the healthcare risk prediction API.
+Model prediction logic for the healthcare risk prediction API.
 
-Supports multiple disease models (diabetes, heart disease, etc.).
-Each disease has its own load/predict functions.
+Delegates model loading and caching to ModelManager.
 """
 
 import logging
 import os
 import asyncio
-import tempfile
-from pathlib import Path
-
-import joblib
 import numpy as np
 import pandas as pd
 from fastapi import Request, HTTPException
 
+from backend.app.services.model_manager import model_manager
+
 logger = logging.getLogger(__name__)
 
-# ── Paths & S3 Initialization ──────────────────────────────────────────────
-REPO_ROOT = Path(__file__).resolve().parents[3]
-LOCAL_MODEL_DIR = REPO_ROOT / "ml" / "models"
-
-S3_MODEL_BUCKET = os.environ.get("S3_MODEL_BUCKET")
-if S3_MODEL_BUCKET:
-    import boto3
-    MODEL_DIR = os.path.join(tempfile.gettempdir(), "healthcare_models")
-    os.makedirs(MODEL_DIR, exist_ok=True)
-    try:
-        s3 = boto3.client('s3')
-        logger.info(f"Downloading models from S3 bucket: {S3_MODEL_BUCKET}")
-        expected_keys = [
-            "diabetes_xgboost.pkl", "isotonic_calibrator.pkl", "shap_explainer.pkl",
-            "heart_disease_xgboost.pkl", "heart_disease_calibrator.pkl", "heart_disease_features.pkl",
-            "lung_cancer_model.pkl", "lung_cancer_scaler.pkl", "lung_cancer_features.pkl", "lung_cancer_calibrator.pkl",
-            "model_registry.json"
-        ]
-        for key in expected_keys:
-            target_path = os.path.join(MODEL_DIR, key)
-            if not os.path.exists(target_path):
-                logger.info(f"Downloading {key}...")
-                s3.download_file(S3_MODEL_BUCKET, key, target_path)
-    except Exception as e:
-        logger.error(f"Failed to download models from S3: {e}")
-        MODEL_DIR = str(LOCAL_MODEL_DIR)
-else:
-    MODEL_DIR = str(LOCAL_MODEL_DIR)
-
-# ── Module-level model singletons ─────────────────────────────────────────
-_diabetes_model = None
-_diabetes_calibrator = None
-
-_heart_model = None
-_heart_calibrator = None
-_heart_features = None
-
-_lung_model = None
-_lung_scaler = None
-_lung_features = None
-_lung_calibrator = None
-
-
-# ══════════════════════════════════════════════════════════════════════════
-#  Loaders
-# ══════════════════════════════════════════════════════════════════════════
-
-# WHY: If pre-loaded stub models already exist (e.g. from test fixtures),
-# skip disk loading entirely. In production, missing weights raise RuntimeError.
-_IS_PRODUCTION = os.environ.get("APP_ENV") == "production"
-
-
 def load_models(app):
-    """Load all disease models at startup.
-
-    If app.state.models is already populated (e.g. by test stubs), skip loading.
-    In production (APP_ENV=production), missing weights cause a hard crash.
-    """
-    if getattr(app.state, "models", None) and any(v is not None for v in app.state.models.values()):
-        logger.info("Models already loaded (likely from test stubs), skipping disk load.")
-        return
-    app.state.models = {}
-    _load_diabetes_models(app)
-    _load_heart_disease_models(app)
-    _load_lung_cancer_models(app)
-
-
-def _load_diabetes_models(app):
-    try:
-        app.state.models["diabetes_model"] = joblib.load(os.path.join(MODEL_DIR, "diabetes_xgboost.pkl"))
-        app.state.models["diabetes_calibrator"] = joblib.load(os.path.join(MODEL_DIR, "isotonic_calibrator.pkl"))
-        logger.info("Diabetes models loaded successfully.")
-    except FileNotFoundError as e:
-        # WHY: In production, missing weights must crash — silent None causes KeyError at inference time
-        if _IS_PRODUCTION:
-            raise RuntimeError(f"Diabetes model weights missing — cannot start in production: {e}") from e
-        logger.warning("Diabetes model files missing (dev/test mode): %s", e)
-        app.state.models["diabetes_model"] = None
-        app.state.models["diabetes_calibrator"] = None
-
-
-def _load_heart_disease_models(app):
-    try:
-        app.state.models["heart_model"] = joblib.load(os.path.join(MODEL_DIR, "heart_disease_xgboost.pkl"))
-        app.state.models["heart_calibrator"] = joblib.load(os.path.join(MODEL_DIR, "heart_disease_calibrator.pkl"))
-        app.state.models["heart_features"] = joblib.load(os.path.join(MODEL_DIR, "heart_disease_features.pkl"))
-        logger.info("Heart disease models loaded successfully.")
-    except Exception as e:
-        # WHY: In production, missing weights must crash — silent None causes KeyError at inference time
-        if _IS_PRODUCTION:
-            raise RuntimeError(f"Heart disease model weights missing — cannot start in production: {e}") from e
-        logger.warning("Heart disease model files missing (dev/test mode): %s", e)
-        app.state.models["heart_model"] = None
-        app.state.models["heart_calibrator"] = None
-        app.state.models["heart_features"] = None
-
-
-def _load_lung_cancer_models(app):
-    try:
-        app.state.models["lung_model"] = joblib.load(os.path.join(MODEL_DIR, "lung_cancer_model.pkl"))
-        app.state.models["lung_scaler"] = joblib.load(os.path.join(MODEL_DIR, "lung_cancer_scaler.pkl"))
-        app.state.models["lung_features"] = joblib.load(os.path.join(MODEL_DIR, "lung_cancer_features.pkl"))
-        cal_path = os.path.join(MODEL_DIR, "lung_cancer_calibrator.pkl")
-        app.state.models["lung_calibrator"] = joblib.load(cal_path) if os.path.exists(cal_path) else None
-        logger.info("Lung cancer models loaded successfully.")
-    except Exception as e:
-        # WHY: In production, missing weights must crash — silent None causes KeyError at inference time
-        if _IS_PRODUCTION:
-            raise RuntimeError(f"Lung cancer model weights missing — cannot start in production: {e}") from e
-        logger.warning("Lung cancer model files missing (dev/test mode): %s", e)
-        app.state.models["lung_model"] = None
-        app.state.models["lung_scaler"] = None
-        app.state.models["lung_features"] = None
-        app.state.models["lung_calibrator"] = None
-
-
+    """(Deprecated) Replaced by ModelManager background warmup."""
+    pass
 
 # ── Dependency Injectors (Circuit Breaker) ──
 def get_diabetes_deps(request: Request):
-    m = request.app.state.models.get("diabetes_model")
-    c = request.app.state.models.get("diabetes_calibrator")
-    if not m or not c:
-        raise HTTPException(status_code=503, detail="Diabetes model temporarily offline.")
-    return m, c
+    try:
+        return model_manager.get_diabetes_deps()
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=str(e))
 
 def get_heart_deps(request: Request):
-    m = request.app.state.models.get("heart_model")
-    c = request.app.state.models.get("heart_calibrator")
-    f = request.app.state.models.get("heart_features")
-    if not m or not c or not f:
-        raise HTTPException(status_code=503, detail="Heart disease model temporarily offline.")
-    return m, c, f
+    try:
+        return model_manager.get_heart_deps()
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=str(e))
 
 def get_lung_deps(request: Request):
-    m = request.app.state.models.get("lung_model")
-    s = request.app.state.models.get("lung_scaler")
-    f = request.app.state.models.get("lung_features")
-    c = request.app.state.models.get("lung_calibrator")
-    if not m or not s or not f:
-        raise HTTPException(status_code=503, detail="Lung cancer model temporarily offline.")
-    return m, s, f, c
+    try:
+        return model_manager.get_lung_deps()
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=str(e))
 
 async def _run_with_timeout(func, *args, **kwargs):
     try:

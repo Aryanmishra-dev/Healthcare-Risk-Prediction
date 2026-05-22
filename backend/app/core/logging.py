@@ -1,66 +1,55 @@
 """
-Structured logging configuration using structlog.
-
-Provides JSON-formatted log output in production, human-readable in development.
-Usage: import and call ``setup_logging()`` once at app startup.
+Structured logging configuration using standard Python logging module.
 """
 
 import logging
 import os
 import sys
 
-import structlog
-
-
 def setup_logging() -> None:
-    """Configure structlog with JSON output (prod) or console (dev)."""
+    """Configure standard logging with JSON formatting (prod) or console (dev)."""
     env = os.environ.get("APP_ENV", "development")
     log_level = os.environ.get("LOG_LEVEL", "INFO").upper()
 
-    shared_processors: list[structlog.types.Processor] = [
-        structlog.contextvars.merge_contextvars,
-        structlog.stdlib.add_log_level,
-        structlog.stdlib.add_logger_name,
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
-    ]
-
-    if env == "production":
-        renderer: structlog.types.Processor = structlog.processors.JSONRenderer()
-    else:
-        renderer = structlog.dev.ConsoleRenderer()
-
-    structlog.configure(
-        processors=[
-            *shared_processors,
-            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
-        ],
-        logger_factory=structlog.stdlib.LoggerFactory(),
-        wrapper_class=structlog.stdlib.BoundLogger,
-        cache_logger_on_first_use=True,
-    )
-
-    formatter = structlog.stdlib.ProcessorFormatter(
-        processors=[
-            structlog.stdlib.ProcessorFormatter.remove_processors_meta,
-            renderer,
-        ],
-    )
-
+    logger = logging.getLogger()
+    logger.setLevel(getattr(logging, log_level, logging.INFO))
+    
+    # Remove all existing handlers
+    for handler in logger.handlers[:]:
+        logger.removeHandler(handler)
+        
     handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(formatter)
+    
+    if env == "production":
+        # Use a simple JSON formatter for production
+        try:
+            import json
+            class JsonFormatter(logging.Formatter):
+                def format(self, record):
+                    log_record = {
+                        "time": self.formatTime(record, self.datefmt),
+                        "level": record.levelname,
+                        "name": record.name,
+                        "message": record.getMessage()
+                    }
+                    if record.exc_info:
+                        log_record["exc_info"] = self.formatException(record.exc_info)
+                    return json.dumps(log_record)
+            
+            formatter = JsonFormatter()
+        except ImportError:
+            formatter = logging.Formatter('{"time": "%(asctime)s", "level": "%(levelname)s", "name": "%(name)s", "message": "%(message)s"}')
+    else:
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-    root = logging.getLogger()
-    root.handlers.clear()
-    root.addHandler(handler)
-    root.setLevel(getattr(logging, log_level, logging.INFO))
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
     # Silence noisy third-party loggers
-    for name in ("uvicorn.access", "httpx", "httpcore"):
+    for name in ("uvicorn.access", "httpx", "httpcore", "mlflow"):
         logging.getLogger(name).setLevel(logging.WARNING)
 
 
-def get_logger(name: str) -> structlog.stdlib.BoundLogger:
-    """Return a structlog bound logger for the given module name."""
-    return structlog.get_logger(name)
+def get_logger(name: str) -> logging.Logger:
+    """Return a standard logger for the given module name."""
+    return logging.getLogger(name)
