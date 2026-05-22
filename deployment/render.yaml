@@ -3,7 +3,7 @@ services:
     name: healthcare-risk-prediction
     runtime: docker
     plan: standard
-    dockerfilePath: ./deployment/Dockerfile
+    dockerfilePath: ./Dockerfile
     healthCheckPath: /health
     envVars:
       - key: APP_ENV
