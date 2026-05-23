@@ -7,17 +7,20 @@ import os
 import time
 import logging
 import asyncio
+import resource
 from pathlib import Path
 
+import joblib
 import mlflow
-import psutil
 
 # Standard Python logging
 logger = logging.getLogger(__name__)
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 MLRUNS_DIR = REPO_ROOT / "mlruns"
+MODEL_DIR = REPO_ROOT / "ml" / "models"
 MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", f"file://{MLRUNS_DIR}")
+MODEL_SOURCE = os.environ.get("MODEL_SOURCE", "local").lower()
 _IS_PRODUCTION = os.environ.get("APP_ENV") == "production"
 
 # Configure MLflow
@@ -58,12 +61,14 @@ class ModelManager:
             return_exceptions=True
         )
         
-        process = psutil.Process()
-        memory_info = process.memory_info()
+        max_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        memory_mb = max_rss / 1024
+        if os.uname().sysname == "Darwin":
+            memory_mb = max_rss / 1024 / 1024
         
         self.startup_diagnostics = {
             "startup_time_seconds": round(time.time() - start_time, 2),
-            "memory_usage_mb": round(memory_info.rss / 1024 / 1024, 2),
+            "memory_usage_mb": round(memory_mb, 2),
             "models_loaded": {k: v["status"] == "ready" for k, v in self.models.items()}
         }
         logger.info(f"Model warmup complete. Diagnostics: {self.startup_diagnostics}")
@@ -84,7 +89,7 @@ class ModelManager:
                         return None
                 await asyncio.sleep(2 ** attempt)
 
-    def _fetch_diabetes(self):
+    def _fetch_diabetes_from_mlflow(self):
         model_uri = "models:/diabetes_xgboost/latest"
         calibrator_uri = "models:/diabetes_calibrator/latest"
         
@@ -92,6 +97,23 @@ class ModelManager:
         c = mlflow.sklearn.load_model(calibrator_uri)
         
         return {"model": m, "calibrator": c, "version": "latest", "stage": "Production"}
+
+    def _fetch_diabetes_from_disk(self):
+        return {
+            "model": joblib.load(MODEL_DIR / "diabetes_xgboost.pkl"),
+            "calibrator": joblib.load(MODEL_DIR / "isotonic_calibrator.pkl"),
+            "version": "local",
+            "stage": "Local",
+        }
+
+    def _fetch_diabetes(self):
+        if MODEL_SOURCE != "mlflow":
+            return self._fetch_diabetes_from_disk()
+        try:
+            return self._fetch_diabetes_from_mlflow()
+        except Exception as exc:
+            logger.warning("diabetes_mlflow_load_failed_falling_back_to_disk: %s", exc)
+            return self._fetch_diabetes_from_disk()
 
     async def _load_diabetes(self):
         start_t = time.time()
@@ -109,7 +131,7 @@ class ModelManager:
         else:
             self.models["diabetes"]["status"] = "failed"
 
-    def _fetch_heart_disease(self):
+    def _fetch_heart_disease_from_mlflow(self):
         model_uri = "models:/heart_disease_xgboost/latest"
         calibrator_uri = "models:/heart_disease_calibrator/latest"
         
@@ -129,6 +151,24 @@ class ModelManager:
         
         return {"model": m, "calibrator": c, "features": f, "version": "latest", "stage": "Production"}
 
+    def _fetch_heart_disease_from_disk(self):
+        return {
+            "model": joblib.load(MODEL_DIR / "heart_disease_xgboost.pkl"),
+            "calibrator": joblib.load(MODEL_DIR / "heart_disease_calibrator.pkl"),
+            "features": joblib.load(MODEL_DIR / "heart_disease_features.pkl"),
+            "version": "local",
+            "stage": "Local",
+        }
+
+    def _fetch_heart_disease(self):
+        if MODEL_SOURCE != "mlflow":
+            return self._fetch_heart_disease_from_disk()
+        try:
+            return self._fetch_heart_disease_from_mlflow()
+        except Exception as exc:
+            logger.warning("heart_mlflow_load_failed_falling_back_to_disk: %s", exc)
+            return self._fetch_heart_disease_from_disk()
+
     async def _load_heart_disease(self):
         start_t = time.time()
         result = await self._load_model_with_retry("heart_disease", self._fetch_heart_disease)
@@ -145,7 +185,7 @@ class ModelManager:
         else:
             self.models["heart_disease"]["status"] = "failed"
 
-    def _fetch_lung_cancer(self):
+    def _fetch_lung_cancer_from_mlflow(self):
         model_uri = "models:/lung_cancer_model/latest"
         scaler_uri = "models:/lung_cancer_scaler/latest"
         calibrator_uri = "models:/lung_cancer_calibrator/latest"
@@ -176,6 +216,26 @@ class ModelManager:
             f = None
 
         return {"model": m, "scaler": s, "calibrator": c, "features": f, "version": "latest", "stage": "Production"}
+
+    def _fetch_lung_cancer_from_disk(self):
+        calibrator_path = MODEL_DIR / "lung_cancer_calibrator.pkl"
+        return {
+            "model": joblib.load(MODEL_DIR / "lung_cancer_model.pkl"),
+            "scaler": joblib.load(MODEL_DIR / "lung_cancer_scaler.pkl"),
+            "calibrator": joblib.load(calibrator_path) if calibrator_path.exists() else None,
+            "features": joblib.load(MODEL_DIR / "lung_cancer_features.pkl"),
+            "version": "local",
+            "stage": "Local",
+        }
+
+    def _fetch_lung_cancer(self):
+        if MODEL_SOURCE != "mlflow":
+            return self._fetch_lung_cancer_from_disk()
+        try:
+            return self._fetch_lung_cancer_from_mlflow()
+        except Exception as exc:
+            logger.warning("lung_mlflow_load_failed_falling_back_to_disk: %s", exc)
+            return self._fetch_lung_cancer_from_disk()
 
     async def _load_lung_cancer(self):
         start_t = time.time()
@@ -221,5 +281,25 @@ class ModelManager:
             } for k, v in self.models.items()},
             "diagnostics": self.startup_diagnostics
         }
+
+    def export_app_state(self):
+        """Return the legacy app.state model mapping used by older tests/routes."""
+        state = {}
+        if self.models["diabetes"]["status"] == "ready":
+            d = self.models["diabetes"]["deps"]
+            state["diabetes_model"] = d["model"]
+            state["diabetes_calibrator"] = d["calibrator"]
+        if self.models["heart_disease"]["status"] == "ready":
+            d = self.models["heart_disease"]["deps"]
+            state["heart_model"] = d["model"]
+            state["heart_calibrator"] = d["calibrator"]
+            state["heart_features"] = d.get("features")
+        if self.models["lung_cancer"]["status"] == "ready":
+            d = self.models["lung_cancer"]["deps"]
+            state["lung_model"] = d["model"]
+            state["lung_scaler"] = d.get("scaler")
+            state["lung_features"] = d.get("features")
+            state["lung_calibrator"] = d.get("calibrator")
+        return state
 
 model_manager = ModelManager()

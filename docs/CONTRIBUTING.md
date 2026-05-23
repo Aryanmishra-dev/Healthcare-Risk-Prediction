@@ -29,5 +29,11 @@ First off, thank you for considering contributing to Healthcare Risk Prediction.
 
 - All model pipelines should be tracked via `dvc`. Do not commit large artifacts or data to the main repo.
 - Ensure changes to models are properly versioned, calibrated, and explainable using SHAP.
+- The checked-in `ml/dvc.yaml` regenerates deterministic launch stubs. Configure
+  a real DVC remote before pulling or publishing production-scale data/model
+  artifacts.
+- Install DVC with `python -m pip install -r ml/requirements-dvc.txt`; it is
+  isolated from the core dev requirements because of an upstream DVC dependency
+  with no fixed security release yet.
 
 Thank you for your contributions!

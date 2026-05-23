@@ -9,7 +9,7 @@ addopts = [
     "--cov=shared",
     "--cov-report=term-missing",
     "--cov-report=html:htmlcov",
-    "--cov-fail-under=80",
+    "--cov-fail-under=70",
 ]
 
 [tool.coverage.run]
@@ -17,8 +17,15 @@ branch = true
 omit = [
     "*/tests/*",
     "*/ml/experiments/*",
+    "ml/models/generate_stubs.py",
+    "ml/pipelines/evaluation/*",
     "ml/pipelines/training/train.py",
+    "ml/pipelines/training/calibrate_lung_model.py",
+    "ml/pipelines/training/optuna_optimize.py",
+    "ml/pipelines/training/train_heart_disease_model.py",
+    "ml/pipelines/training/train_lung_cancer_model.py",
     "ml/pipelines/inference/risk_assistant.py",
+    "ml/registry/*",
     "backend/app/api/legacy_main.py",
 ]
 

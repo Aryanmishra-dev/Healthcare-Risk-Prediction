@@ -1,6 +1,9 @@
 # ML Model Weights
 
-This directory stores trained model artefacts (`.pkl` / `.joblib` / `.pt` files).
+This directory stores model artifacts (`.pkl` / `.joblib` / `.pt` files).
+The small files committed in this repository are deterministic stubs used for
+local launch, tests, and Docker smoke checks. Replace them with real trained
+artifacts from the configured DVC remote for production model quality.
 
 ## Required Files
 
@@ -16,11 +19,25 @@ This directory stores trained model artefacts (`.pkl` / `.joblib` / `.pt` files)
 | `lung_cancer_features.pkl` | Lung Cancer | Feature name list |
 | `lung_cancer_calibrator.pkl` | Lung Cancer | Probability calibrator (optional) |
 
-## How to Download
-
-Model weights are tracked with DVC and stored in the configured remote:
+## How to Regenerate Local Stubs
 
 ```bash
+python -m ml.models.generate_stubs
+```
+
+Or through DVC:
+
+```bash
+dvc repro ml/dvc.yaml
+```
+
+## How to Download Real Artifacts
+
+Real model weights should be tracked with DVC and stored in the configured
+remote:
+
+```bash
+dvc remote add -d <name> <remote-url>
 dvc pull
 ```
 
@@ -32,6 +49,7 @@ aws s3 sync s3://$S3_MODEL_BUCKET/ ml/models/
 
 ## Notes
 
-- These files are **git-ignored** — do NOT commit `.pkl` files to the repo.
+- Keep only tiny deterministic stubs in Git. Do NOT commit large trained
+  `.pkl` files to the repo.
 - In CI, tests use deterministic stub models (see `tests/unit/ml/conftest.py`).
 - In production, missing weights cause the app to crash at startup (`APP_ENV=production`).

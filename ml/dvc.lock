@@ -1,0 +1,50 @@
+schema: '2.0'
+stages:
+  generate_stub_models:
+    cmd: python -m ml.models.generate_stubs
+    deps:
+    - path: ml/models/generate_stubs.py
+      hash: md5
+      md5: 7cd19d5867b2eae6b6719b09f643914e
+      size: 1487
+    - path: ml/models/stubs.py
+      hash: md5
+      md5: d0ef03318bfdb6afb03b3ca306d8ae77
+      size: 4409
+    outs:
+    - path: ml/models/diabetes_xgboost.pkl
+      hash: md5
+      md5: 65e10f73d9e82d1a7874899a9e90d709
+      size: 60
+    - path: ml/models/heart_disease_calibrator.pkl
+      hash: md5
+      md5: f4283059fee7b99c92c1c5fdd145e53d
+      size: 52
+    - path: ml/models/heart_disease_features.pkl
+      hash: md5
+      md5: 6329b6b4591af9f3d281ae8e330143b8
+      size: 158
+    - path: ml/models/heart_disease_xgboost.pkl
+      hash: md5
+      md5: 2ff6574d75e052be341db1d6389b3e2e
+      size: 57
+    - path: ml/models/isotonic_calibrator.pkl
+      hash: md5
+      md5: f4283059fee7b99c92c1c5fdd145e53d
+      size: 52
+    - path: ml/models/lung_cancer_calibrator.pkl
+      hash: md5
+      md5: f4283059fee7b99c92c1c5fdd145e53d
+      size: 52
+    - path: ml/models/lung_cancer_features.pkl
+      hash: md5
+      md5: e19143a9e9c0ed2389b6063fc6a8b774
+      size: 119
+    - path: ml/models/lung_cancer_model.pkl
+      hash: md5
+      md5: 822f8b23a937fb2b9ba060b411310bcf
+      size: 56
+    - path: ml/models/lung_cancer_scaler.pkl
+      hash: md5
+      md5: 65a3289983519a2e7905a60be639a8f5
+      size: 48

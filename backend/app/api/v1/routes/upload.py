@@ -10,7 +10,7 @@ entities plus mapped features for all three models.
 
 import logging
 
-from fastapi import APIRouter, File, UploadFile, Depends, Request, Response
+from fastapi import APIRouter, File, HTTPException, UploadFile
 
 from backend.app.utils.file_validation import validate_upload
 from backend.app.services.document_parser import parse_document
@@ -56,8 +56,6 @@ async def extract_from_text(payload: TextExtractionRequest):
 
 @router.post("/document/upload")
 async def upload_document(
-    request: Request,
-    response: Response,
     file: UploadFile = File(..., description="Medical report (PDF, JPG, JPEG, or PNG, ≤ 5 MB)")
 ):
     """
@@ -80,7 +78,11 @@ async def upload_document(
         }
       }
     """
-    # 1. Validate
+    return await process_uploaded_document(file)
+
+
+async def process_uploaded_document(file: UploadFile):
+    """Run validation, text extraction, NLP, and feature mapping for an upload."""
     file_bytes, mime_type = await validate_upload(file)
     logger.info(
         "document_upload_received",
@@ -91,8 +93,11 @@ async def upload_document(
     try:
         raw_text = parse_document(file_bytes, mime_type)
     except Exception as e:
-        logger.error("document_parse_failed", extra={"error": str(e)})
-        return {"error": f"Failed to extract text from document: {str(e)}"}
+        logger.exception("document_parse_failed")
+        raise HTTPException(
+            status_code=422,
+            detail="Failed to extract text from document. The file may be corrupt or unreadable.",
+        ) from e
 
     if not raw_text:
         return {

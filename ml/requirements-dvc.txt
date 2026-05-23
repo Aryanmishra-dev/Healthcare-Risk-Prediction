@@ -1,0 +1,4 @@
+# Optional DVC tooling for reproducing ml/dvc.yaml.
+# Kept separate from backend/requirements-dev.txt because DVC currently pulls
+# diskcache 5.6.3, which pip-audit flags without a fixed release.
+dvc==3.67.1

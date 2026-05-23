@@ -10,3 +10,17 @@ services:
         value: production
       - key: PYTHONUNBUFFERED
         value: "1"
+      - key: MODEL_SOURCE
+        value: local
+      - key: CORS_ORIGINS
+        value: https://healthcare-risk-prediction.onrender.com
+      - key: TRUSTED_HOSTS
+        value: healthcare-risk-prediction.onrender.com
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: MLFLOW_TRACKING_URI
+        sync: false
