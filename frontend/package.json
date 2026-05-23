@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "lint": "echo \"HTMX/Jinja frontend is linted through backend template checks\""
+    "lint": "echo \"HTMX/Jinja frontend is linted through backend template checks\"",
+    "build": "mkdir -p dist && cp -R src/pages dist/pages && cp -R src/assets dist/assets && cp -R src/styles dist/styles"
   },
   "dependencies": {}
 }

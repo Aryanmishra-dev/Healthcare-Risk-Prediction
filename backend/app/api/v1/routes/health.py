@@ -2,8 +2,9 @@
 Health check endpoints for the API, models, and database.
 """
 
+import sqlite3
 import time
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from backend.app.services.model_manager import model_manager
@@ -36,15 +37,11 @@ def health_models():
 @router.get("/database")
 async def health_database():
     """Database health check."""
-    # Simple check for SQLite/aiosqlite
     try:
-        import aiosqlite
-        # Just check if we can connect to a dummy in-memory DB or the actual DB if configured
-        async with aiosqlite.connect(":memory:") as db:
-            cursor = await db.execute("SELECT 1")
-            result = await cursor.fetchone()
-            if result and result[0] == 1:
-                return {"status": "healthy", "latency_ms": 0.0}
+        with sqlite3.connect(":memory:") as db:
+            result = db.execute("SELECT 1").fetchone()
+        if result and result[0] == 1:
+            return {"status": "healthy", "latency_ms": 0.0}
     except Exception as e:
         return JSONResponse(status_code=503, content={"status": "unhealthy", "error": str(e)})
     return {"status": "unknown", "message": "Database check not fully configured"}

@@ -114,7 +114,8 @@ print(f"After cleaning: {df_model.shape}")
 print(f"Rows dropped: {df.shape[0] - df_model.shape[0]:,}")
 
 # Validation: dataset should have >200k rows
-assert df_model.shape[0] > 200_000, f"Dataset too small: {df_model.shape[0]} rows"
+if df_model.shape[0] <= 200_000:
+    raise ValueError(f"Dataset too small: {df_model.shape[0]} rows")
 print(f"\n✓ Validation passed: {df_model.shape[0]:,} rows (>200k required)")
 
 
@@ -184,20 +185,24 @@ print("=" * 50)
 
 # Check 1: Dataset size
 print(f"\n1. Dataset size: {X.shape[0]:,} rows, {X.shape[1]} features")
-assert X.shape[0] > 200_000, "Dataset too small"
+if X.shape[0] <= 200_000:
+    raise ValueError("Dataset too small")
 print("   ✓ >200k rows")
 
 # Check 2: Feature count
-assert X.shape[1] == 14, f"Expected 14 features, got {X.shape[1]}"
+if X.shape[1] != 14:
+    raise ValueError(f"Expected 14 features, got {X.shape[1]}")
 print(f"   ✓ 14 features")
 
 # Check 3: No missing values
-assert X.isnull().sum().sum() == 0, "Missing values found"
+if X.isnull().sum().sum() != 0:
+    raise ValueError("Missing values found")
 print("   ✓ No missing values")
 
 # Check 4: All numeric types
 non_numeric = X.select_dtypes(exclude=["int", "float", "bool"]).columns.tolist()
-assert len(non_numeric) == 0, f"Non-numeric columns: {non_numeric}"
+if non_numeric:
+    raise ValueError(f"Non-numeric columns: {non_numeric}")
 print("   ✓ All features numeric")
 
 # Check 5: Target distribution

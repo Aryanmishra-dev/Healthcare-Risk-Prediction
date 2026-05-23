@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,10 +15,13 @@ class Settings(BaseSettings):
     host: str = "127.0.0.1"
     port: int = 8000
     model_dir: str = "ml/models"
-    database_url: str
-    sync_database_url: str
-    secret_key: str = "replace_me_with_a_secure_random_string"
-    algorithm: str = "HS256"
+    database_url: str = "sqlite:///data/interim/audit_log.db"
+    sync_database_url: str = "sqlite:///data/interim/audit_log.db"
+    secret_key: str = Field(
+        default="dev-only-healthpredict-secret-change-me",
+        validation_alias=AliasChoices("SECRET_KEY", "JWT_SECRET_KEY"),
+    )
+    algorithm: str = Field(default="HS256", validation_alias=AliasChoices("ALGORITHM", "JWT_ALGORITHM"))
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
     redis_url: str = "redis://localhost:6379/0"

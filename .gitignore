@@ -39,6 +39,15 @@ ml/experiments/lung_cancer_plots/
 *.npz
 !ml/models/.gitkeep
 !ml/models/__init__.py
+!ml/models/diabetes_xgboost.pkl
+!ml/models/isotonic_calibrator.pkl
+!ml/models/heart_disease_xgboost.pkl
+!ml/models/heart_disease_calibrator.pkl
+!ml/models/heart_disease_features.pkl
+!ml/models/lung_cancer_model.pkl
+!ml/models/lung_cancer_scaler.pkl
+!ml/models/lung_cancer_features.pkl
+!ml/models/lung_cancer_calibrator.pkl
 
 # Data and generated results
 data/raw/*

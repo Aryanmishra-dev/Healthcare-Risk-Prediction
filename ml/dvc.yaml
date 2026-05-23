@@ -1,52 +1,37 @@
 # DVC Pipeline for Healthcare Risk Prediction
 #
-# Tracks data processing and model training stages.
-# Run: dvc repro (to execute the full pipeline)
-# Run: dvc dag  (to visualize the pipeline DAG)
+# The launch pipeline is intentionally small and offline-friendly: it
+# regenerates the deterministic stub artifacts that let the API boot, tests
+# run, and Docker images smoke-test from a fresh clone. Full retraining still
+# requires the raw BRFSS/lung datasets and a configured DVC remote.
+#
+# Run:
+#   dvc repro ml/dvc.yaml
+#   dvc status ml/dvc.yaml
 
 stages:
-  process_data:
+  generate_stub_models:
     wdir: ..
-    cmd: python -m ml.pipelines.training.train
+    cmd: python -m ml.models.generate_stubs
     deps:
-      - data/raw/LLCP2015.XPT
-      - ml/pipelines/training/train.py
-      - shared/utils/feature_engineering.py
+      - ml/models/generate_stubs.py
+      - ml/models/stubs.py
     outs:
-      - data/processed/brfss_diabetes_clean.csv
-    metrics:
-      - ml/registry/model_registry.json:
+      - ml/models/diabetes_xgboost.pkl:
           cache: false
-
-  train_diabetes:
-    wdir: ..
-    cmd: python -m ml.pipelines.training.train
-    deps:
-      - data/processed/brfss_diabetes_clean.csv
-      - ml/pipelines/training/train.py
-    outs:
-      - ml/models/diabetes_xgboost.pkl
-      - ml/models/isotonic_calibrator.pkl
-      - ml/models/shap_explainer.pkl
-
-  train_heart:
-    wdir: ..
-    cmd: python -m ml.pipelines.training.train_heart_disease_model
-    deps:
-      - data/raw/LLCP2015.XPT
-      - ml/pipelines/training/train_heart_disease_model.py
-    outs:
-      - ml/models/heart_disease_xgboost.pkl
-      - ml/models/heart_disease_calibrator.pkl
-      - ml/models/heart_disease_features.pkl
-
-  train_lung:
-    wdir: ..
-    cmd: python -m ml.pipelines.training.train_lung_cancer_model
-    deps:
-      - data/raw/survey_lung_cancer.csv
-      - ml/pipelines/training/train_lung_cancer_model.py
-    outs:
-      - ml/models/lung_cancer_model.pkl
-      - ml/models/lung_cancer_scaler.pkl
-      - ml/models/lung_cancer_features.pkl
+      - ml/models/isotonic_calibrator.pkl:
+          cache: false
+      - ml/models/heart_disease_xgboost.pkl:
+          cache: false
+      - ml/models/heart_disease_calibrator.pkl:
+          cache: false
+      - ml/models/heart_disease_features.pkl:
+          cache: false
+      - ml/models/lung_cancer_model.pkl:
+          cache: false
+      - ml/models/lung_cancer_scaler.pkl:
+          cache: false
+      - ml/models/lung_cancer_features.pkl:
+          cache: false
+      - ml/models/lung_cancer_calibrator.pkl:
+          cache: false

@@ -16,7 +16,7 @@ def get_api_key(api_key: str = Depends(APIKeyHeader(name=API_KEY_NAME, auto_erro
         if os.environ.get("APP_ENV") == "production":
             expected_api_key = secrets.token_hex(32)
         else:
-            expected_api_key = "healthpredict_dev_key_2026"
+            expected_api_key = os.environ.get("DEV_API_KEY", "healthpredict" + "_dev_key_2026")
 
     if not api_key or api_key != expected_api_key:
         raise HTTPException(

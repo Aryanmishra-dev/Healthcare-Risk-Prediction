@@ -49,7 +49,6 @@ python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r backend/requirements-dev.txt
-dvc pull
 python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
@@ -133,9 +132,15 @@ python -m pip_audit -r backend/requirements-dev.txt
 ## Reproduce Results With DVC
 
 ```bash
-dvc pull
+python -m pip install -r ml/requirements-dvc.txt
 dvc repro ml/dvc.yaml
+dvc status ml/dvc.yaml
 ```
+
+`ml/dvc.yaml` regenerates the deterministic local stub model artifacts used for
+launch smoke tests and CI. Full retraining requires the raw datasets and a real
+DVC remote; configure one with `dvc remote add -d <name> <url>` before using
+`dvc pull` for production-scale data or model artifacts.
 
 ---
 

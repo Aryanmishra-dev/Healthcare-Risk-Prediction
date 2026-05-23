@@ -4,9 +4,8 @@ Model prediction logic for the healthcare risk prediction API.
 Delegates model loading and caching to ModelManager.
 """
 
-import logging
-import os
 import asyncio
+import logging
 import numpy as np
 import pandas as pd
 from fastapi import Request, HTTPException
@@ -16,8 +15,31 @@ from backend.app.services.model_manager import model_manager
 logger = logging.getLogger(__name__)
 
 def load_models(app):
-    """(Deprecated) Replaced by ModelManager background warmup."""
-    pass
+    """Load models synchronously for legacy callers and tests."""
+    app.state.models = {}
+    model_manager.models["diabetes"].update({
+        "status": "ready",
+        "version": "local",
+        "stage": "Local",
+        "latency_ms": 0.0,
+        "deps": model_manager._fetch_diabetes_from_disk(),
+    })
+    model_manager.models["heart_disease"].update({
+        "status": "ready",
+        "version": "local",
+        "stage": "Local",
+        "latency_ms": 0.0,
+        "deps": model_manager._fetch_heart_disease_from_disk(),
+    })
+    model_manager.models["lung_cancer"].update({
+        "status": "ready",
+        "version": "local",
+        "stage": "Local",
+        "latency_ms": 0.0,
+        "deps": model_manager._fetch_lung_cancer_from_disk(),
+    })
+    app.state.models.update(model_manager.export_app_state())
+    logger.info("local_models_loaded")
 
 # ── Dependency Injectors (Circuit Breaker) ──
 def get_diabetes_deps(request: Request):
@@ -111,7 +133,8 @@ def _sync_predict_heart(m, c, f, age, sex, bmi, high_bp, high_chol, smoker, phys
         "_RFDRHV5": float(1 - heavy_drinker), "GENHLTH": float(gen_health),
         "MENTHLTH": float(ment_health), "PHYSHLTH": float(phys_health), "DIABETE3": float(diabetes),
     }
-    df = pd.DataFrame([row])[f].astype(np.float64)
+    feature_order = f or list(row.keys())
+    df = pd.DataFrame([row])[feature_order].astype(np.float64)
     raw_prob = m.predict_proba(df)[:, 1][0]
     cal_prob = float(np.clip(c.predict([raw_prob])[0], 0.0, 1.0))
     risk_pct = round(cal_prob * 100, 1)
@@ -136,8 +159,10 @@ def _sync_predict_lung(m, s, f, c, age, gender, smoking, yellow_fingers, chronic
         "Yellow Fingers": float(yellow_fingers), "Chronic Disease": float(chronic_disease),
         "Fatigue": float(fatigue), "Wheezing": float(wheezing), "Shortness of Breath": float(shortness_of_breath),
     }
-    df = pd.DataFrame([row])[f].copy()
-    df["Age"] = s.transform(df[["Age"]])
+    feature_order = f or list(row.keys())
+    df = pd.DataFrame([row])[feature_order].copy()
+    if s is not None and "Age" in df:
+        df["Age"] = s.transform(df[["Age"]])
     df = df.astype(np.float64)
 
     raw_prob = float(np.clip(m.predict_proba(df)[:, 1][0], 0.0, 1.0))
