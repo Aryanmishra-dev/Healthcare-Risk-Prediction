@@ -14,7 +14,7 @@ def client():
         yield c
 
 # Test API key
-VALID_API_KEY = "healthpredict_dev_key_2026"
+VALID_API_KEY = os.environ.get("DEV_API_KEY", "test-dev-api-key")
 INVALID_API_KEY = "wrong_key_123"
 
 # Common test payloads

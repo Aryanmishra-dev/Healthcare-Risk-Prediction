@@ -12,7 +12,7 @@ services:
         value: "1"
       - key: MODEL_SOURCE
         value: local
-      - key: CORS_ORIGINS
+      - key: ALLOWED_ORIGINS
         value: https://healthcare-risk-prediction.onrender.com
       - key: TRUSTED_HOSTS
         value: healthcare-risk-prediction.onrender.com

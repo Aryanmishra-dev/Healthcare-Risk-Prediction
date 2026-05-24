@@ -33,6 +33,12 @@ _request_log: dict[str, list[float]] = defaultdict(list)
 _MAX_TRACKED_IPS = 10_000  # Prevent unbounded memory growth
 
 
+def _cors_origins(default: str) -> list[str]:
+    """Prefer ALLOWED_ORIGINS while keeping CORS_ORIGINS backward compatible."""
+    raw_origins = os.environ.get("ALLOWED_ORIGINS") or os.environ.get("CORS_ORIGINS") or default
+    return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Load ML models at startup."""
@@ -50,17 +56,17 @@ app = FastAPI(
 )
 
 # ── CORS ───────────────────────────────────────────────────────────────────
-ALLOWED_ORIGINS = os.environ.get(
-    "CORS_ORIGINS",
+ALLOWED_ORIGINS = _cors_origins(
     "https://yourdomain.com,http://localhost:8000,http://127.0.0.1:8000",
-).split(",")
+)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type", "Accept"],
-    allow_credentials=False,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "X-CSRFToken"],
+    expose_headers=["X-CSRFToken"],
+    allow_credentials="*" not in ALLOWED_ORIGINS,
 )
 
 

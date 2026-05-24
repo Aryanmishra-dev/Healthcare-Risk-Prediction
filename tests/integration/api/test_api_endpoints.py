@@ -1,4 +1,5 @@
 import pytest
+import os
 from fastapi.testclient import TestClient
 
 from backend.app.main import app
@@ -8,7 +9,7 @@ def client():
     with TestClient(app) as c:
         yield c
 
-VALID_API_KEY = "healthpredict_dev_key_2026"
+VALID_API_KEY = os.environ.get("DEV_API_KEY", "test-dev-api-key")
 
 def test_explain_diabetes_json_api(client):
     headers = {"X-API-Key": VALID_API_KEY}
@@ -72,5 +73,4 @@ def test_healthz():
     with TestClient(app) as local_client:
         response = local_client.get("/healthz")
         assert response.status_code == 200
-
 

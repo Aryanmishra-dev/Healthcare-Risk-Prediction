@@ -50,7 +50,7 @@ function uploadsPage() {
       await this.load();
     },
     async load() {
-      const res = await fetch('/auth/uploads', { headers: { 'Authorization': 'Bearer ' + this.token } });
+      const res = await window.HealthPredictConfig.fetch('/auth/uploads', { headers: { 'Authorization': 'Bearer ' + this.token } });
       if (res.status === 401) { localStorage.removeItem('access_token'); window.location.href = '/'; return; }
       const items = await res.json();
       const tbody = document.getElementById('uploads-tbody');
@@ -86,7 +86,7 @@ function uploadsPage() {
       const content = document.getElementById('upload-detail-content');
       panel.classList.remove('hidden');
       content.innerHTML = '<p class="text-slate-400 text-sm">Loading…</p>';
-      const res = await fetch(`/auth/uploads/${uploadId}`, { headers: { 'Authorization': 'Bearer ' + this.token } });
+      const res = await window.HealthPredictConfig.fetch(`/auth/uploads/${uploadId}`, { headers: { 'Authorization': 'Bearer ' + this.token } });
       const d = await res.json();
       if (!d.predictions?.length) {
         content.innerHTML = '<p class="text-slate-400 text-sm">No predictions linked to this upload.</p>';

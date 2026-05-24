@@ -22,10 +22,72 @@ tailwind.config = {
         },
     },
 }
+var HEALTHPREDICT_API_URL = "__HEALTHPREDICT_API_URL__";
+var HEALTHPREDICT_API_URL_PLACEHOLDER = "__HEALTHPREDICT" + "_API_URL__";
+(function () {
+    function normalizeApiUrl(value) {
+        value = (value || "").trim();
+        if (!value || value === HEALTHPREDICT_API_URL_PLACEHOLDER) return "";
+        return value.replace(/\/+$/, "");
+    }
+    function readCookie(name) {
+        var match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+        return match ? match[2] : "";
+    }
+    var config = {
+        apiUrl: normalizeApiUrl(HEALTHPREDICT_API_URL),
+        csrfToken: "",
+        csrfReady: null
+    };
+    config.apiPath = function(path) {
+        if (!path) return config.apiUrl || "";
+        if (path.indexOf(HEALTHPREDICT_API_URL_PLACEHOLDER) === 0) {
+            path = path.slice(HEALTHPREDICT_API_URL_PLACEHOLDER.length) || "/";
+        }
+        if (/^https?:\/\//i.test(path)) return path;
+        if (!config.apiUrl) return path;
+        return config.apiUrl + (path.charAt(0) === "/" ? path : "/" + path);
+    };
+    config.getCsrfToken = function() {
+        return config.csrfToken || readCookie("csrf_token");
+    };
+    config.ensureCsrfToken = function() {
+        if (!config.apiUrl) {
+            config.csrfToken = config.getCsrfToken();
+            return Promise.resolve(config.csrfToken);
+        }
+        if (config.csrfReady) return config.csrfReady;
+        config.csrfReady = fetch(config.apiPath("/"), {
+            method: "GET",
+            credentials: "include",
+            mode: "cors"
+        }).then(function(response) {
+            config.csrfToken = response.headers.get("X-CSRFToken") || config.csrfToken;
+            return config.csrfToken;
+        }).catch(function() {
+            return config.csrfToken;
+        });
+        return config.csrfReady;
+    };
+    config.fetch = function(path, options) {
+        return fetch(config.apiPath(path), Object.assign({ credentials: "include" }, options || {}));
+    };
+    window.HealthPredictConfig = config;
+})();
+if (window.htmx) {
+    window.htmx.config.withCredentials = true;
+}
+document.addEventListener("DOMContentLoaded", function() {
+    window.HealthPredictConfig.ensureCsrfToken();
+});
 document.addEventListener("htmx:configRequest", function(evt) {
-    let match = document.cookie.match(new RegExp('(^| )' + 'csrf_token' + '=([^;]+)'));
-    if (match) {
-        evt.detail.headers['X-CSRFToken'] = match[2];
+    var config = window.HealthPredictConfig;
+    if (config) {
+        evt.detail.path = config.apiPath(evt.detail.path);
+        var token = config.getCsrfToken();
+        if (token) {
+            evt.detail.headers["X-CSRFToken"] = token;
+        }
     }
 });
 </script>

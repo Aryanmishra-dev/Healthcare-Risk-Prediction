@@ -11,6 +11,7 @@ Headless:
 """
 
 import random
+import os
 
 from locust import HttpUser, between, task
 
@@ -19,7 +20,7 @@ class HealthPredictUser(HttpUser):
     """Simulates a user interacting with the Healthcare Risk Prediction API."""
 
     wait_time = between(0.5, 2.0)
-    api_headers = {"X-API-Key": "healthpredict_dev_key_2026"}
+    api_headers = {"X-API-Key": os.environ.get("DEV_API_KEY", "test-dev-api-key")}
 
     # ── Page loads ────────────────────────────────────────────────────────
     @task(3)

@@ -106,6 +106,17 @@ HTTP_REQUEST_DURATION = Histogram(
 
 RATE_LIMIT = int(os.environ.get("RATE_LIMIT_PER_MINUTE", "60"))
 
+
+def _csv_env(name: str, default: str) -> list[str]:
+    """Read a comma-separated env var into a trimmed list."""
+    return [item.strip() for item in os.environ.get(name, default).split(",") if item.strip()]
+
+
+def _cors_origins(default: str) -> list[str]:
+    """Prefer ALLOWED_ORIGINS while keeping CORS_ORIGINS backward compatible."""
+    raw_origins = os.environ.get("ALLOWED_ORIGINS") or os.environ.get("CORS_ORIGINS") or default
+    return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Load ML models at startup."""
@@ -161,22 +172,30 @@ if STATIC_DIR.is_dir():
 # ── CORS ───────────────────────────────────────────────────────────────────
 _IS_PROD = os.environ.get("APP_ENV") == "production"
 if _IS_PROD:
-    ALLOWED_ORIGINS = os.environ.get(
-        "CORS_ORIGINS",
+    ALLOWED_ORIGINS = _cors_origins(
         "https://healthcare-risk-prediction.onrender.com",
-    ).split(",")
+    )
 else:
-    ALLOWED_ORIGINS = os.environ.get(
-        "CORS_ORIGINS",
+    ALLOWED_ORIGINS = _cors_origins(
         "http://localhost:3000,http://localhost:8000,http://127.0.0.1:8000,https://healthcare-risk-prediction.onrender.com",
-    ).split(",")
+    )
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type", "Accept", "HX-Request"],
-    allow_credentials=False,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "Accept",
+        "HX-Request",
+        "HX-Trigger",
+        "HX-Target",
+        "HX-Current-URL",
+        "X-CSRFToken",
+    ],
+    expose_headers=["X-CSRFToken"],
+    allow_credentials="*" not in ALLOWED_ORIGINS,
 )
 
 # Add Timing Middleware for request timing and error logging
@@ -184,10 +203,10 @@ app.add_middleware(TimingMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 
 # ── Trusted Host middleware (reject spoofed Host headers) ─────────────
-TRUSTED_HOSTS = os.environ.get(
+TRUSTED_HOSTS = _csv_env(
     "TRUSTED_HOSTS",
     "localhost,127.0.0.1,testserver,healthcare-risk-prediction.onrender.com",
-).split(",")
+)
 
 app.add_middleware(
     TrustedHostMiddleware,
@@ -285,10 +304,18 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 def _render_index(request: Request, initial_tab: str = "home"):
     """Render the main UI shell with the requested tab selected."""
+    csrf_token = request.cookies.get("csrf_token") or secrets.token_hex(32)
     response = templates.TemplateResponse(request, "index.html", {"request": request, "initial_tab": initial_tab})
     if "csrf_token" not in request.cookies:
         is_prod = os.environ.get("APP_ENV") == "production"
-        response.set_cookie(key="csrf_token", value=secrets.token_hex(32), httponly=False, samesite="lax", secure=is_prod)
+        response.set_cookie(
+            key="csrf_token",
+            value=csrf_token,
+            httponly=False,
+            samesite="none" if is_prod else "lax",
+            secure=is_prod,
+        )
+    response.headers["X-CSRFToken"] = csrf_token
     return response
 
 

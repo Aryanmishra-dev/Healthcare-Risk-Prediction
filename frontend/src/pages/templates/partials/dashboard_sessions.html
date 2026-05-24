@@ -42,7 +42,7 @@ function sessionsPage() {
       await this.load();
     },
     async load() {
-      const res = await fetch('/auth/sessions', { headers: { 'Authorization': 'Bearer ' + this.token } });
+      const res = await window.HealthPredictConfig.fetch('/auth/sessions', { headers: { 'Authorization': 'Bearer ' + this.token } });
       if (res.status === 401) { localStorage.removeItem('access_token'); window.location.href = '/'; return; }
       this.sessions = await res.json();
       const tbody = document.getElementById('sessions-tbody');
@@ -75,13 +75,13 @@ function sessionsPage() {
     },
     async revoke(sessionId) {
       if (!confirm('Revoke this session?')) return;
-      await fetch('/auth/sessions/' + sessionId, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + this.token } });
+      await window.HealthPredictConfig.fetch('/auth/sessions/' + sessionId, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + this.token } });
       await this.load();
     },
     async revokeAll() {
       if (!confirm('Logout from all devices? You will be logged out here too.')) return;
       for (const s of this.sessions) {
-        await fetch('/auth/sessions/' + s.id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + this.token } });
+        await window.HealthPredictConfig.fetch('/auth/sessions/' + s.id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + this.token } });
       }
       localStorage.removeItem('access_token');
       window.location.href = '/';

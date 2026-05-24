@@ -10,7 +10,7 @@
 
     <div class="p-5">
         <form id="doc-upload-form-{{ widget_id }}"
-              hx-post="/api/v1/document/upload"
+              hx-post="__HEALTHPREDICT_API_URL__/api/v1/document/upload"
               hx-encoding="multipart/form-data"
               hx-target="#upload-result-{{ widget_id }}"
               hx-swap="innerHTML"
@@ -216,28 +216,30 @@
     }
 
     function submitVoiceData(text) {
-        var xhr = new XMLHttpRequest();
-        xhr.open('POST', '/api/v1/document/text', true);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        
-        // Use HTMX csrf logic if available
-        var match = document.cookie.match(new RegExp('(^| )csrf_token=([^;]+)'));
-        if (match) xhr.setRequestHeader('X-CSRFToken', match[2]);
-        
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4) {
-                voiceStatus.textContent = 'Voice processing complete.';
-                setTimeout(function(){ voiceStatus.classList.add('hidden'); }, 3000);
-                
-                var resultDiv = document.getElementById('upload-result-' + wid);
-                resultDiv.innerHTML = xhr.responseText;
-                // Trigger HTMX afterSwap manually to run auto-populate
-                document.body.dispatchEvent(new CustomEvent('htmx:afterSwap', {
-                    detail: { target: resultDiv }
-                }));
-            }
-        };
-        xhr.send(JSON.stringify({ text: text }));
+        window.HealthPredictConfig.ensureCsrfToken().finally(function() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', window.HealthPredictConfig.apiPath('/api/v1/document/text'), true);
+            xhr.withCredentials = true;
+            xhr.setRequestHeader('Content-Type', 'application/json');
+
+            var csrfToken = window.HealthPredictConfig.getCsrfToken();
+            if (csrfToken) xhr.setRequestHeader('X-CSRFToken', csrfToken);
+
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    voiceStatus.textContent = 'Voice processing complete.';
+                    setTimeout(function(){ voiceStatus.classList.add('hidden'); }, 3000);
+
+                    var resultDiv = document.getElementById('upload-result-' + wid);
+                    resultDiv.innerHTML = xhr.responseText;
+                    // Trigger HTMX afterSwap manually to run auto-populate
+                    document.body.dispatchEvent(new CustomEvent('htmx:afterSwap', {
+                        detail: { target: resultDiv }
+                    }));
+                }
+            };
+            xhr.send(JSON.stringify({ text: text }));
+        });
     }
 
     /* ── Auto-populate forms ── */

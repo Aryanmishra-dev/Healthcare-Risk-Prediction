@@ -7,6 +7,7 @@ import os
 import pytest
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
+VALID_API_KEY = os.environ.get("DEV_API_KEY", "test-dev-api-key")
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -15,7 +16,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
 
 class TestVersionedAPI:
     def test_v1_root(self, client):
-        resp = client.get("/api/v1/", headers={"X-API-Key": "healthpredict_dev_key_2026"})
+        resp = client.get("/api/v1/", headers={"X-API-Key": VALID_API_KEY})
         assert resp.status_code == 200
         body = resp.json()
         assert body["version"] == "v1"
@@ -25,7 +26,7 @@ class TestVersionedAPI:
         resp = client.post("/api/v1/predict/diabetes", json={
             "age": 7, "bmi": 25.0, "bp": 0, "cholesterol": 0,
             "smoker": 0, "activity": 1, "health": 3, "mental": 0,
-        }, headers={"X-API-Key": "healthpredict_dev_key_2026"})
+        }, headers={"X-API-Key": VALID_API_KEY})
         assert resp.status_code == 200
         body = resp.json()
         assert "risk_percentage" in body
@@ -37,7 +38,7 @@ class TestVersionedAPI:
             "smoker": 0, "phys_activity": 1, "fruits": 1, "veggies": 1,
             "heavy_drinker": 0, "gen_health": 3, "ment_health": 0,
             "phys_health": 0, "diabetes": 0,
-        }, headers={"X-API-Key": "healthpredict_dev_key_2026"})
+        }, headers={"X-API-Key": VALID_API_KEY})
         assert resp.status_code == 200
         body = resp.json()
         assert "risk_percentage" in body
@@ -47,7 +48,7 @@ class TestVersionedAPI:
             "age": 50, "gender": 1, "smoking": 0, "yellow_fingers": 0,
             "chronic_disease": 0, "fatigue": 0, "wheezing": 0,
             "shortness_of_breath": 0,
-        }, headers={"X-API-Key": "healthpredict_dev_key_2026"})
+        }, headers={"X-API-Key": VALID_API_KEY})
         assert resp.status_code == 200
         body = resp.json()
         assert "risk_percentage" in body
@@ -64,7 +65,7 @@ class TestVersionedAPI:
 
 class TestModelRegistry:
     def test_registry_endpoint(self, client):
-        resp = client.get("/api/v1/models", headers={"X-API-Key": "healthpredict_dev_key_2026"})
+        resp = client.get("/api/v1/models", headers={"X-API-Key": VALID_API_KEY})
         assert resp.status_code == 200
         body = resp.json()
         assert "registry_version" in body
@@ -74,7 +75,7 @@ class TestModelRegistry:
         assert "lung_cancer_logreg" in body["models"]
 
     def test_registry_does_not_expose_hashes(self, client):
-        resp = client.get("/api/v1/models", headers={"X-API-Key": "healthpredict_dev_key_2026"})
+        resp = client.get("/api/v1/models", headers={"X-API-Key": VALID_API_KEY})
         body = resp.json()
         # SHA-256 hashes should NOT be in the public response
         for model_info in body["models"].values():
@@ -171,7 +172,7 @@ class TestSecurityHeaders:
 class TestProductionReadiness:
     def test_readiness_endpoint(self, client):
         """Readiness probe should confirm models are loaded."""
-        resp = client.get("/api/v1/health/ready", headers={"X-API-Key": "healthpredict_dev_key_2026"})
+        resp = client.get("/api/v1/health/ready", headers={"X-API-Key": VALID_API_KEY})
         assert resp.status_code == 200
         assert resp.json()["status"] == "ready"
 
@@ -374,7 +375,7 @@ class TestSHAPEndpoints:
         resp = client.post("/api/v1/explain/diabetes", json={
             "age": 7, "bmi": 25.0, "bp": 0, "cholesterol": 0,
             "smoker": 0, "activity": 1, "health": 3, "mental": 0,
-        }, headers={"X-API-Key": "healthpredict_dev_key_2026"})
+        }, headers={"X-API-Key": VALID_API_KEY})
         assert resp.status_code == 200
         body = resp.json()
         assert "explanation" in body
@@ -387,7 +388,7 @@ class TestSHAPEndpoints:
             "smoker": 0, "phys_activity": 1, "fruits": 1, "veggies": 1,
             "heavy_drinker": 0, "gen_health": 3, "ment_health": 0,
             "phys_health": 0, "diabetes": 0,
-        }, headers={"X-API-Key": "healthpredict_dev_key_2026"})
+        }, headers={"X-API-Key": VALID_API_KEY})
         assert resp.status_code == 200
         body = resp.json()
         assert "explanation" in body
@@ -397,7 +398,7 @@ class TestSHAPEndpoints:
             "age": 50, "gender": 1, "smoking": 0, "yellow_fingers": 0,
             "chronic_disease": 0, "fatigue": 0, "wheezing": 0,
             "shortness_of_breath": 0,
-        }, headers={"X-API-Key": "healthpredict_dev_key_2026"})
+        }, headers={"X-API-Key": VALID_API_KEY})
         assert resp.status_code == 200
         body = resp.json()
         assert "explanation" in body

@@ -107,7 +107,7 @@ Open:
 - `POST /explain/{disease}` - SHAP Explanations
 - `POST /document/upload` - Clinical feature extraction pipeline
 
-*Development API Key:* If `API_KEY` isn't set and `APP_ENV` is not `production`, you can use `X-API-Key: healthpredict_dev_key_2026`.
+*Development API Key:* Set `DEV_API_KEY` locally and pass that value as `X-API-Key` when `API_KEY` is not set.
 
 ### Public/Legacy Endpoints (No API key needed)
 - `POST /api/predict`
