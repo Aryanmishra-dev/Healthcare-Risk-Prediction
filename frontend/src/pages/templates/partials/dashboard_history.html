@@ -63,7 +63,7 @@ function historyPage() {
     async load() {
       const type = document.getElementById('hist-filter-type')?.value || '';
       const url = '/auth/history' + (type ? '?disease_type=' + type : '');
-      const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + this.token } });
+      const res = await window.HealthPredictConfig.fetch(url, { headers: { 'Authorization': 'Bearer ' + this.token } });
       if (res.status === 401) { localStorage.removeItem('access_token'); window.location.href = '/'; return; }
       _histData = await res.json();
       const tbody = document.getElementById('history-tbody');
@@ -103,7 +103,7 @@ function historyPage() {
     },
     async deleteRecord(id) {
       if (!confirm('Delete this prediction record?')) return;
-      await fetch('/auth/history/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + this.token } });
+      await window.HealthPredictConfig.fetch('/auth/history/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + this.token } });
       await this.load();
     }
   }

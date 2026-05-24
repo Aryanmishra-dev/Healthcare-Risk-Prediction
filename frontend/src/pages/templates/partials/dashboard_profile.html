@@ -64,7 +64,7 @@ function profilePage() {
       await this.load();
     },
     async load() {
-      const res = await fetch('/auth/me', { headers: { 'Authorization': 'Bearer ' + this.token } });
+      const res = await window.HealthPredictConfig.fetch('/auth/me', { headers: { 'Authorization': 'Bearer ' + this.token } });
       if (res.status === 401) { localStorage.removeItem('access_token'); window.location.href = '/'; return; }
       const u = await res.json();
       document.getElementById('profile-name-display').textContent = u.full_name || 'No name set';
@@ -84,7 +84,7 @@ function profilePage() {
       e.preventDefault();
       const name = document.getElementById('new-full-name').value.trim();
       if (!name) return this.showMsg('name-msg', 'Please enter a name.', true);
-      const res = await fetch('/auth/me', {
+      const res = await window.HealthPredictConfig.fetch('/auth/me', {
         method: 'PATCH',
         headers: { 'Authorization': 'Bearer ' + this.token, 'Content-Type': 'application/json' },
         body: JSON.stringify({ full_name: name })
@@ -100,7 +100,7 @@ function profilePage() {
       if (pwd.length < 8) return this.showMsg('pass-msg', 'Password must be at least 8 characters.', true);
       if (!/[A-Z]/.test(pwd)) return this.showMsg('pass-msg', 'Must contain an uppercase letter.', true);
       if (!/[0-9]/.test(pwd)) return this.showMsg('pass-msg', 'Must contain a number.', true);
-      const res = await fetch('/auth/me', {
+      const res = await window.HealthPredictConfig.fetch('/auth/me', {
         method: 'PATCH',
         headers: { 'Authorization': 'Bearer ' + this.token, 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: pwd })

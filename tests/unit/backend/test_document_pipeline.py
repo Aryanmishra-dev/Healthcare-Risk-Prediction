@@ -9,6 +9,7 @@ Covers:
 """
 
 import io
+import os
 import pytest
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
@@ -21,6 +22,8 @@ from backend.app.services.feature_mapper import (
     map_to_all_models,
 )
 from backend.app.utils.file_validation import validate_mime_type, sanitize_filename, MAX_FILE_SIZE_BYTES
+
+VALID_API_KEY = os.environ.get("DEV_API_KEY", "test-dev-api-key")
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -338,7 +341,7 @@ class TestUploadEndpoint:
         resp = client.post(
             "/api/v1/document/upload",
             files={"file": ("test.txt", fake_file, "text/plain")},
-            headers={"X-API-Key": "healthpredict_dev_key_2026"},
+            headers={"X-API-Key": VALID_API_KEY},
         )
         assert resp.status_code == 400
 
@@ -348,7 +351,7 @@ class TestUploadEndpoint:
         resp = client.post(
             "/api/v1/document/upload",
             files={"file": ("big.pdf", fake_file, "application/pdf")},
-            headers={"X-API-Key": "healthpredict_dev_key_2026"},
+            headers={"X-API-Key": VALID_API_KEY},
         )
         assert resp.status_code == 400
 
@@ -358,7 +361,7 @@ class TestUploadEndpoint:
         resp = client.post(
             "/api/v1/document/upload",
             files={"file": ("empty.pdf", fake_file, "application/pdf")},
-            headers={"X-API-Key": "healthpredict_dev_key_2026"},
+            headers={"X-API-Key": VALID_API_KEY},
         )
         assert resp.status_code == 400
 
@@ -375,7 +378,7 @@ class TestUploadEndpoint:
         resp = client.post(
             "/api/v1/document/upload",
             files={"file": ("report.pdf", fake_pdf, "application/pdf")},
-            headers={"X-API-Key": "healthpredict_dev_key_2026"},
+            headers={"X-API-Key": VALID_API_KEY},
         )
         assert resp.status_code == 200
         data = resp.json()
