@@ -42,8 +42,8 @@ flowchart TB
     end
 
     %% Client Interactions
-    User -->|HTTPS (443)| NginxProxy
-    NginxProxy -->|Internal Proxy (8000)| Router
+    User -->|"HTTPS (443)"| NginxProxy
+    NginxProxy -->|"Internal Proxy (8000)"| Router
     
     %% Application Flow
     Router <--> AuthService
@@ -60,7 +60,7 @@ flowchart TB
     Router <--> RedisCache
     
     %% Monitoring Exporters
-    Router -.->|Scrapes| Prometheus
+    Router -.->|"Scrapes"| Prometheus
     Prometheus --> Grafana
 ```
 
