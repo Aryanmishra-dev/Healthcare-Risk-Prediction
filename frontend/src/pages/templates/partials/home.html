@@ -9,10 +9,10 @@
                 </div>
                 <div class="space-y-4">
                     <h1 class="text-3xl md:text-5xl font-black leading-tight text-slate-900">
-                        Predict Health Risks with Artificial Intelligence
+                        Predict Your Health Risk in Minutes
                     </h1>
                     <p class="max-w-2xl text-sm md:text-base leading-7 text-slate-600">
-                        HealthPredict AI uses trained clinical machine learning models to estimate preventive risk for diabetes, heart disease, and lung cancer from structured health inputs or uploaded medical reports.
+                        Answer a few health questions and get an AI-powered risk estimate for Diabetes, Heart Disease, or Lung Cancer — free, fast, and private.
                     </p>
                 </div>
                 <div class="flex flex-col sm:flex-row gap-3">
@@ -21,10 +21,10 @@
                         <span class="material-symbols-outlined text-lg" aria-hidden="true">bolt</span>
                         Start Health Check
                     </a>
-                    <a href="/about" onclick="switchTab('about');return false"
+                    <a href="/how-it-works" onclick="switchTab('how-it-works');return false"
                        class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition-all hover:bg-slate-50">
                         <span class="material-symbols-outlined text-lg" aria-hidden="true">schema</span>
-                        Learn How It Works
+                        How It Works
                     </a>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
@@ -43,34 +43,45 @@
                 </div>
             </div>
 
-            <div class="lg:col-span-5">
-                <div class="rounded-xl bg-gradient-to-br from-sky-700 to-primary p-6 text-white shadow-xl shadow-primary/20">
-                    <div class="flex items-center gap-4">
-                        <img src="/static/dr_ai_avatar_v2.png" alt="Virtual AI Doctor" class="size-20 rounded-full border-2 border-white/30 object-cover object-top shadow-lg">
-                        <div>
-                            <p class="text-xs font-bold uppercase tracking-wider text-sky-100">Clinical AI Assistant</p>
-                            <h2 class="mt-1 text-xl font-black">Risk insights in minutes</h2>
-                        </div>
-                    </div>
-                    <div class="mt-6 grid grid-cols-3 gap-3">
-                        <div class="rounded-lg bg-white/10 p-3 text-center">
+            <div class="lg:col-span-5 flex flex-col gap-4">
+                <!-- Diabetes Card -->
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-5 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex items-start gap-4">
+                        <div class="flex size-10 items-center justify-center rounded-lg bg-sky-100 text-sky-600">
                             <span class="material-symbols-outlined text-2xl" aria-hidden="true">water_drop</span>
-                            <p class="mt-1 text-[11px] font-bold">Diabetes</p>
                         </div>
-                        <div class="rounded-lg bg-white/10 p-3 text-center">
+                        <div class="flex-1">
+                            <h3 class="text-base font-bold text-slate-900">Diabetes Risk</h3>
+                            <p class="mt-1 text-sm text-slate-500">Estimate your risk of type 2 diabetes based on lifestyle and clinical factors.</p>
+                        </div>
+                    </div>
+                    <a href="/diabetes" onclick="switchTab('diabetes');return false" class="mt-4 block w-full text-center rounded-lg bg-white border border-slate-200 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">Start Assessment</a>
+                </div>
+                <!-- Heart Disease Card -->
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-5 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex items-start gap-4">
+                        <div class="flex size-10 items-center justify-center rounded-lg bg-red-100 text-red-600">
                             <span class="material-symbols-outlined text-2xl" aria-hidden="true">favorite</span>
-                            <p class="mt-1 text-[11px] font-bold">Heart</p>
                         </div>
-                        <div class="rounded-lg bg-white/10 p-3 text-center">
+                        <div class="flex-1">
+                            <h3 class="text-base font-bold text-slate-900">Heart Disease Risk</h3>
+                            <p class="mt-1 text-sm text-slate-500">Check cardiovascular risk indicators using standard health metrics.</p>
+                        </div>
+                    </div>
+                    <a href="/heart-disease" onclick="switchTab('heart');return false" class="mt-4 block w-full text-center rounded-lg bg-white border border-slate-200 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">Start Assessment</a>
+                </div>
+                <!-- Lung Cancer Card -->
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-5 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex items-start gap-4">
+                        <div class="flex size-10 items-center justify-center rounded-lg bg-violet-100 text-violet-600">
                             <span class="material-symbols-outlined text-2xl" aria-hidden="true">pulmonology</span>
-                            <p class="mt-1 text-[11px] font-bold">Lung</p>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-base font-bold text-slate-900">Lung Cancer Risk</h3>
+                            <p class="mt-1 text-sm text-slate-500">Evaluate lung health risks based on smoking history and symptoms.</p>
                         </div>
                     </div>
-                    <div class="mt-6 rounded-lg border border-white/20 bg-white/10 p-4">
-                        <p class="text-sm font-semibold leading-6 text-sky-50">
-                            Designed for early awareness, transparent model context, and responsible next-step conversations with qualified clinicians.
-                        </p>
-                    </div>
+                    <a href="/lung-cancer" onclick="switchTab('lung');return false" class="mt-4 block w-full text-center rounded-lg bg-white border border-slate-200 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">Start Assessment</a>
                 </div>
             </div>
         </div>

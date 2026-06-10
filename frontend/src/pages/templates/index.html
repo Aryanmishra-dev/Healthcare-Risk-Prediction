@@ -22,7 +22,12 @@
                     <span class="material-symbols-outlined text-[20px]">home</span>
                     <span class="text-sm {% if initial_tab == 'home' or not initial_tab %}font-bold{% else %}font-medium{% endif %}">Home</span>
                 </a>
-                                <a id="nav-about" href="/about" onclick="switchTab('about');return false"
+                <a id="nav-how-it-works" href="/how-it-works" onclick="switchTab('how-it-works');return false"
+                   class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'how-it-works' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
+                    <span class="material-symbols-outlined text-[20px]">help</span>
+                    <span class="text-sm {% if initial_tab == 'how-it-works' %}font-bold{% else %}font-medium{% endif %}">How It Works</span>
+                </a>
+                <a id="nav-about" href="/about" onclick="switchTab('about');return false"
                    class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'about' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
                     <span class="material-symbols-outlined text-[20px]">info</span>
                     <span class="text-sm {% if initial_tab == 'about' %}font-bold{% else %}font-medium{% endif %}">About</span>
@@ -48,6 +53,11 @@
                     <span class="material-symbols-outlined text-[20px]">dashboard</span>
                     <span class="text-sm {% if initial_tab == 'dashboard' %}font-bold{% else %}font-medium{% endif %}">Dashboard</span>
                 </a>
+                <a id="nav-contact" href="/contact" onclick="switchTab('contact');return false"
+                   class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'contact' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
+                    <span class="material-symbols-outlined text-[20px]">mail</span>
+                    <span class="text-sm {% if initial_tab == 'contact' %}font-bold{% else %}font-medium{% endif %}">Contact</span>
+                </a>
                 </nav>
             </div>
 
@@ -60,8 +70,8 @@
 <main class="flex-1 flex flex-col overflow-hidden">
 
     <!-- Scrollable Content -->
-    <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 hide-scrollbar bg-background-light scroll-smooth">
-        <div class="max-w-7xl mx-auto">
+    <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 hide-scrollbar bg-background-light scroll-smooth flex flex-col">
+        <div class="max-w-7xl mx-auto w-full flex-1">
 
         <!-- ══════════════ HOME SECTION ══════════════ -->
         <div class="section-panel {% if initial_tab == 'home' or not initial_tab %}active{% endif %}" id="section-home">
@@ -71,6 +81,21 @@
         <!-- ══════════════ ABOUT SECTION ══════════════ -->
         <div class="section-panel {% if initial_tab == 'about' %}active{% endif %}" id="section-about">
             {% include "partials/about.html" %}
+        </div>
+
+        <!-- ══════════════ HOW IT WORKS SECTION ══════════════ -->
+        <div class="section-panel {% if initial_tab == 'how-it-works' %}active{% endif %}" id="section-how-it-works">
+            {% include "partials/how_it_works.html" %}
+        </div>
+
+        <!-- ══════════════ MODEL CARDS SECTION ══════════════ -->
+        <div class="section-panel {% if initial_tab == 'model-cards' %}active{% endif %}" id="section-model-cards">
+            {% include "partials/model_cards.html" %}
+        </div>
+
+        <!-- ══════════════ CONTACT SECTION ══════════════ -->
+        <div class="section-panel {% if initial_tab == 'contact' %}active{% endif %}" id="section-contact">
+            {% include "partials/contact.html" %}
         </div>
 
         <!-- ══════════════ DIABETES SECTION ══════════════ -->
@@ -127,6 +152,13 @@
 
 
         </div>
+        
+        <!-- Persistent Footer -->
+        <footer class="mt-8 py-4 text-center border-t border-slate-200">
+            <p class="text-xs text-slate-500">
+                HealthPredict AI provides statistical risk estimates only. Not a substitute for medical advice.
+            </p>
+        </footer>
     </div>
 </main>
 
@@ -232,7 +264,10 @@ function closeSidebar() {
 
 var tabPaths = {
     'home': '/',
+    'how-it-works': '/how-it-works',
     'about': '/about',
+    'model-cards': '/model-cards',
+    'contact': '/contact',
     'diabetes': '/diabetes',
     'heart': '/heart-disease',
     'lung': '/lung-cancer'
@@ -240,7 +275,10 @@ var tabPaths = {
 
 var pathTabs = {
     '/': 'home',
+    '/how-it-works': 'how-it-works',
     '/about': 'about',
+    '/model-cards': 'model-cards',
+    '/contact': 'contact',
     '/diabetes': 'diabetes',
     '/heart-disease': 'heart',
     '/lung-cancer': 'lung'
@@ -270,7 +308,10 @@ function switchTab(tab, skipHistory) {
 
     var titles = {
         'home': 'Risk Assessment',
+        'how-it-works': 'How It Works',
         'about': 'About HealthPredict AI',
+        'model-cards': 'Model Cards & Technical Details',
+        'contact': 'Contact Us',
         'diabetes': 'Diabetes Risk Assessment',
         'heart': 'Heart Disease Risk Assessment',
         'lung': 'Lung Cancer Risk Assessment'
