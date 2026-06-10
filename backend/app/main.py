@@ -331,6 +331,24 @@ def about_page(request: Request):
     return _render_index(request, "about")
 
 
+@app.get("/how-it-works")
+def how_it_works_page(request: Request):
+    """Render the How It Works page."""
+    return _render_index(request, "how-it-works")
+
+
+@app.get("/contact")
+def contact_page(request: Request):
+    """Render the Contact page."""
+    return _render_index(request, "contact")
+
+
+@app.get("/model-cards")
+def model_cards_page(request: Request):
+    """Render the Model Cards page."""
+    return _render_index(request, "model-cards")
+
+
 @app.get("/login")
 def login_page(request: Request):
     """Render the Login page."""

@@ -1,0 +1,118 @@
+<div class="text-heavy-page space-y-12">
+    <div class="space-y-2">
+        <h1 class="text-3xl md:text-4xl font-black text-slate-900">How It Works</h1>
+        <p class="text-slate-600">A simple, transparent process to understand your health risks.</p>
+    </div>
+
+    <!-- Section 1: How the prediction works -->
+    <section class="space-y-6">
+        <div>
+            <h2 class="text-2xl font-black text-slate-900 mt-0">How the prediction works</h2>
+            <p class="mt-2 text-sm text-slate-600">Behind the scenes, we use clinically-trained machine learning models to analyze your inputs.</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div class="space-y-4">
+                {% set workflow_steps = [
+                    "Fill in the risk assessment form",
+                    "Data is sent to the backend",
+                    "Data is preprocessed to match training format",
+                    "The ML model generates a probability score",
+                    "Score is displayed as Low / Medium / High risk",
+                    "An AI-generated explanation is provided"
+                ] %}
+                {% for step in workflow_steps %}
+                <div class="flex gap-4">
+                    <div class="flex size-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-black text-primary">{{ loop.index }}</div>
+                    <p class="pt-1 text-base font-semibold text-slate-800">{{ step }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 2: What you'll need -->
+    <section class="space-y-6">
+        <div>
+            <h2 class="text-2xl font-black text-slate-900 mt-0">What you'll need</h2>
+            <p class="mt-2 text-sm text-slate-600">Gather this information before starting your assessment.</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <ul class="space-y-3">
+                <li class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-emerald-500" aria-hidden="true">check_circle</span>
+                    <span class="text-base text-slate-700">Your age group</span>
+                </li>
+                <li class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-emerald-500" aria-hidden="true">check_circle</span>
+                    <span class="text-base text-slate-700">Basic health history (blood pressure, cholesterol, diabetes status)</span>
+                </li>
+                <li class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-emerald-500" aria-hidden="true">check_circle</span>
+                    <span class="text-base text-slate-700">Lifestyle info (smoking, physical activity, diet)</span>
+                </li>
+                <li class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-emerald-500" aria-hidden="true">check_circle</span>
+                    <span class="text-base text-slate-700"><strong>Optionally:</strong> a medical report PDF or image to auto-fill the form</span>
+                </li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Section 3: FAQ -->
+    <section class="space-y-6">
+        <div>
+            <h2 class="text-2xl font-black text-slate-900 mt-0">Frequently Asked Questions</h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Q1 -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-3">
+                <h3 class="text-base font-bold text-slate-900 mt-0">Is this a medical diagnosis?</h3>
+                <p class="text-sm text-slate-600">No. These are probabilistic estimates based on population-level clinical data. Always consult a qualified doctor for actual diagnosis and treatment.</p>
+            </div>
+            <!-- Q2 -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-3">
+                <h3 class="text-base font-bold text-slate-900 mt-0">Is my data stored?</h3>
+                <p class="text-sm text-slate-600">No. Uploaded files are parsed for feature extraction only and are never saved. Form inputs are used only to generate your prediction.</p>
+            </div>
+            <!-- Q3 -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-3">
+                <h3 class="text-base font-bold text-slate-900 mt-0">How accurate are the predictions?</h3>
+                <p class="text-sm text-slate-600">Models are trained on peer-reviewed public datasets and evaluated on held-out test sets. Accuracy varies by condition — see the Model Cards page for detailed metrics.</p>
+            </div>
+            <!-- Q4 -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-3">
+                <h3 class="text-base font-bold text-slate-900 mt-0">What medical reports can I upload?</h3>
+                <p class="text-sm text-slate-600">PDF or image files (JPG, PNG) of blood test results, health checkup reports, or clinical summaries. Max size: 5 MB.</p>
+            </div>
+            <!-- Q5 -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-3">
+                <h3 class="text-base font-bold text-slate-900 mt-0">Do I need to create an account?</h3>
+                <p class="text-sm text-slate-600">No. The tool is fully free and requires no login.</p>
+            </div>
+            <!-- Q6 -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-3">
+                <h3 class="text-base font-bold text-slate-900 mt-0">Can I use this for someone else?</h3>
+                <p class="text-sm text-slate-600">Yes. You can enter data on behalf of a family member. Results are not linked to any identity.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTAs -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-4 pb-8">
+        <a href="/diabetes" onclick="switchTab('diabetes');return false"
+           class="inline-flex items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-sky-600/20 transition-all hover:bg-sky-700">
+            <span class="material-symbols-outlined text-lg" aria-hidden="true">water_drop</span>
+            Start Diabetes Assessment
+        </a>
+        <a href="/heart-disease" onclick="switchTab('heart');return false"
+           class="inline-flex items-center justify-center gap-2 rounded-lg bg-red-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-red-500/20 transition-all hover:bg-red-600">
+            <span class="material-symbols-outlined text-lg" aria-hidden="true">favorite</span>
+            Start Heart Assessment
+        </a>
+        <a href="/lung-cancer" onclick="switchTab('lung');return false"
+           class="inline-flex items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-violet-600/20 transition-all hover:bg-violet-700">
+            <span class="material-symbols-outlined text-lg" aria-hidden="true">pulmonology</span>
+            Start Lung Assessment
+        </a>
+    </section>
+</div>
