@@ -111,7 +111,8 @@ function renderIncludes(html, context) {
 function renderVariables(html, context) {
   return html
     .replace(/\{\{\s*widget_id\s*\}\}/g, context.widget_id || "")
-    .replace(/\{\{\s*initial_tab\|default\("home"\)\s*\}\}/g, initialTab);
+    .replace(/\{\{\s*initial_tab\|default\("home"\)\s*\}\}/g, initialTab)
+    .replace(/\{\{\s*BACKEND_URL\s*\}\}/g, process.env.BACKEND_URL || process.env.VITE_API_URL || "");
 }
 
 function renderTemplate(templatePath, context = {}) {
