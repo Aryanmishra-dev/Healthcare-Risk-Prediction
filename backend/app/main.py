@@ -165,6 +165,7 @@ async def openapi_alias():
 
 # ── Templates & Static ────────────────────────────────────────────────────
 templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
+templates.env.globals["BACKEND_URL"] = os.environ.get("BACKEND_URL", "https://healthcare-risk-prediction.onrender.com")
 
 if STATIC_DIR.is_dir():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")

@@ -242,8 +242,63 @@ body { font-family: 'Inter', sans-serif; }
 {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-background-light text-slate-900 antialiased">
+<div id="startup-banner" style="display: none;" class="fixed top-0 left-0 w-full bg-blue-600 text-white text-center py-3 z-[9999] shadow-md transition-opacity duration-300">
+    <div class="flex items-center justify-center gap-3">
+        <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span class="font-medium text-sm sm:text-base">Service is starting up... (This may take ~50 seconds)</span>
+    </div>
+</div>
 {% block body %}{% endblock %}
 
 {% block scripts %}{% endblock %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    var backendUrl = "{{ BACKEND_URL }}";
+    var placeholder = String.fromCharCode(123, 123) + " BACKEND_URL " + String.fromCharCode(125, 125);
+    var noSpace = String.fromCharCode(123, 123) + "BACKEND_URL" + String.fromCharCode(125, 125);
+    if (backendUrl && backendUrl !== placeholder && backendUrl !== noSpace) {
+        var banner = document.getElementById("startup-banner");
+        var healthUrl = backendUrl.replace(/\/+$/, '') + "/healthz";
+        var maxRetries = 18; // 90 seconds (5s intervals)
+        var retries = 0;
+        
+        function checkHealth() {
+            fetch(healthUrl, { method: "GET", mode: "cors" })
+                .then(function(response) {
+                    if (response.ok) {
+                        if (banner) {
+                            banner.style.opacity = "0";
+                            setTimeout(function() { banner.style.display = "none"; }, 300);
+                        }
+                    } else {
+                        throw new Error("Not OK");
+                    }
+                })
+                .catch(function(error) {
+                    if (retries === 0 && banner) {
+                        banner.style.display = "block";
+                    }
+                    if (retries < maxRetries) {
+                        retries++;
+                        setTimeout(checkHealth, 5000);
+                    } else {
+                        if (banner) {
+                            var span = banner.querySelector('span');
+                            if(span) span.innerHTML = "Service failed to start. Please refresh the page.";
+                            banner.classList.replace("bg-blue-600", "bg-red-600");
+                            var svg = banner.querySelector('svg');
+                            if(svg) svg.style.display = "none";
+                        }
+                    }
+                });
+        }
+        checkHealth();
+    }
+});
+</script>
 </body>
 </html>
