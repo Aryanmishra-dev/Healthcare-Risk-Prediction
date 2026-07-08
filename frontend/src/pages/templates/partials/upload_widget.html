@@ -276,8 +276,9 @@
             + '<span class="text-sm font-bold text-emerald-800">Extracted ' + found.length + ' clinical context points</span>'
             + '</div><div class="flex flex-wrap gap-1.5">';
         found.forEach(function(e) {
+            var valStr = e[1].value !== undefined ? e[1].value : e[1];
             html += '<span class="text-[11px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">'
-                + e[0].replace(/_/g,' ') + ': ' + e[1] + '</span>';
+                + e[0].replace(/_/g,' ') + ': ' + valStr + '</span>';
         });
         html += '</div><p class="text-[11px] text-slate-500 mt-2">Active form fields have been auto-populated with matched values. Review before predicting.</p></div>';
         evt.detail.target.innerHTML = html;
@@ -322,11 +323,35 @@
         }
     });
 
-    function setVal(id, val) {
+    function setVal(id, dataObj) {
         var el = document.getElementById(id);
-        if (el && val !== undefined && val !== null) {
+        if (!el) return;
+
+        var val = dataObj ? dataObj.value : null;
+        var conf = dataObj ? dataObj.confidence : null;
+
+        // Reset previous visual state
+        var msg = el.parentElement.querySelector('.extract-msg');
+        if (msg) msg.remove();
+        el.classList.remove('border-red-500', 'border-emerald-500', 'border-amber-500');
+
+        if (val !== undefined && val !== null) {
             el.value = val;
             el.dispatchEvent(new Event('change', { bubbles: true }));
+            
+            // Add confidence score
+            if (conf) {
+                var color = conf > 0.8 ? 'text-emerald-600' : 'text-amber-600';
+                var border = conf > 0.8 ? 'border-emerald-500' : 'border-amber-500';
+                el.classList.add(border);
+                var pct = Math.round(conf * 100) + '%';
+                el.insertAdjacentHTML('afterend', '<span class="extract-msg text-[10px] ' + color + ' font-bold mt-1 block">Extracted (' + pct + ' confidence)</span>');
+            }
+        } else {
+            // Not detected
+            el.value = '';
+            el.classList.add('border-red-500');
+            el.insertAdjacentHTML('afterend', '<span class="extract-msg text-[10px] text-red-500 font-bold mt-1 block">Not detected</span>');
         }
     }
 })();

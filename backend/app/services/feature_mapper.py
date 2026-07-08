@@ -48,6 +48,12 @@ def _bool_flag(value: str | None, positive: str | list[str] = "yes") -> float:
     return 1.0 if value.lower() in [p.lower() for p in positive] else 0.0
 
 
+def _map_field(entities, key, mapper=lambda x: x):
+    if key in entities and entities[key] is not None:
+        val = mapper(entities[key]["value"])
+        return {"value": val, "confidence": entities[key]["confidence"]}
+    return None
+
 # ══════════════════════════════════════════════════════════════════════════
 #  Diabetes Feature Mapping
 # ══════════════════════════════════════════════════════════════════════════
@@ -55,26 +61,19 @@ def _bool_flag(value: str | None, positive: str | list[str] = "yes") -> float:
 def map_to_diabetes_features(entities: dict[str, Any]) -> dict[str, Any]:
     """
     Map extracted clinical entities to diabetes model input.
-    Returns None for missing properties so the frontend doesn't overwrite manual inputs.
     """
     res = {}
-    if entities.get("age") is not None:
-        res["age"] = _age_to_group(entities.get("age"))
-    if entities.get("bmi") is not None:
-        res["bmi"] = entities.get("bmi")
-    if entities.get("blood_pressure") is not None:
-        res["bp"] = _bool_flag(entities.get("blood_pressure"), "high")
-    if entities.get("cholesterol") is not None:
-        res["cholesterol"] = _bool_flag(entities.get("cholesterol"), "high")
-    if entities.get("smoking") is not None:
-        res["smoker"] = _bool_flag(entities.get("smoking"), "yes")
-    if entities.get("physical_activity") is not None:
-        res["activity"] = _bool_flag(entities.get("physical_activity"), "active")
-    if entities.get("general_health") is not None:
-        res["health"] = float(entities.get("general_health"))
-    if entities.get("mental_health") is not None:
-        res["mental"] = float(entities.get("mental_health"))
-    return res
+    res["age"] = _map_field(entities, "age", _age_to_group)
+    res["bmi"] = _map_field(entities, "bmi")
+    res["bp"] = _map_field(entities, "blood_pressure", lambda x: _bool_flag(x, "high"))
+    res["cholesterol"] = _map_field(entities, "cholesterol", lambda x: _bool_flag(x, "high"))
+    res["smoker"] = _map_field(entities, "smoking", lambda x: _bool_flag(x, "yes"))
+    res["activity"] = _map_field(entities, "physical_activity", lambda x: _bool_flag(x, "active"))
+    res["health"] = _map_field(entities, "general_health", float)
+    res["mental"] = _map_field(entities, "mental_health", float)
+    
+    # Remove Nones so frontend handles them
+    return {k: v for k, v in res.items() if v is not None}
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -84,28 +83,22 @@ def map_to_diabetes_features(entities: dict[str, Any]) -> dict[str, Any]:
 def map_to_heart_features(entities: dict[str, Any]) -> dict[str, Any]:
     """
     Map extracted clinical entities to heart disease model input.
-    Returns None for missing properties so the frontend doesn't overwrite manual inputs.
     """
     res = {}
-    if entities.get("age") is not None:
-        res["hd_age"] = _age_to_group(entities.get("age"))
-    if entities.get("gender") is not None:
-        res["hd_sex"] = 1 if entities.get("gender") == "male" else 0
-    if entities.get("bmi") is not None:
-        res["hd_bmi"] = entities.get("bmi")
-    if entities.get("blood_pressure") is not None:
-        res["hd_high_bp"] = int(_bool_flag(entities.get("blood_pressure"), "high"))
-    if entities.get("cholesterol") is not None:
-        res["hd_high_chol"] = int(_bool_flag(entities.get("cholesterol"), "high"))
-    if entities.get("smoking") is not None:
-        res["hd_smoker"] = int(_bool_flag(entities.get("smoking"), "yes"))
-    if entities.get("physical_activity") is not None:
-        res["hd_phys_activity"] = int(_bool_flag(entities.get("physical_activity"), "active"))
-    if entities.get("general_health") is not None:
-        res["hd_gen_health"] = int(entities.get("general_health"))
-    if entities.get("mental_health") is not None:
-        res["hd_ment_health"] = int(entities.get("mental_health"))
-    return res
+    res["hd_age"] = _map_field(entities, "age", _age_to_group)
+    res["hd_sex"] = _map_field(entities, "gender", lambda x: 1 if x == "male" else 0)
+    res["hd_bmi"] = _map_field(entities, "bmi")
+    res["hd_high_bp"] = _map_field(entities, "blood_pressure", lambda x: int(_bool_flag(x, "high")))
+    res["hd_high_chol"] = _map_field(entities, "cholesterol", lambda x: int(_bool_flag(x, "high")))
+    res["hd_smoker"] = _map_field(entities, "smoking", lambda x: int(_bool_flag(x, "yes")))
+    res["hd_phys_activity"] = _map_field(entities, "physical_activity", lambda x: int(_bool_flag(x, "active")))
+    res["hd_gen_health"] = _map_field(entities, "general_health", int)
+    res["hd_ment_health"] = _map_field(entities, "mental_health", int)
+    
+    # Additional mappings based on family history or diabetes history could be added here
+    res["hd_diabetes"] = _map_field(entities, "diagnosis", lambda x: 2 if "diabetes" in str(x).lower() else 0)
+    
+    return {k: v for k, v in res.items() if v is not None}
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -115,16 +108,17 @@ def map_to_heart_features(entities: dict[str, Any]) -> dict[str, Any]:
 def map_to_lung_features(entities: dict[str, Any]) -> dict[str, Any]:
     """
     Map extracted clinical entities to lung cancer model input.
-    Returns None for missing properties so the frontend doesn't overwrite manual inputs.
     """
     res = {}
-    if entities.get("age") is not None:
-        res["lc_age"] = entities.get("age")
-    if entities.get("gender") is not None:
-        res["lc_gender"] = 1 if entities.get("gender") == "male" else 0
-    if entities.get("smoking") is not None:
-        res["lc_smoking"] = int(_bool_flag(entities.get("smoking"), "yes"))
-    return res
+    res["lc_age"] = _map_field(entities, "age")
+    res["lc_gender"] = _map_field(entities, "gender", lambda x: 1 if x == "male" else 0)
+    res["lc_smoking"] = _map_field(entities, "smoking", lambda x: int(_bool_flag(x, "yes")))
+    
+    # New mapped features for lung cancer form
+    res["lc_chronic_disease"] = _map_field(entities, "copd", lambda x: int(_bool_flag(x, "yes")))
+    res["lc_wheezing"] = _map_field(entities, "asthma", lambda x: int(_bool_flag(x, "yes")))
+
+    return {k: v for k, v in res.items() if v is not None}
 
 
 # ══════════════════════════════════════════════════════════════════════════
