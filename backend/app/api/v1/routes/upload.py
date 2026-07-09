@@ -16,43 +16,10 @@ from backend.app.utils.file_validation import validate_upload
 from backend.app.services.document_parser import parse_document
 from backend.app.services.medical_nlp import extract_clinical_entities
 from backend.app.services.feature_mapper import map_to_all_models
-from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["document-ai"])
-
-class TextExtractionRequest(BaseModel):
-    text: str
-
-@router.post("/document/text")
-async def extract_from_text(payload: TextExtractionRequest):
-    """
-    Extract clinical features directly from transcribed voice text.
-    """
-    raw_text = payload.text
-    if not raw_text.strip():
-        return {"error": "No text provided for extraction."}
-        
-    entities = extract_clinical_entities(raw_text)
-    mapped_features = map_to_all_models(entities)
-    
-    logger.info("text_pipeline_complete", extra={
-        "entities_found": sum(1 for v in entities.values() if v is not None),
-    })
-
-
-    
-    
-    
-
-    return {
-        "raw_text": raw_text[:2000],
-        "entities": entities,
-        "mapped_features": mapped_features,
-    }
-
-
 
 @router.post("/document/upload")
 async def upload_document(
