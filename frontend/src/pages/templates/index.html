@@ -176,8 +176,39 @@
         if (!synthesis) return;
         try {
             var voices = synthesis.getVoices() || [];
-            var hiVoices = voices.filter(function(v) { return v.lang && v.lang.indexOf("hi") !== -1; });
-            voiceObj = hiVoices[0] || voices[0];
+            if (voices.length === 0) return;
+            
+            var preferredNames = [
+                'Google US English Female',
+                'Microsoft Aria',
+                'Microsoft Jenny',
+                'Samantha'
+            ];
+            
+            voiceObj = null;
+            
+            for (var i = 0; i < preferredNames.length; i++) {
+                var match = voices.find(function(v) { return v.name.indexOf(preferredNames[i]) !== -1; });
+                if (match) {
+                    voiceObj = match;
+                    break;
+                }
+            }
+            
+            if (!voiceObj) {
+                voiceObj = voices.find(function(v) { 
+                    return v.lang.indexOf('en-US') !== -1 && (v.name.toLowerCase().indexOf('female') !== -1 || v.name.indexOf('Zira') !== -1); 
+                });
+            }
+            
+            if (!voiceObj) {
+                voiceObj = voices.find(function(v) { return v.lang.indexOf('en-US') !== -1 || v.lang.indexOf('en-GB') !== -1; });
+            }
+            
+            if (!voiceObj) {
+                voiceObj = voices.find(function(v) { return v.lang.indexOf('en') === 0; });
+            }
+            
             synthesis.onvoiceschanged = null; // Always clear to prevent infinite loops
         } catch (e) {
             console.error("Speech API error:", e);
@@ -215,16 +246,17 @@
         var disease = widget.getAttribute('data-dr-disease') || 'this condition';
         var risk    = widget.getAttribute('data-dr-risk') || 'moderate';
 
-        var message = 'नमस्ते। मैंने हेल्थ प्रेडिक्ट एआई इंजन से आपके क्लिनिकल मापदंडों की समीक्षा की है। '
-            + 'हमारे प्रेडिक्टिव मॉडल के आधार पर, ' + disease + ' के लिए आपकी संभावना वर्तमान में ' + risk + ' आंकी गई है। '
-            + 'कृपया याद रखें कि यह हमें मार्गदर्शन करने के लिए जनसंख्या डेटा पर आधारित एक सांख्यिकीय अनुमान है, कोई निश्चित चिकित्सा निदान नहीं। '
-            + 'आइए इन जानकारियों पर चर्चा करने और एक निवारक देखभाल योजना बनाने के लिए एक फॉलो-अप परामर्श की व्यवस्था करें।';
+        var message = 'Hello. I have reviewed your clinical parameters using the HealthPredict AI engine. '
+            + 'Based on our predictive models, your likelihood for ' + disease + ' is currently assessed as ' + risk + '. '
+            + 'Please remember that this is a statistical estimate based on population data to help guide us, not a definitive medical diagnosis. '
+            + 'Let\'s arrange a follow-up consultation to discuss these insights and create a preventative care plan.';
 
         var utterance = new SpeechSynthesisUtterance(message);
-        utterance.lang = 'hi-IN';
+        utterance.lang = 'en-US';
         if (voiceObj) utterance.voice = voiceObj;
-        utterance.rate  = 0.9;
+        utterance.rate  = 1.0;
         utterance.pitch = 1.0;
+        utterance.volume = 1.0;
 
         utterance.onstart = function () {
             avatar.classList.add('speaking');
