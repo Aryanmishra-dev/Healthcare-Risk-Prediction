@@ -172,3 +172,52 @@ class LegacyLungCancerAuditRequest(BaseModel):
     shortness_of_breath: int = Field(0, ge=0, le=2)
     swallowing_difficulty: int = Field(0, ge=0, le=2)
     chest_pain: int = Field(0, ge=0, le=2)
+
+
+# ── Phase 2.3: Prediction History ──────────────────────────────────────────
+
+from datetime import datetime
+from uuid import UUID
+from typing import Optional, List, Dict, Any
+
+class PredictionHistoryResponse(BaseModel):
+    id: int
+    request_id: Optional[str] = None
+    user_id: Optional[UUID] = None
+    report_id: Optional[UUID] = None
+    disease_model: str
+    source: str
+    risk_percentage: float
+    risk_level: str
+    confidence_score: float
+    model_version: str
+    shap_values: Optional[Dict[str, Any]] = None
+    processing_time_ms: int
+    prediction_status: str
+    favorite: bool
+    archived: bool
+    notes: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class PredictionHistoryPaginated(BaseModel):
+    items: List[PredictionHistoryResponse]
+    total: int
+    page: int
+    size: int
+    pages: int
+
+
+class PredictionHistoryParams(BaseModel):
+    page: int = Field(1, ge=1)
+    size: int = Field(20, ge=1, le=100)
+    disease: Optional[str] = None
+    risk_level: Optional[str] = None
+    favorite: Optional[bool] = None
+    report_id: Optional[UUID] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    search: Optional[str] = None

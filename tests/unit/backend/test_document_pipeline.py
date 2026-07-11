@@ -78,132 +78,132 @@ class TestMedicalNLP:
     def test_extract_bmi(self):
         text = "Patient BMI 27.4, blood tests normal."
         entities = extract_clinical_entities(text)
-        assert entities["bmi"] == 27.4
+        assert entities["bmi"]["value"] == 27.4
 
     def test_extract_bmi_with_colon(self):
         text = "BMI: 32.1"
         entities = extract_clinical_entities(text)
-        assert entities["bmi"] == 32.1
+        assert entities["bmi"]["value"] == 32.1
 
     def test_extract_bmi_body_mass_index(self):
         text = "Body mass index of 29.5"
         entities = extract_clinical_entities(text)
-        assert entities["bmi"] == 29.5
+        assert entities["bmi"]["value"] == 29.5
 
     def test_extract_blood_pressure_numeric_high(self):
         text = "BP 150/95 mmHg, patient reports headaches."
         entities = extract_clinical_entities(text)
-        assert entities["blood_pressure"] == "high"
+        assert entities["blood_pressure"]["value"] == "high"
 
     def test_extract_blood_pressure_numeric_normal(self):
         text = "Blood pressure 120/80."
         entities = extract_clinical_entities(text)
-        assert entities["blood_pressure"] == "normal"
+        assert entities["blood_pressure"]["value"] == "normal"
 
     def test_extract_blood_pressure_keyword(self):
         text = "Patient has high blood pressure."
         entities = extract_clinical_entities(text)
-        assert entities["blood_pressure"] == "high"
+        assert entities["blood_pressure"]["value"] == "high"
 
     def test_extract_blood_pressure_hypertension(self):
         text = "Diagnosis: hypertension stage 2."
         entities = extract_clinical_entities(text)
-        assert entities["blood_pressure"] == "high"
+        assert entities["blood_pressure"]["value"] == "high"
 
     def test_extract_cholesterol_high_keyword(self):
         text = "High cholesterol noted."
         entities = extract_clinical_entities(text)
-        assert entities["cholesterol"] == "high"
+        assert entities["cholesterol"]["value"] == "high"
 
     def test_extract_cholesterol_numeric_high(self):
         text = "Total cholesterol 260 mg/dL."
         entities = extract_clinical_entities(text)
-        assert entities["cholesterol"] == "high"
+        assert entities["cholesterol"]["value"] == "high"
 
     def test_extract_cholesterol_numeric_normal(self):
         text = "Cholesterol 180."
         entities = extract_clinical_entities(text)
-        assert entities["cholesterol"] == "normal"
+        assert entities["cholesterol"]["value"] == "normal"
 
     def test_extract_smoker_yes(self):
         text = "Patient is a current smoker, 10 pack-years."
         entities = extract_clinical_entities(text)
-        assert entities["smoking"] == "yes"
+        assert entities["smoking"]["value"] == "yes"
 
     def test_extract_smoker_no(self):
         text = "Non-smoker, no tobacco use."
         entities = extract_clinical_entities(text)
-        assert entities["smoking"] == "no"
+        assert entities["smoking"]["value"] == "no"
 
     def test_extract_physical_activity_active(self):
         text = "Patient exercises regularly, 30 min/day."
         entities = extract_clinical_entities(text)
-        assert entities["physical_activity"] == "active"
+        assert entities["physical_activity"]["value"] == "active"
 
     def test_extract_physical_activity_sedentary(self):
         text = "Sedentary lifestyle, office worker."
         entities = extract_clinical_entities(text)
-        assert entities["physical_activity"] == "inactive"
+        assert entities["physical_activity"]["value"] == "inactive"
 
     def test_extract_general_health(self):
         text = "General health: good."
         entities = extract_clinical_entities(text)
-        assert entities["general_health"] == 3
+        assert entities["general_health"]["value"] == 3
 
     def test_extract_general_health_excellent(self):
         text = "Overall health: excellent."
         entities = extract_clinical_entities(text)
-        assert entities["general_health"] == 1
+        assert entities["general_health"]["value"] == 1
 
     def test_extract_mental_health_days(self):
         text = "Mental health days: 5 in the past month."
         entities = extract_clinical_entities(text)
-        assert entities["mental_health"] == 5
+        assert entities["mental_health"]["value"] == 5
 
     def test_extract_age(self):
         text = "Patient age 52, presenting with chest pain."
         entities = extract_clinical_entities(text)
-        assert entities["age"] == 52
+        assert entities["age"]["value"] == 52
 
     def test_extract_age_years_old(self):
         text = "65 year old male patient."
         entities = extract_clinical_entities(text)
-        assert entities["age"] == 65
+        assert entities["age"]["value"] == 65
 
     def test_extract_gender_male(self):
         text = "Sex: Male. Age: 45."
         entities = extract_clinical_entities(text)
-        assert entities["gender"] == "male"
+        assert entities["gender"]["value"] == "male"
 
     def test_extract_gender_female(self):
         text = "Gender: Female, age 38."
         entities = extract_clinical_entities(text)
-        assert entities["gender"] == "female"
+        assert entities["gender"]["value"] == "female"
 
     def test_extract_blood_group(self):
         text = "Blood group: O+"
         entities = extract_clinical_entities(text)
-        assert entities["blood_group"] == "O+"
+        assert entities["blood_group"]["value"] == "O+"
         
     def test_extract_blood_group_negative(self):
         text = "Type: AB negative"
         entities = extract_clinical_entities(text)
-        assert entities["blood_group"] == "AB-"
+        assert entities["blood_group"]["value"] == "AB-"
 
     def test_extract_medical_history(self):
         text = "Medical history: Patient has a history of asthma.\nDiagnosis:"
         entities = extract_clinical_entities(text)
-        assert entities["medical_history"] == "Patient has a history of asthma."
+        assert entities["medical_history"]["value"] == "Patient has a history of asthma."
 
     def test_extract_diagnosis(self):
         text = "Diagnosis: Type 2 Diabetes Mellitus\nMedications:"
         entities = extract_clinical_entities(text)
-        assert entities["diagnosis"] == "Type 2 Diabetes Mellitus"
+        assert entities["diagnosis"]["value"] == "Type 2 Diabetes Mellitus"
 
     def test_extract_medications(self):
         text = "Medications: Metformin 500mg BID\n"
         entities = extract_clinical_entities(text)
-        assert entities["medications"] == "Metformin 500mg BID"
+        assert entities["medications"]["value"] == "Metformin 500mg BID"
 
     def test_extract_none_values(self):
         text = "The weather is sunny today."
@@ -235,19 +235,19 @@ class TestMedicalNLP:
         Lisinopril, Atorvastatin.
         """
         entities = extract_clinical_entities(text)
-        assert entities["age"] == 58
-        assert entities["gender"] == "male"
-        assert entities["blood_group"] == "A+"
-        assert entities["bmi"] == 31.2
-        assert entities["blood_pressure"] == "high"
-        assert entities["cholesterol"] == "high"
-        assert entities["smoking"] == "no"
-        assert entities["physical_activity"] == "inactive"
-        assert entities["general_health"] == 4
-        assert entities["mental_health"] == 8
-        assert entities["medical_history"] == "Hypertension, hyperlipidemia."
-        assert entities["diagnosis"] == "Coronary artery disease."
-        assert entities["medications"] == "Lisinopril, Atorvastatin."
+        assert entities["age"]["value"] == 58
+        assert entities["gender"]["value"] == "male"
+        assert entities["blood_group"]["value"] == "A+"
+        assert entities["bmi"]["value"] == 31.2
+        assert entities["blood_pressure"]["value"] == "high"
+        assert entities["cholesterol"]["value"] == "high"
+        assert entities["smoking"]["value"] == "no"
+        assert entities["physical_activity"]["value"] == "inactive"
+        assert entities["general_health"]["value"] == 4
+        assert entities["mental_health"]["value"] == 8
+        assert entities["medical_history"]["value"] == "Hypertension, hyperlipidemia."
+        assert entities["diagnosis"]["value"] == "Coronary artery disease."
+        assert entities["medications"]["value"] == "Lisinopril, Atorvastatin."
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -259,41 +259,41 @@ class TestFeatureMapper:
     @pytest.fixture
     def sample_entities(self):
         return {
-            "bmi": 27.4,
-            "blood_pressure": "high",
-            "cholesterol": "normal",
-            "smoking": "no",
-            "physical_activity": "active",
-            "general_health": 3,
-            "mental_health": 5,
-            "age": 52,
-            "gender": "male",
+            "bmi": {"value": 27.4, "confidence": 1.0},
+            "blood_pressure": {"value": "high", "confidence": 1.0},
+            "cholesterol": {"value": "normal", "confidence": 1.0},
+            "smoking": {"value": "no", "confidence": 1.0},
+            "physical_activity": {"value": "active", "confidence": 1.0},
+            "general_health": {"value": 3, "confidence": 1.0},
+            "mental_health": {"value": 5, "confidence": 1.0},
+            "age": {"value": 52, "confidence": 1.0},
+            "gender": {"value": "male", "confidence": 1.0},
         }
 
     def test_diabetes_mapping(self, sample_entities):
         result = map_to_diabetes_features(sample_entities)
-        assert result["bmi"] == 27.4
-        assert result["bp"] == 1.0      # "high" → 1
-        assert result["cholesterol"] == 0.0  # "normal" → 0
-        assert result["smoker"] == 0.0   # "no" → 0
-        assert result["activity"] == 1.0 # "active" → 1
-        assert result["health"] == 3.0
-        assert result["mental"] == 5.0
-        assert result["age"] == 7.0      # 52 → group 7 (50-54)
+        assert result["bmi"]["value"] == 27.4
+        assert result["bp"]["value"] == 1.0      # "high" → 1
+        assert result["cholesterol"]["value"] == 0.0  # "normal" → 0
+        assert result["smoker"]["value"] == 0.0   # "no" → 0
+        assert result["activity"]["value"] == 1.0 # "active" → 1
+        assert result["health"]["value"] == 3.0
+        assert result["mental"]["value"] == 5.0
+        assert result["age"]["value"] == 7.0      # 52 → group 7 (50-54)
 
     def test_heart_mapping(self, sample_entities):
         result = map_to_heart_features(sample_entities)
-        assert result["hd_bmi"] == 27.4
-        assert result["hd_sex"] == 1     # "male" → 1
-        assert result["hd_high_bp"] == 1
-        assert result["hd_high_chol"] == 0
-        assert result["hd_smoker"] == 0
+        assert result["hd_bmi"]["value"] == 27.4
+        assert result["hd_sex"]["value"] == 1     # "male" → 1
+        assert result["hd_high_bp"]["value"] == 1
+        assert result["hd_high_chol"]["value"] == 0
+        assert result["hd_smoker"]["value"] == 0
 
     def test_lung_mapping(self, sample_entities):
         result = map_to_lung_features(sample_entities)
-        assert result["lc_age"] == 52
-        assert result["lc_gender"] == 1
-        assert result["lc_smoking"] == 0
+        assert result["lc_age"]["value"] == 52
+        assert result["lc_gender"]["value"] == 1
+        assert result["lc_smoking"]["value"] == 0
 
     def test_map_all_models(self, sample_entities):
         result = map_to_all_models(sample_entities)
@@ -385,7 +385,7 @@ class TestUploadEndpoint:
 
         assert "entities" in data
         assert "mapped_features" in data
-        assert data["entities"]["bmi"] == 28.5
-        assert data["entities"]["blood_pressure"] == "high"
-        assert data["entities"]["smoking"] == "no"
-        assert data["mapped_features"]["diabetes"]["bmi"] == 28.5
+        assert data["entities"]["bmi"]["value"] == 28.5
+        assert data["entities"]["blood_pressure"]["value"] == "high"
+        assert data["entities"]["smoking"]["value"] == "no"
+        assert data["mapped_features"]["diabetes"]["bmi"]["value"] == 28.5
