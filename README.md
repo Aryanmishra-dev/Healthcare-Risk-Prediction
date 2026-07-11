@@ -32,7 +32,7 @@ flowchart TB
     subgraph DataML ["ML & Data Infrastructure"]
         MLflow["MLflow Registry\n(Production Model Artifacts)"]
         DVCStore["DVC Registry\n(Local Stub Artifacts & Pipelines)"]
-        DB[(SQLite / PostgreSQL\nAudit Logs & User Profiles)]
+        DB[(PostgreSQL\nAudit Logs, Users, & Sessions)]
         RedisCache[(Redis Cache\nRate Limiter & Session Cache)]
     end
 
@@ -97,7 +97,7 @@ flowchart TB
 
 | Component | Technologies & Frameworks | Description |
 | :--- | :--- | :--- |
-| **Backend Core** | FastAPI, Pydantic v2, SQLAlchemy, Uvicorn, Gunicorn | High-performance async APIs, request validation, and database ORM. |
+| **Backend Core** | FastAPI, Pydantic v2, SQLAlchemy 2.0 (Async), Alembic | High-performance async APIs, request validation, and database ORM/Migrations. |
 | **Machine Learning**| XGBoost, Scikit-Learn, SHAP, Pandas, NumPy, Joblib | Model architectures, explainability plots, and data pre-processing. |
 | **MLOps / Registry**| MLflow, DVC (Data Version Control) | Experiment tracking, model registry, and pipeline run reproducibility. |
 | **Frontend UI** | HTMX, Jinja2 Templates, Vanilla CSS | Interactive single-page UI, partial HTML updates, and typography. |
@@ -134,12 +134,24 @@ python -m pip install --upgrade pip
 python -m pip install -r backend/requirements-dev.txt
 ```
 
-### 2. Configure Environment Variables
+### 2. Configure Environment Variables & Database
 Copy the template configuration files and modify environment variables as required:
 ```bash
 # Setup root, backend, and config environment files
 cp .env.example .env
 cp backend/.env.example backend/.env
+```
+
+Start the local PostgreSQL database using Docker Compose:
+```bash
+docker compose -f deployment/docker/docker-compose.yml up -d db redis
+```
+
+Apply the database migrations:
+```bash
+cd backend
+alembic upgrade head
+cd ..
 ```
 
 ### 3. Generate Local Stub Models (DVC Pipeline)

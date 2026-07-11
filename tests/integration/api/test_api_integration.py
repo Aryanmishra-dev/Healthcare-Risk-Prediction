@@ -119,37 +119,24 @@ class TestAPIAuthentication:
 
 
 class TestAuditLogging:
-    """Test functionality of prediction audit logging to SQLite."""
-
-    @pytest.fixture(autouse=True)
-    def clean_db(self):
-        """Count rows before test and ensure we can calculate the difference."""
-        db_path = os.path.join(ROOT, "data", "interim", "audit_log.db")
-        
-        def get_count():
-            if not os.path.exists(db_path):
-                return 0
-            try:
-                conn = sqlite3.connect(db_path)
-                cursor = conn.cursor()
-                cursor.execute("SELECT COUNT(*) FROM prediction_audit_logs")
-                count = cursor.fetchone()[0]
-                conn.close()
-                return count
-            except sqlite3.OperationalError:
-                return 0
-
-        self.initial_count = get_count()
-        self.db_path = db_path
-        yield
-        
+    """Test functionality of prediction audit logging."""
+    
     def get_latest_log(self):
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        cursor.execute("SELECT disease_model, source, risk_percentage FROM prediction_audit_logs ORDER BY id DESC LIMIT 1")
-        row = cursor.fetchone()
-        conn.close()
-        return {"disease_model": row[0], "source": row[1], "risk_percentage": row[2]} if row else None
+        import asyncio
+        from sqlalchemy import select
+        from tests.conftest import TestingSessionLocal
+        from backend.app.models.prediction import PredictionAuditLog
+        
+        async def _get():
+            async with TestingSessionLocal() as session:
+                stmt = select(PredictionAuditLog).order_by(PredictionAuditLog.id.desc()).limit(1)
+                result = await session.execute(stmt)
+                return result.scalar_one_or_none()
+        
+        row = asyncio.run(_get())
+        if row:
+            return {"disease_model": row.disease_model, "source": row.source, "risk_percentage": row.risk_percentage}
+        return None
 
     def test_json_api_logs_prediction(self, client):
         """Verify that a successful JSON API request creates a log entry."""

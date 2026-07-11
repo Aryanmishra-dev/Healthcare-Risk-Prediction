@@ -30,18 +30,11 @@ from fastapi_cache.decorator import cache
 from fastapi_limiter import FastAPILimiter
 from fastapi_limiter.depends import RateLimiter
 
-class OptionalRateLimiter:
-    def __init__(self, times: int, seconds: int):
-        self.limiter = RateLimiter(times=times, seconds=seconds)
-    async def __call__(self, request: Request, response: Response):
-        if hasattr(FastAPILimiter, "redis") and FastAPILimiter.redis is not None:
-            try:
-                await self.limiter(request, response)
-            except Exception as exc:
-                logger.warning("optional_rate_limiter_failed: %s", exc)
+from backend.app.api.dependencies import get_api_key, OptionalRateLimiter, RATE_LIMIT
+from backend.app.auth.router import get_current_user, router as auth_router
+from backend.app.api.v1.routes.users import router as users_router
 
-from backend.app.api.dependencies import get_api_key
-from backend.app.auth.router import get_current_user, init_auth_db, router as auth_router
+
 from backend.app.schemas.prediction import (
     MEDICAL_DISCLAIMER,
     PredictionRequest,
@@ -66,11 +59,19 @@ from backend.app.services.shap_explainer import (
     explain_lung,
 )
 from backend.app.core.logging import setup_logging, get_logger
-from backend.app.api.v1.routes.upload import process_uploaded_document, router as upload_router
 from backend.app.api.v1.routes.health import router as health_router
+from backend.app.api.v1.routes.upload import router as upload_router
+from backend.app.api.v1.routes.users import router as users_router
+from backend.app.api.v1.routes.predictions import router as predictions_router
+from backend.app.api.v1.routes.reports import router as reports_router
+from backend.app.api.v1.routes.notifications import router as notifications_router
+from backend.app.api.v1.routes.security import router as security_router
+from backend.app.api.v1.routes.exports import router as exports_router
+from backend.app.api.v1.routes.models import router as models_router
 from backend.app.middleware.security_headers import SecurityHeadersMiddleware
 from backend.app.middleware.timing import TimingMiddleware
-from backend.app.services.audit_log import ensure_audit_log_db, log_prediction_to_db
+from backend.app.services.audit_log import log_prediction_to_db
+from backend.app.services.model_monitoring_service import model_monitoring_service
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
 logger = get_logger(__name__)
@@ -104,8 +105,6 @@ HTTP_REQUEST_DURATION = Histogram(
 
 
 
-RATE_LIMIT = int(os.environ.get("RATE_LIMIT_PER_MINUTE", "60"))
-
 
 def _csv_env(name: str, default: str) -> list[str]:
     """Read a comma-separated env var into a trimmed list."""
@@ -126,8 +125,7 @@ async def lifespan(app: FastAPI):
     # Initialize in-memory cache since we removed Redis database
     from fastapi_cache.backends.inmemory import InMemoryBackend
     FastAPICache.init(InMemoryBackend(), prefix="healthpredict-cache")
-    ensure_audit_log_db()
-    init_auth_db()
+    # Legacy sqlite init removed
         
     app.state.models = {}
     
@@ -795,6 +793,13 @@ async def api_upload_alias(file: UploadFile = File(...)):
 # ══════════════════════════════════════════════════════════════════════════
 
 v1 = APIRouter(prefix="/api/v1", tags=["v1"], dependencies=[Depends(get_api_key)])
+v1.include_router(users_router)
+v1.include_router(predictions_router)
+v1.include_router(reports_router)
+v1.include_router(notifications_router)
+v1.include_router(security_router)
+v1.include_router(exports_router)
+v1.include_router(models_router)
 
 
 @v1.get("/")
@@ -827,66 +832,138 @@ def v1_model_registry():
 
 @v1.post("/predict/diabetes", response_model=PredictionResponse)
 async def v1_predict_diabetes(request: Request, data: PredictionRequest):
+    """Predict diabetes risk (v1) — fully instrumented."""
+    import time as _time
+    _start = _time.time()
+    success = True
+    try:
+        result = await predict(
+            request=request,
+            age_group=data.age, bmi=data.bmi, high_bp=data.bp,
+            smoker=data.smoker, high_cholesterol=data.cholesterol,
+            physical_activity=data.activity, general_health=data.health,
+            mental_health=data.mental,
+        )
+        # SHAP explanation
+        df = build_diabetes_features(
+            data.age, data.bmi, data.bp, data.smoker,
+            data.cholesterol, data.activity, data.health, data.mental,
+        )
+        shap_data = explain_diabetes(df)
+    except Exception:
+        success = False
+        raise
+    finally:
+        latency_ms = int((_time.time() - _start) * 1000)
+        model_monitoring_service.record_prediction("diabetes", latency_ms, success)
 
-    """Predict diabetes risk (v1)."""
-    result = await predict(request=request,
-        age_group=data.age, bmi=data.bmi, high_bp=data.bp,
-        smoker=data.smoker, high_cholesterol=data.cholesterol,
-        physical_activity=data.activity, general_health=data.health,
-        mental_health=data.mental,
-    )
-    
-    # Log to DB and Prometheus
     await log_prediction_to_db(
-        request, "diabetes", data.model_dump(), result["risk_percentage"], result["risk_level"], "api_v1", None
+        request, "diabetes", data.model_dump(),
+        result["risk_percentage"], result["risk_level"], "api_v1", None,
+        shap_values=shap_data,
+        processing_time_ms=latency_ms,
     )
     PREDICTION_PROB_METRIC.labels(model_name="diabetes").observe(result["risk_percentage"] / 100.0)
-
-    return PredictionResponse(**_prediction_payload(result, "diabetes"))
+    payload = _prediction_payload(result, "diabetes")
+    payload["explanation"] = shap_data
+    return PredictionResponse(**{k: v for k, v in payload.items() if k in PredictionResponse.model_fields})
 
 
 @v1.post("/predict/heart", response_model=PredictionResponse)
 async def v1_predict_heart(request: Request, data: HeartDiseasePredictionRequest):
+    """Predict heart disease risk (v1) — fully instrumented."""
+    import time as _time
+    import pandas as pd, numpy as np
+    _start = _time.time()
+    success = True
+    try:
+        result = await predict_heart_disease(
+            request=request,
+            age=data.age, sex=data.sex, bmi=data.bmi,
+            high_bp=data.high_bp, high_chol=data.high_chol,
+            smoker=data.smoker, phys_activity=data.phys_activity,
+            fruits=data.fruits, veggies=data.veggies,
+            heavy_drinker=data.heavy_drinker, gen_health=data.gen_health,
+            ment_health=data.ment_health, phys_health=data.phys_health,
+            diabetes=data.diabetes,
+        )
+        row = {
+            "_AGEG5YR": float(data.age), "SEX": float(data.sex), "_BMI5": float(data.bmi),
+            "_RFHYPE5": float(1 - data.high_bp), "_RFCHOL": float(1 - data.high_chol),
+            "SMOKE100": float(data.smoker), "_TOTINDA": float(data.phys_activity),
+            "_FRTLT1": float(data.fruits), "_VEGLT1": float(data.veggies),
+            "_RFDRHV5": float(1 - data.heavy_drinker), "GENHLTH": float(data.gen_health),
+            "MENTHLTH": float(data.ment_health), "PHYSHLTH": float(data.phys_health),
+            "DIABETE3": float(data.diabetes),
+        }
+        f = request.app.state.models.get("heart_features") or list(row.keys())
+        df = pd.DataFrame([row])[f].astype(np.float64)
+        shap_data = explain_heart(df)
+    except Exception:
+        success = False
+        raise
+    finally:
+        latency_ms = int((_time.time() - _start) * 1000)
+        model_monitoring_service.record_prediction("heart_disease", latency_ms, success)
 
-    """Predict heart disease risk (v1)."""
-    result = await predict_heart_disease(request=request,
-        age=data.age, sex=data.sex, bmi=data.bmi,
-        high_bp=data.high_bp, high_chol=data.high_chol,
-        smoker=data.smoker, phys_activity=data.phys_activity,
-        fruits=data.fruits, veggies=data.veggies,
-        heavy_drinker=data.heavy_drinker, gen_health=data.gen_health,
-        ment_health=data.ment_health, phys_health=data.phys_health,
-        diabetes=data.diabetes,
-    )
-    
-    # Log to DB and Prometheus
     await log_prediction_to_db(
-        request, "heart_disease", data.model_dump(), result["risk_percentage"], result["risk_level"], "api_v1", None
+        request, "heart_disease", data.model_dump(),
+        result["risk_percentage"], result["risk_level"], "api_v1", None,
+        shap_values=shap_data,
+        processing_time_ms=latency_ms,
     )
     PREDICTION_PROB_METRIC.labels(model_name="heart_disease").observe(result["risk_percentage"] / 100.0)
-
-    return PredictionResponse(**_prediction_payload(result, "heart_disease"))
+    payload = _prediction_payload(result, "heart_disease")
+    payload["explanation"] = shap_data
+    return PredictionResponse(**{k: v for k, v in payload.items() if k in PredictionResponse.model_fields})
 
 
 @v1.post("/predict/lung", response_model=PredictionResponse)
 async def v1_predict_lung(request: Request, data: LungCancerPredictionRequest):
+    """Predict lung cancer risk (v1) — fully instrumented."""
+    import time as _time
+    import pandas as pd, numpy as np
+    _start = _time.time()
+    success = True
+    try:
+        result = await predict_lung_cancer(
+            request=request,
+            age=data.age, gender=data.gender, smoking=data.smoking,
+            yellow_fingers=data.yellow_fingers,
+            chronic_disease=data.chronic_disease, fatigue=data.fatigue,
+            wheezing=data.wheezing,
+            shortness_of_breath=data.shortness_of_breath,
+        )
+        row = {
+            "Age": float(data.age), "Gender": float(data.gender), "Smoking": float(data.smoking),
+            "Yellow Fingers": float(data.yellow_fingers), "Chronic Disease": float(data.chronic_disease),
+            "Fatigue": float(data.fatigue), "Wheezing": float(data.wheezing),
+            "Shortness of Breath": float(data.shortness_of_breath),
+        }
+        f = request.app.state.models.get("lung_features") or list(row.keys())
+        s = request.app.state.models.get("lung_scaler")
+        df = pd.DataFrame([row])[f].copy()
+        if s is not None and "Age" in df:
+            df["Age"] = s.transform(df[["Age"]])
+        df = df.astype(np.float64)
+        shap_data = explain_lung(df)
+    except Exception:
+        success = False
+        raise
+    finally:
+        latency_ms = int((_time.time() - _start) * 1000)
+        model_monitoring_service.record_prediction("lung_cancer", latency_ms, success)
 
-    """Predict lung cancer risk (v1)."""
-    result = await predict_lung_cancer(request=request,
-        age=data.age, gender=data.gender, smoking=data.smoking,
-        yellow_fingers=data.yellow_fingers,
-        chronic_disease=data.chronic_disease, fatigue=data.fatigue,
-        wheezing=data.wheezing,
-        shortness_of_breath=data.shortness_of_breath,
-    )
-    
-    # Log to DB and Prometheus
     await log_prediction_to_db(
-        request, "lung_cancer", data.model_dump(), result["risk_percentage"], result["risk_level"], "api_v1", None
+        request, "lung_cancer", data.model_dump(),
+        result["risk_percentage"], result["risk_level"], "api_v1", None,
+        shap_values=shap_data,
+        processing_time_ms=latency_ms,
     )
     PREDICTION_PROB_METRIC.labels(model_name="lung_cancer").observe(result["risk_percentage"] / 100.0)
-
-    return PredictionResponse(**_prediction_payload(result, "lung_cancer"))
+    payload = _prediction_payload(result, "lung_cancer")
+    payload["explanation"] = shap_data
+    return PredictionResponse(**{k: v for k, v in payload.items() if k in PredictionResponse.model_fields})
 
 
 # ══════════════════════════════════════════════════════════════════════════

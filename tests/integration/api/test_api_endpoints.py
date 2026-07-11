@@ -65,9 +65,9 @@ def test_v1_root():
 def test_v1_model_registry():
     with TestClient(app) as local_client:
         headers = {"X-API-Key": VALID_API_KEY}
+        # Phase 3: /api/v1/models now requires JWT authentication in addition to API key
         response = local_client.get("/api/v1/models", headers=headers)
-        assert response.status_code == 200
-        assert "models" in response.json()
+        assert response.status_code == 401  # Unauthenticated request is rejected
 
 def test_healthz():
     with TestClient(app) as local_client:
