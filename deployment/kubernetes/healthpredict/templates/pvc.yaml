@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "healthpredict.fullname" . }}-data-pvc
+  labels:
+    app.kubernetes.io/name: {{ include "healthpredict.name" . }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi

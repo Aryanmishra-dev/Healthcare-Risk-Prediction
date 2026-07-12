@@ -1,10 +1,10 @@
 # ── Stage 1: Builder ──────────────────────────────────────────────────────
-FROM python:3.13-slim AS builder
+FROM python:3.11-slim AS builder
 
 WORKDIR /build
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends libgomp1 && \
+    apt-get install -y --no-install-recommends libgomp1 gcc python3-dev && \
     rm -rf /var/lib/apt/lists/*
 
 COPY backend/requirements.txt .
@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 
 # ── Stage 2: Runtime ─────────────────────────────────────────────────────
-FROM python:3.13-slim
+FROM python:3.11-slim
 
 LABEL org.opencontainers.image.title="HealthPredict AI" \
       org.opencontainers.image.description="AI-powered clinical risk prediction (Diabetes, Heart Disease, Lung Cancer)" \
@@ -33,7 +33,9 @@ RUN groupadd --gid 1000 appuser && \
     useradd --uid 1000 --gid appuser --shell /bin/sh --create-home appuser
 
 WORKDIR /app
-ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
 
 # Copy application code securely
 COPY --chown=appuser:appuser backend/ ./backend/

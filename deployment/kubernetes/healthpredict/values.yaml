@@ -26,3 +26,6 @@ autoscaling:
 redis:
   host: "healthpredict-redis-master"
   port: 6379
+
+ingress:
+  host: "api.healthpredict.com"
