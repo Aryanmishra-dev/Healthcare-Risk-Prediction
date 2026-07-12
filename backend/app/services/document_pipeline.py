@@ -48,7 +48,10 @@ async def process_report_pipeline(report_id: UUID, user_id: UUID):
 
             try:
                 file_bytes = await storage_provider.get_file(report.storage_path)
-                raw_text = parse_document(file_bytes, report.mime_type)
+                # B5: CPU-bound PDF/image parsing — offload to thread pool
+                raw_text = await asyncio.to_thread(
+                    parse_document, file_bytes, report.mime_type
+                )
                 if not raw_text:
                     report.processing_status = "failed"
                     await db.commit()
@@ -84,7 +87,8 @@ async def process_report_pipeline(report_id: UUID, user_id: UUID):
             await db.commit()
 
             try:
-                entities = extract_clinical_entities(raw_text)
+                # B5: CPU-bound NLP — offload to thread pool
+                entities = await asyncio.to_thread(extract_clinical_entities, raw_text)
                 report.extracted_entities = entities
             except Exception as e:
                 logger.exception(f"NLP failed for report {report_id}")

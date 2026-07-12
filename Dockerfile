@@ -48,8 +48,10 @@ USER appuser
 
 EXPOSE 8000
 
-# Health check using curl
+# Health check — probes /healthz (the correct endpoint)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -f http://localhost:8000/healthz || exit 1
 
-CMD ["gunicorn", "backend.app.main:app", "-w", "1", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--timeout", "120", "--keep-alive", "30", "--access-logfile", "-", "--error-logfile", "-"]
+# 2 workers: minimum viable concurrency for production.
+# Scale to 2*$(nproc)+1 in production orchestration.
+CMD ["gunicorn", "backend.app.main:app", "-w", "2", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--timeout", "120", "--keep-alive", "30", "--worker-tmp-dir", "/dev/shm", "--access-logfile", "-", "--error-logfile", "-"]
