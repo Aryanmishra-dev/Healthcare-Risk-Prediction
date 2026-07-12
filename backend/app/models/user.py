@@ -1,8 +1,9 @@
 import uuid
 from datetime import datetime
+
 from sqlalchemy import Boolean, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.types import DateTime, Uuid, JSON
+from sqlalchemy.types import JSON, DateTime, Uuid
 
 from backend.app.models.base import Base, TimestampMixin, UUIDMixin, utc_now
 
@@ -49,6 +50,18 @@ class User(Base, UUIDMixin, TimestampMixin):
     )
     security_events = relationship(
         "SecurityEvent", back_populates="user", cascade="all, delete-orphan"
+    )
+    admin_actions_performed = relationship(
+        "AdminAction",
+        foreign_keys="AdminAction.admin_id",
+        back_populates="admin",
+        cascade="all, delete-orphan",
+    )
+    admin_actions_received = relationship(
+        "AdminAction",
+        foreign_keys="AdminAction.target_user_id",
+        back_populates="target_user",
+        cascade="all, delete-orphan",
     )
 
 
@@ -105,25 +118,30 @@ class UserSession(Base, UUIDMixin):
     country: Mapped[str | None] = mapped_column(String(100), nullable=True)
     city: Mapped[str | None] = mapped_column(String(100), nullable=True)
     login_method: Mapped[str] = mapped_column(String(50), default="password")
-    last_activity: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    last_activity: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )
     is_revoked: Mapped[bool] = mapped_column(Boolean, default=False)
-    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now
     )
-    
+
     @property
     def is_active(self) -> bool:
         if self.is_revoked or (self.revoked_at is not None):
             return False
-        
+
         # Handle naive datetimes from SQLite in tests
         from datetime import timezone
+
         exp = self.expires_at
         if exp and exp.tzinfo is None:
             exp = exp.replace(tzinfo=timezone.utc)
-            
+
         return exp > utc_now()
 
     user = relationship("User", back_populates="sessions")
@@ -187,8 +205,12 @@ class LoginHistory(Base, UUIDMixin, TimestampMixin):
     country: Mapped[str | None] = mapped_column(String(100), nullable=True)
     city: Mapped[str | None] = mapped_column(String(100), nullable=True)
     login_method: Mapped[str] = mapped_column(String(50), default="password")
-    status: Mapped[str] = mapped_column(String(50), default="success") # success, failed
-    login_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    status: Mapped[str] = mapped_column(
+        String(50), default="success"
+    )  # success, failed
+    login_time: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )
 
     user = relationship("User", back_populates="login_history")
 
@@ -200,8 +222,10 @@ class SecurityEvent(Base, UUIDMixin, TimestampMixin):
         Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=True
     )
     event_type: Mapped[str] = mapped_column(String(255))
-    severity: Mapped[str] = mapped_column(String(50), default="info") # info, warning, critical
+    severity: Mapped[str] = mapped_column(
+        String(50), default="info"
+    )  # info, warning, critical
     description: Mapped[str] = mapped_column(String(500))
     metadata_payload: Mapped[dict | None] = mapped_column(JSON, nullable=True)
-    
+
     user = relationship("User", back_populates="security_events")

@@ -4,15 +4,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.app.auth.router import get_current_user
 from backend.app.core.database import get_db
 from backend.app.models.user import User
-from backend.app.schemas.user_dashboard import (
-    DashboardResponse,
-    UserProfileResponse,
-    UserProfileUpdate,
-    UserSettingsResponse,
-    UserSettingsUpdate,
-    AccountResponse,
-    UserStatisticsResponse,
-)
+from backend.app.schemas.user_dashboard import (AccountResponse,
+                                                DashboardResponse,
+                                                UserProfileResponse,
+                                                UserProfileUpdate,
+                                                UserSettingsResponse,
+                                                UserSettingsUpdate,
+                                                UserStatisticsResponse)
 from backend.app.services import user_dashboard_service
 
 router = APIRouter(prefix="/users", tags=["Users"])

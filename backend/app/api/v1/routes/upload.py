@@ -11,19 +11,21 @@ entities plus mapped features for all three models.
 import logging
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
-
-from backend.app.utils.file_validation import validate_upload
-from backend.app.services.document_parser import parse_document
-from backend.app.services.medical_nlp import extract_clinical_entities
-from backend.app.services.feature_mapper import map_to_all_models
 from pydantic import BaseModel
+
+from backend.app.services.document_parser import parse_document
+from backend.app.services.feature_mapper import map_to_all_models
+from backend.app.services.medical_nlp import extract_clinical_entities
+from backend.app.utils.file_validation import validate_upload
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["document-ai"])
 
+
 class TextExtractionRequest(BaseModel):
     text: str
+
 
 @router.post("/document/text")
 async def extract_from_text(payload: TextExtractionRequest):
@@ -33,18 +35,16 @@ async def extract_from_text(payload: TextExtractionRequest):
     raw_text = payload.text
     if not raw_text.strip():
         return {"error": "No text provided for extraction."}
-        
+
     entities = extract_clinical_entities(raw_text)
     mapped_features = map_to_all_models(entities)
-    
-    logger.info("text_pipeline_complete", extra={
-        "entities_found": sum(1 for v in entities.values() if v is not None),
-    })
 
-
-    
-    
-    
+    logger.info(
+        "text_pipeline_complete",
+        extra={
+            "entities_found": sum(1 for v in entities.values() if v is not None),
+        },
+    )
 
     return {
         "raw_text": raw_text[:2000],
@@ -53,10 +53,11 @@ async def extract_from_text(payload: TextExtractionRequest):
     }
 
 
-
 @router.post("/document/upload")
 async def upload_document(
-    file: UploadFile = File(..., description="Medical report (PDF, JPG, JPEG, or PNG, ≤ 5 MB)")
+    file: UploadFile = File(
+        ..., description="Medical report (PDF, JPG, JPEG, or PNG, ≤ 5 MB)"
+    )
 ):
     """
     Upload a medical report and extract clinical features.
@@ -113,14 +114,12 @@ async def process_uploaded_document(file: UploadFile):
     # 4. Map to model features
     mapped_features = map_to_all_models(entities)
 
-    logger.info("document_pipeline_complete", extra={
-        "entities_found": sum(1 for v in entities.values() if v is not None),
-    })
-
-
-    
-    
-    
+    logger.info(
+        "document_pipeline_complete",
+        extra={
+            "entities_found": sum(1 for v in entities.values() if v is not None),
+        },
+    )
 
     return {
         "raw_text": raw_text[:2000],  # truncate for response size

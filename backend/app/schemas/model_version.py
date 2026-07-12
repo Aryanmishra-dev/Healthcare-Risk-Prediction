@@ -1,7 +1,9 @@
-from datetime import datetime
 import uuid
-from typing import Optional, Dict, Any, List
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, ConfigDict, Field
+
 
 class ModelVersionBase(BaseModel):
     model_name: str
@@ -19,13 +21,16 @@ class ModelVersionBase(BaseModel):
     mlflow_model_uri: Optional[str] = None
     checksum: Optional[str] = None
 
+
 class ModelVersionCreate(ModelVersionBase):
     pass
+
 
 class ModelVersionUpdate(BaseModel):
     status: Optional[str] = None
     retired_at: Optional[datetime] = None
     deployed_at: Optional[datetime] = None
+
 
 class ModelVersionResponse(ModelVersionBase):
     id: uuid.UUID
@@ -35,8 +40,9 @@ class ModelVersionResponse(ModelVersionBase):
     retired_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
+
 
 class ModelComparisonResponse(BaseModel):
     model_name: str

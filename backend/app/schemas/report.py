@@ -1,6 +1,7 @@
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 from uuid import UUID
-from typing import Optional, List, Dict, Any
+
 from pydantic import BaseModel, Field
 
 
@@ -9,7 +10,7 @@ class ReportUploadResponse(BaseModel):
     filename: str
     upload_status: str
     processing_status: str
-    
+
     model_config = {"from_attributes": True}
 
 

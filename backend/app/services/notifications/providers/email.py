@@ -17,9 +17,10 @@ import logging
 from typing import Any
 from uuid import UUID
 
-from backend.app.services.notifications.providers.base import NotificationProvider
 from backend.app.core.database import AsyncSessionLocal
 from backend.app.models.user import User
+from backend.app.services.notifications.providers.base import \
+    NotificationProvider
 
 logger = logging.getLogger(__name__)
 
@@ -55,8 +56,9 @@ class EmailProvider(NotificationProvider):
 
         # Build the email via the template router in email_service
         try:
-            from backend.app.services.email_service import email_backend, build_email
             from backend.app.core.config import settings
+            from backend.app.services.email_service import (build_email,
+                                                            email_backend)
 
             base_url = getattr(settings, "app_base_url", "http://localhost:8000")
             subject, html_body = build_email(

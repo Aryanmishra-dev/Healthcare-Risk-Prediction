@@ -14,18 +14,13 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from backend.app.schemas.prediction import (
-    PredictionRequest,
-    PredictionResponse,
-    HeartDiseasePredictionRequest,
-    LungCancerPredictionRequest,
-)
-from backend.app.services.model_loader import (
-    load_models,
-    predict,
-    predict_heart_disease,
-    predict_lung_cancer,
-)
+from backend.app.schemas.prediction import (HeartDiseasePredictionRequest,
+                                            LungCancerPredictionRequest,
+                                            PredictionRequest,
+                                            PredictionResponse)
+from backend.app.services.model_loader import (load_models, predict,
+                                               predict_heart_disease,
+                                               predict_lung_cancer)
 
 # ── Rate limiting ──────────────────────────────────────────────────────────
 RATE_LIMIT = int(os.environ.get("RATE_LIMIT_PER_MINUTE", "60"))
@@ -35,7 +30,9 @@ _MAX_TRACKED_IPS = 10_000  # Prevent unbounded memory growth
 
 def _cors_origins(default: str) -> list[str]:
     """Prefer ALLOWED_ORIGINS while keeping CORS_ORIGINS backward compatible."""
-    raw_origins = os.environ.get("ALLOWED_ORIGINS") or os.environ.get("CORS_ORIGINS") or default
+    raw_origins = (
+        os.environ.get("ALLOWED_ORIGINS") or os.environ.get("CORS_ORIGINS") or default
+    )
     return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
 
 
@@ -96,6 +93,7 @@ async def rate_limit_middleware(request: Request, call_next):
 #  Root
 # ══════════════════════════════════════════════════════════════════════════
 
+
 @app.get("/")
 @app.get("/api")
 def root():
@@ -109,6 +107,7 @@ def root():
 # ══════════════════════════════════════════════════════════════════════════
 #  Diabetes Prediction
 # ══════════════════════════════════════════════════════════════════════════
+
 
 @app.post("/predict", response_model=PredictionResponse)
 @app.post("/api/predict", response_model=PredictionResponse)
@@ -136,9 +135,12 @@ async def make_diabetes_prediction(request: Request, data: PredictionRequest):
 #  Heart Disease Prediction
 # ══════════════════════════════════════════════════════════════════════════
 
+
 @app.post("/predict-heart", response_model=PredictionResponse)
 @app.post("/api/predict-heart", response_model=PredictionResponse)
-async def make_heart_disease_prediction(request: Request, data: HeartDiseasePredictionRequest):
+async def make_heart_disease_prediction(
+    request: Request, data: HeartDiseasePredictionRequest
+):
     """
     Predict heart disease risk from health indicators.
 
@@ -168,9 +170,12 @@ async def make_heart_disease_prediction(request: Request, data: HeartDiseasePred
 #  Lung Cancer Prediction
 # ══════════════════════════════════════════════════════════════════════════
 
+
 @app.post("/predict-lung", response_model=PredictionResponse)
 @app.post("/api/predict-lung", response_model=PredictionResponse)
-async def make_lung_cancer_prediction(request: Request, data: LungCancerPredictionRequest):
+async def make_lung_cancer_prediction(
+    request: Request, data: LungCancerPredictionRequest
+):
     """
     Predict lung cancer risk from patient indicators.
 

@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 # ── HTML email templates ──────────────────────────────────────────────────────
 
+
 def _base_html(title: str, body_html: str) -> str:
     """Wrap body content in a consistent, minimal HTML email shell."""
     return textwrap.dedent(f"""
@@ -134,7 +135,9 @@ def render_email_verification(verify_url: str) -> tuple[str, str]:
     return subject, _base_html(subject, body)
 
 
-def render_new_login(ip_address: str, user_agent: str, base_url: str) -> tuple[str, str]:
+def render_new_login(
+    ip_address: str, user_agent: str, base_url: str
+) -> tuple[str, str]:
     """(subject, html) for a new-device login security alert."""
     subject = "New login detected — HealthPredict AI"
     body = f"""
@@ -210,7 +213,10 @@ def build_email(
 
     if notification_type == "password_reset_request":
         token = meta.get("reset_token", "")
-        reset_url = meta.get("reset_url") or f"{base_url}/auth/password-reset-confirm?token={token}"
+        reset_url = (
+            meta.get("reset_url")
+            or f"{base_url}/auth/password-reset-confirm?token={token}"
+        )
         return render_password_reset(reset_url)
 
     if notification_type == "email_verification":
@@ -236,6 +242,7 @@ def build_email(
 
 # ── Abstract base ─────────────────────────────────────────────────────────────
 
+
 class EmailBackend(ABC):
     """Abstract email delivery backend."""
 
@@ -252,6 +259,7 @@ class EmailBackend(ABC):
 
 
 # ── Development backend ───────────────────────────────────────────────────────
+
 
 class DevelopmentEmailBackend(EmailBackend):
     """Logs email content to the application logger. No real delivery."""
@@ -273,6 +281,7 @@ class DevelopmentEmailBackend(EmailBackend):
 
 
 # ── SMTP backend ──────────────────────────────────────────────────────────────
+
 
 class SMTPEmailBackend(EmailBackend):
     """
@@ -343,6 +352,7 @@ class SMTPEmailBackend(EmailBackend):
 
 # ── Factory ───────────────────────────────────────────────────────────────────
 
+
 def create_email_backend() -> EmailBackend:
     """
     Instantiate the configured email backend.
@@ -351,14 +361,20 @@ def create_email_backend() -> EmailBackend:
       ``development``  → ``DevelopmentEmailBackend`` (default)
       ``smtp``         → ``SMTPEmailBackend``
     """
-    from backend.app.core.config import settings  # local import avoids circular
+    from backend.app.core.config import \
+        settings  # local import avoids circular
 
     backend_name = getattr(settings, "email_backend", "development").lower()
 
     if backend_name == "smtp":
         missing = [
             field
-            for field in ("smtp_host", "smtp_username", "smtp_password", "email_from_address")
+            for field in (
+                "smtp_host",
+                "smtp_username",
+                "smtp_password",
+                "email_from_address",
+            )
             if not getattr(settings, field, "")
         ]
         if missing:

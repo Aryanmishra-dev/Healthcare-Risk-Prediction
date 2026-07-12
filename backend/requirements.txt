@@ -40,3 +40,4 @@ passlib[bcrypt]==1.7.4
 pyjwt==2.10.1
 user-agents==2.2.0
 aiosmtplib==5.1.2
+psutil==6.0.0
