@@ -152,3 +152,20 @@ terraform.rc
 dump.rdb
 bandit_report.json
 healthcare.db
+
+# Runtime test databases
+*.db
+*.sqlite3
+!backend/migrations/versions/*.py
+
+# Runtime data directories (user-uploaded content, exports — PII risk)
+exports_data/
+uploads/
+backend/exports_data/
+backend/uploads/
+
+# Runtime logs
+test_output.log
+
+# Cookie / token dumps
+scripts/cookies.txt
