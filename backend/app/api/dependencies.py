@@ -329,6 +329,13 @@ def validate_startup_config() -> None:
         if not jwt_key or "dev-only" in jwt_key:
             errors.append("JWT_SECRET_KEY must be set to a secure value in production.")
 
+        db_url = os.environ.get("DATABASE_URL", "")
+        if not db_url or "sqlite" in db_url:
+            errors.append(
+                "DATABASE_URL must be set to a Postgres connection string in "
+                "production. The SQLite fallback is for local development only."
+            )
+
         email_backend = os.environ.get("EMAIL_BACKEND", "development")
         if email_backend != "smtp":
             warnings.append(
