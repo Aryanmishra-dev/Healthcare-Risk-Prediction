@@ -121,14 +121,17 @@ async def lifespan(app: FastAPI):
     """Load ML models at startup."""
     setup_logging()
     logger.info("application_startup version=3.0.0")
-    
-    # Initialize in-memory cache since we removed Redis database
+
+    # Validate configuration before accepting any traffic (B7)
+    from backend.app.api.dependencies import validate_startup_config
+    validate_startup_config()
+
+    # Initialize in-memory cache
     from fastapi_cache.backends.inmemory import InMemoryBackend
     FastAPICache.init(InMemoryBackend(), prefix="healthpredict-cache")
-    # Legacy sqlite init removed
-        
+
     app.state.models = {}
-    
+
     # Load models before accepting requests so health and inference are ready.
     await model_manager.load_all_models()
     app.state.models.update(model_manager.export_app_state())
@@ -813,13 +816,24 @@ def v1_root():
 
 
 @v1.get("/models")
-def v1_model_registry():
+async def v1_model_registry():
     """Return model registry metadata (versions, metrics, status)."""
-    with open(REGISTRY_PATH) as f:
-        registry = json.load(f)
+    # B8: Use asyncio.to_thread for non-blocking file read
+    def _read_registry() -> dict:
+        with open(REGISTRY_PATH) as f:
+            return json.load(f)
+
+    try:
+        registry = await asyncio.to_thread(_read_registry)
+    except FileNotFoundError:
+        return {"registry_version": "unknown", "models": {}}
+    except Exception as exc:
+        logger.error("registry_read_failed | error=%s", exc)
+        return {"registry_version": "error", "models": {}}
+
     # Return only safe metadata — strip sha256 hashes from public API
     summary = {}
-    for name, meta in registry["models"].items():
+    for name, meta in registry.get("models", {}).items():
         summary[name] = {
             "version": meta["version"],
             "algorithm": meta["algorithm"],
@@ -827,7 +841,7 @@ def v1_model_registry():
             "status": meta["status"],
             "metrics": meta.get("metrics", {}),
         }
-    return {"registry_version": registry["registry_version"], "models": summary}
+    return {"registry_version": registry.get("registry_version", "unknown"), "models": summary}
 
 
 @v1.post("/predict/diabetes", response_model=PredictionResponse)
