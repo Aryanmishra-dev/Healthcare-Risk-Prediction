@@ -4,7 +4,7 @@ services:
     runtime: docker
     plan: standard
     dockerfilePath: ./Dockerfile
-    healthCheckPath: /health
+    healthCheckPath: /healthz
     envVars:
       - key: APP_ENV
         value: production
