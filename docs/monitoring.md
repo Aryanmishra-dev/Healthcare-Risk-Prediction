@@ -7,7 +7,7 @@
 
 ## Accessing the Dashboards
 1. Run `docker compose --profile monitoring up -d` to launch the monitoring stack.
-2. Navigate to `http://localhost:3000` to access Grafana (Default credentials: `admin` / `healthpredict_admin_setup_2026`).
+2. Navigate to `http://localhost:3000` to access Grafana. Default credentials: `admin` / `<YOUR_GRAFANA_PASSWORD>` (set via `GRAFANA_PASSWORD` env variable; dev-only fallback is `dev-grafana-change-me`).
 
 ## Available Metrics
 - **System Metrics**: CPU, memory, and container-level stats.

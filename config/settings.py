@@ -26,8 +26,10 @@ class Settings(BaseSettings):
     db_max_overflow: int = 20
 
     # ── Auth / JWT ───────────────────────────────────────────────────────────
+    # WARNING: Must be set via env var SECRET_KEY or JWT_SECRET_KEY in production!
+    # The dev-only fallback is intentionally weak and for local use only.
     secret_key: str = Field(
-        default="dev-only-healthpredict-secret-change-me",
+        default="dev-only-change-me-in-production",
         validation_alias=AliasChoices("SECRET_KEY", "JWT_SECRET_KEY"),
     )
     algorithm: str = Field(

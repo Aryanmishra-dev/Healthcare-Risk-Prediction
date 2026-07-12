@@ -23,6 +23,11 @@ autoscaling:
   maxReplicas: 10
   targetCPUUtilizationPercentage: 80
 
+db:
+  # Database connection URL for the application
+  # Provide via --set db.url=... or external-secrets. Do not hardcode.
+  url: "postgresql+asyncpg://user:CHANGE_ME@healthpredict-db:5432/healthcare_audit"
+
 redis:
   host: "healthpredict-redis-master"
   port: 6379

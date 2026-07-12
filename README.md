@@ -268,7 +268,7 @@ The platform is integrated with **MLflow** for tracking parameter tunings and re
     python ml/scripts/migrate_to_mlflow.py
     ```
 
-For detailed guides on model configurations, calibration curves, and fairness checks, refer to [ml/README.md](file:///Users/theogengineer/Projects/Healthcare-Risk-Prediction/ml/README.md) (if present) or our [Troubleshooting Guide](file:///Users/theogengineer/Projects/Healthcare-Risk-Prediction/docs/TROUBLESHOOTING.md).
+For detailed guides on model configurations, calibration curves, and fairness checks, refer to `ml/README.md` (if present) or our [Troubleshooting Guide](./docs/TROUBLESHOOTING.md).
 
 ---
 
@@ -311,7 +311,7 @@ terraform apply
 
 ###  Production Deployment Considerations
 *   **Render Cold Starts:** In resource-constrained environments (like Render free tiers), XGBoost models and SHAP explainers might trigger slow initialization. The production Gunicorn wrapper in the `Dockerfile` sets `--timeout 120` to prevent worker OOM crashes.
-*   **Out of Memory (OOM) Safety:** Concurrent loads of multi-model XGBoost/sklearn weights can spike past 512MB RAM. If memory footprints exceed limits, consult [TROUBLESHOOTING.md](file:///Users/theogengineer/Projects/Healthcare-Risk-Prediction/docs/TROUBLESHOOTING.md) to disable unused predictors or adjust worker allocations.
+*   **Out of Memory (OOM) Safety:** Concurrent loads of multi-model XGBoost/sklearn weights can spike past 512MB RAM. If memory footprints exceed limits, consult [TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md) to disable unused predictors or adjust worker allocations.
 
 ---
 
@@ -337,6 +337,6 @@ pip-audit -r backend/requirements-dev.txt
 ---
 
 ##  Additional Resources
-*   [Security Architecture Guide](file:///Users/theogengineer/Projects/Healthcare-Risk-Prediction/docs/SECURITY.md) — Comprehensive overview of multi-layered security.
-*   [Troubleshooting & Recovery](file:///Users/theogengineer/Projects/Healthcare-Risk-Prediction/docs/TROUBLESHOOTING.md) — Common error resolution steps, cold-start limits, and MLflow setups.
-*   [Contributing Guidelines](file:///Users/theogengineer/Projects/Healthcare-Risk-Prediction/docs/CONTRIBUTING.md) — Code styles, DVC model workflows, and guidelines.
+*   [Security Architecture Guide](./docs/SECURITY.md) — Comprehensive overview of multi-layered security.
+*   [Troubleshooting & Recovery](./docs/TROUBLESHOOTING.md) — Common error resolution steps, cold-start limits, and MLflow setups.
+*   [Contributing Guidelines](./docs/CONTRIBUTING.md) — Code styles, DVC model workflows, and guidelines.

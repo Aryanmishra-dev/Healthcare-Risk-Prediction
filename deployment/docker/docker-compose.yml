@@ -52,8 +52,9 @@ services:
     container_name: postgres-db
     restart: unless-stopped
     environment:
+      # DEV-ONLY defaults. Override via .env or environment in production.
       POSTGRES_USER: ${POSTGRES_USER:-admin}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-REDACTED}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev-only-change-me}
       POSTGRES_DB: ${POSTGRES_DB:-healthcare_audit}
     ports:
       - "127.0.0.1:5432:5432"
@@ -92,13 +93,13 @@ services:
     ports:
       - "127.0.0.1:5000:5000"
     environment:
-      - MLFLOW_BACKEND_STORE_URI=postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-REDACTED}@db:5432/${POSTGRES_DB:-healthcare_audit}
+      - MLFLOW_BACKEND_STORE_URI=postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-dev-only-change-me}@db:5432/${POSTGRES_DB:-healthcare_audit}
       - MLFLOW_DEFAULT_ARTIFACT_ROOT=/mlruns
     volumes:
       - mlflow_artifacts:/mlruns
     command: >
       bash -c "pip install mlflow psycopg2-binary &&
-      mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-REDACTED}@db:5432/${POSTGRES_DB:-healthcare_audit} --default-artifact-root /mlruns"
+      mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-dev-only-change-me}@db:5432/${POSTGRES_DB:-healthcare_audit} --default-artifact-root /mlruns"
     networks:
       - internal
     depends_on:
@@ -162,7 +163,8 @@ services:
       - "127.0.0.1:3000:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-healthpredict_admin_setup_2026}
+      # DEV-ONLY default. Set GRAFANA_PASSWORD in .env for production.
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-dev-grafana-change-me}
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - grafana_data:/var/lib/grafana

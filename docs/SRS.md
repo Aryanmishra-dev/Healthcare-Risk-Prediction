@@ -34,8 +34,8 @@ HealthPredict AI is an enterprise-grade, end-to-end Machine Learning, Web, and M
 *   **XGBoost:** Extreme Gradient Boosting algorithm
 
 #### 1.4 References
-*   [README.md](file:///Users/theogengineer/Projects/Healthcare-Risk-Prediction/README.md)
-*   [SECURITY.md](file:///Users/theogengineer/Projects/Healthcare-Risk-Prediction/SECURITY.md)
+*   [README.md](../README.md)
+*   [SECURITY.md](../SECURITY.md)
 *   mlruns / DVC artifact storage metadata
 *   Tesseract OCR Documentation
 *   FastAPI / HTMX Official Documentation
