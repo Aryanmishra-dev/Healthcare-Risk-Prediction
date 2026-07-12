@@ -1,7 +1,9 @@
-from pydantic import BaseModel, Field
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 from uuid import UUID
-from typing import List, Optional, Dict, Any
+
+from pydantic import BaseModel, Field
+
 
 class SessionResponse(BaseModel):
     id: UUID
@@ -19,6 +21,7 @@ class SessionResponse(BaseModel):
 
     model_config = {"from_attributes": True}
 
+
 class LoginHistoryResponse(BaseModel):
     id: UUID
     device_name: Optional[str] = None
@@ -33,6 +36,7 @@ class LoginHistoryResponse(BaseModel):
 
     model_config = {"from_attributes": True}
 
+
 class SecurityEventResponse(BaseModel):
     id: UUID
     event_type: str
@@ -43,11 +47,25 @@ class SecurityEventResponse(BaseModel):
 
     model_config = {"from_attributes": True}
 
+
+class AdminActionResponse(BaseModel):
+    id: UUID
+    admin_id: Optional[UUID] = None
+    target_user_id: Optional[UUID] = None
+    target_resource: str
+    action_type: str
+    metadata_payload: Optional[Dict[str, Any]] = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class DeviceResponse(BaseModel):
     device_name: str
     browser: str
     operating_system: str
     last_active: datetime
+
 
 class PaginatedSessionResponse(BaseModel):
     items: List[SessionResponse]
@@ -56,6 +74,7 @@ class PaginatedSessionResponse(BaseModel):
     size: int
     pages: int
 
+
 class PaginatedLoginHistoryResponse(BaseModel):
     items: List[LoginHistoryResponse]
     total: int
@@ -63,12 +82,14 @@ class PaginatedLoginHistoryResponse(BaseModel):
     size: int
     pages: int
 
+
 class PaginatedSecurityEventResponse(BaseModel):
     items: List[SecurityEventResponse]
     total: int
     page: int
     size: int
     pages: int
+
 
 class SecurityQueryParams(BaseModel):
     page: int = Field(1, ge=1)

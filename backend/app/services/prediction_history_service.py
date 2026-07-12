@@ -1,14 +1,17 @@
+import asyncio
 import math
-from typing import Optional, Any
+from typing import Any, Optional
 from uuid import UUID
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc, or_
+
 from fastapi import HTTPException, status
+from sqlalchemy import desc, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.models.prediction import PredictionAuditLog
-from backend.app.schemas.prediction import PredictionHistoryParams, PredictionHistoryPaginated
-from backend.app.services.notifications.notification_service import notification_dispatcher
-import asyncio
+from backend.app.schemas.prediction import (PredictionHistoryPaginated,
+                                            PredictionHistoryParams)
+from backend.app.services.notifications.notification_service import \
+    notification_dispatcher
 
 
 async def save_prediction(
@@ -47,7 +50,7 @@ async def save_prediction(
     try:
         await db.commit()
         await db.refresh(log_entry)
-        
+
         if user_id:
             status_text = "successfully" if prediction_status == "success" else "failed"
             asyncio.create_task(
@@ -57,10 +60,10 @@ async def save_prediction(
                     category="Prediction",
                     priority="NORMAL",
                     title=f"Prediction {prediction_status.capitalize()}",
-                    message=f"Your {disease_model} prediction has {status_text} completed."
+                    message=f"Your {disease_model} prediction has {status_text} completed.",
                 )
             )
-            
+
         return log_entry
     except Exception as e:
         await db.rollback()
@@ -74,7 +77,7 @@ async def get_history(
 ) -> PredictionHistoryPaginated:
     """Get paginated prediction history with filters."""
     query = select(PredictionAuditLog).where(PredictionAuditLog.user_id == user_id)
-    
+
     if params.disease:
         query = query.where(PredictionAuditLog.disease_model == params.disease)
     if params.risk_level:
@@ -97,7 +100,7 @@ async def get_history(
                 PredictionAuditLog.notes.ilike(search_term),
             )
         )
-    
+
     # Do not show archived unless specifically requested (or never)
     # We will exclude archived by default for history
     query = query.where(PredictionAuditLog.archived == False)
@@ -105,22 +108,22 @@ async def get_history(
     # Count total
     count_query = select(func.count()).select_from(query.subquery())
     total = await db.scalar(count_query) or 0
-    
+
     # Pagination
     offset = (params.page - 1) * params.size
-    query = query.order_by(desc(PredictionAuditLog.created_at)).offset(offset).limit(params.size)
-    
+    query = (
+        query.order_by(desc(PredictionAuditLog.created_at))
+        .offset(offset)
+        .limit(params.size)
+    )
+
     result = await db.execute(query)
     items = result.scalars().all()
-    
+
     pages = math.ceil(total / params.size) if total > 0 else 0
-    
+
     return PredictionHistoryPaginated(
-        items=items,
-        total=total,
-        page=params.page,
-        size=params.size,
-        pages=pages
+        items=items, total=total, page=params.page, size=params.size, pages=pages
     )
 
 
@@ -131,16 +134,15 @@ async def get_prediction_by_id(
 ) -> PredictionAuditLog:
     """Get a single prediction and verify ownership."""
     query = select(PredictionAuditLog).where(
-        PredictionAuditLog.id == prediction_id,
-        PredictionAuditLog.user_id == user_id
+        PredictionAuditLog.id == prediction_id, PredictionAuditLog.user_id == user_id
     )
     result = await db.execute(query)
     prediction = result.scalar_one_or_none()
-    
+
     if not prediction:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Prediction not found or you don't have access to it."
+            detail="Prediction not found or you don't have access to it.",
         )
     return prediction
 

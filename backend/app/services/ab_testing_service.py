@@ -1,5 +1,6 @@
 import random
-from typing import Dict, Any
+from typing import Any, Dict
+
 
 class ABTestingService:
     def __init__(self):
@@ -18,16 +19,17 @@ class ABTestingService:
         """Assign a request to a model group based on traffic split."""
         if disease not in self.configs:
             return "Production"
-            
+
         config = self.configs[disease]
         rand = random.uniform(0, 100)
-        
+
         cumulative = 0
         for group, percentage in config.items():
             cumulative += percentage
             if rand <= cumulative:
                 return group
-                
+
         return "Production"
+
 
 ab_testing_service = ABTestingService()

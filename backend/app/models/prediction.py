@@ -1,7 +1,8 @@
 import uuid
-from sqlalchemy import Float, ForeignKey, String, Integer
+
+from sqlalchemy import Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.types import Uuid, JSON
+from sqlalchemy.types import JSON, Uuid
 
 from backend.app.models.base import Base, TimestampMixin
 
@@ -38,7 +39,9 @@ class PredictionAuditLog(Base, TimestampMixin):
     notes: Mapped[str | None] = mapped_column(String(1000), nullable=True)
 
     # Phase 3: MLOps and Model Lifecycle
-    model_version_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("model_versions.id", ondelete="SET NULL"), nullable=True)
+    model_version_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("model_versions.id", ondelete="SET NULL"), nullable=True
+    )
     is_calibrated: Mapped[bool] = mapped_column(default=False)
     ab_test_group: Mapped[str | None] = mapped_column(String(50), nullable=True)
     drift_detected: Mapped[bool] = mapped_column(default=False)

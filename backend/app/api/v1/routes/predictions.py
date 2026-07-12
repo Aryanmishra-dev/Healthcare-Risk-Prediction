@@ -1,16 +1,15 @@
-from fastapi import APIRouter, Depends, status, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Any, Dict, List, Optional
 from uuid import UUID
-from typing import Any, Dict, Optional, List
 
-from backend.app.core.database import get_db
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from backend.app.auth.router import get_current_user
+from backend.app.core.database import get_db
 from backend.app.models.user import User
-from backend.app.schemas.prediction import (
-    PredictionHistoryResponse,
-    PredictionHistoryPaginated,
-    PredictionHistoryParams
-)
+from backend.app.schemas.prediction import (PredictionHistoryPaginated,
+                                            PredictionHistoryParams,
+                                            PredictionHistoryResponse)
 from backend.app.services import prediction_history_service
 
 router = APIRouter(prefix="/predictions", tags=["Prediction History"])
@@ -33,7 +32,9 @@ async def get_prediction(
     db: AsyncSession = Depends(get_db),
 ):
     """Get a single prediction by ID."""
-    return await prediction_history_service.get_prediction_by_id(db, prediction_id, current_user.id)
+    return await prediction_history_service.get_prediction_by_id(
+        db, prediction_id, current_user.id
+    )
 
 
 @router.delete("/{prediction_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -43,7 +44,9 @@ async def delete_prediction(
     db: AsyncSession = Depends(get_db),
 ):
     """Soft delete (archive) a prediction."""
-    await prediction_history_service.delete_prediction(db, prediction_id, current_user.id)
+    await prediction_history_service.delete_prediction(
+        db, prediction_id, current_user.id
+    )
     return None
 
 
@@ -54,7 +57,9 @@ async def favorite_prediction(
     db: AsyncSession = Depends(get_db),
 ):
     """Mark a prediction as favorite."""
-    return await prediction_history_service.toggle_favorite(db, prediction_id, current_user.id, True)
+    return await prediction_history_service.toggle_favorite(
+        db, prediction_id, current_user.id, True
+    )
 
 
 @router.delete("/{prediction_id}/favorite", response_model=PredictionHistoryResponse)
@@ -64,12 +69,15 @@ async def unfavorite_prediction(
     db: AsyncSession = Depends(get_db),
 ):
     """Remove favorite status from a prediction."""
-    return await prediction_history_service.toggle_favorite(db, prediction_id, current_user.id, False)
+    return await prediction_history_service.toggle_favorite(
+        db, prediction_id, current_user.id, False
+    )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  Phase 3.4 — SHAP Explainability
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @router.get("/{prediction_id}/explanation")
 async def get_prediction_explanation(
@@ -86,7 +94,9 @@ async def get_prediction_explanation(
     - ranked feature importances with human-readable descriptions
     - waterfall/force plot metadata
     """
-    prediction = await prediction_history_service.get_prediction_by_id(db, prediction_id, current_user.id)
+    prediction = await prediction_history_service.get_prediction_by_id(
+        db, prediction_id, current_user.id
+    )
 
     shap_values = prediction.shap_values
     if not shap_values or not shap_values.get("features"):
@@ -126,7 +136,13 @@ async def get_prediction_explanation(
     waterfall = []
     running = base_value
     for r in ranked:
-        waterfall.append({"feature": r["feature"], "value": r["shap_value"], "cumulative": running + r["shap_value"]})
+        waterfall.append(
+            {
+                "feature": r["feature"],
+                "value": r["shap_value"],
+                "cumulative": running + r["shap_value"],
+            }
+        )
         running += r["shap_value"]
 
     return {

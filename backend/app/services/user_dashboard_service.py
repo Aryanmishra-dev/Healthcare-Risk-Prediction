@@ -1,23 +1,22 @@
 from uuid import UUID
-from sqlalchemy import select, func, desc
+
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.models.user import User, UserProfile, UserSettings, UserSession
+from backend.app.models.base import utc_now
+from backend.app.models.export import DataExport
+from backend.app.models.notification import Notification
 from backend.app.models.prediction import PredictionAuditLog
 from backend.app.models.report import UserReport
-from backend.app.models.notification import Notification
-from backend.app.models.export import DataExport
-from backend.app.schemas.user_dashboard import (
-    DashboardResponse,
-    AccountResponse,
-    UserStatisticsResponse,
-    UserProfileUpdate,
-    UserSettingsUpdate,
-    RecentPrediction,
-    RecentReport,
-    RecentExport,
-)
-from backend.app.models.base import utc_now
+from backend.app.models.user import (User, UserProfile, UserSession,
+                                     UserSettings)
+from backend.app.schemas.user_dashboard import (AccountResponse,
+                                                DashboardResponse,
+                                                RecentExport, RecentPrediction,
+                                                RecentReport,
+                                                UserProfileUpdate,
+                                                UserSettingsUpdate,
+                                                UserStatisticsResponse)
 
 
 async def get_or_create_profile(db: AsyncSession, user_id: UUID) -> UserProfile:
@@ -125,9 +124,7 @@ async def get_dashboard_data(db: AsyncSession, user: User) -> DashboardResponse:
     unread_notifications = await db.scalar(
         select(func.count())
         .select_from(Notification)
-        .where(
-            Notification.user_id == user_id, Notification.is_read.is_(False)
-        )
+        .where(Notification.user_id == user_id, Notification.is_read.is_(False))
     )
     # Recent Predictions
     recent_preds_query = (
@@ -187,7 +184,13 @@ async def get_dashboard_data(db: AsyncSession, user: User) -> DashboardResponse:
             for r in recent_reports
         ],
         recent_exports=[
-            RecentExport(id=e.id, export_format=e.export_format, status=e.status, created_at=e.created_at, completed_at=e.completed_at)
+            RecentExport(
+                id=e.id,
+                export_format=e.export_format,
+                status=e.status,
+                created_at=e.created_at,
+                completed_at=e.completed_at,
+            )
             for e in recent_exports
         ],
         account_created_date=user.created_at,

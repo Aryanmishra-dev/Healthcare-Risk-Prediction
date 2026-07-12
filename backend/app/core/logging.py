@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 
+
 def setup_logging() -> None:
     """Configure standard logging with JSON formatting (prod) or console (dev)."""
     env = os.environ.get("APP_ENV", "development")
@@ -13,34 +14,39 @@ def setup_logging() -> None:
 
     logger = logging.getLogger()
     logger.setLevel(getattr(logging, log_level, logging.INFO))
-    
+
     # Remove all existing handlers
     for handler in logger.handlers[:]:
         logger.removeHandler(handler)
-        
+
     handler = logging.StreamHandler(sys.stdout)
-    
+
     if env == "production":
         # Use a simple JSON formatter for production
         try:
             import json
+
             class JsonFormatter(logging.Formatter):
                 def format(self, record):
                     log_record = {
                         "time": self.formatTime(record, self.datefmt),
                         "level": record.levelname,
                         "name": record.name,
-                        "message": record.getMessage()
+                        "message": record.getMessage(),
                     }
                     if record.exc_info:
                         log_record["exc_info"] = self.formatException(record.exc_info)
                     return json.dumps(log_record)
-            
+
             formatter = JsonFormatter()
         except ImportError:
-            formatter = logging.Formatter('{"time": "%(asctime)s", "level": "%(levelname)s", "name": "%(name)s", "message": "%(message)s"}')
+            formatter = logging.Formatter(
+                '{"time": "%(asctime)s", "level": "%(levelname)s", "name": "%(name)s", "message": "%(message)s"}'
+            )
     else:
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
 
     handler.setFormatter(formatter)
     logger.addHandler(handler)

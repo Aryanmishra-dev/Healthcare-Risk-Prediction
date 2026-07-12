@@ -1,10 +1,12 @@
-"""Shared test fixtures and configuration."""
-
 import os
 
 import pytest
 from fastapi.testclient import TestClient
 
+# Tell HardenedRateLimiter to skip in-memory throttle during tests.
+# Redis is not available in CI, so without this flag tests would be
+# rate-limited by the fallback bucket after just a few requests.
+os.environ.setdefault("TESTING", "1")
 os.environ.setdefault("DEV_API_KEY", "test-dev-api-key")
 
 from backend.app.main import app

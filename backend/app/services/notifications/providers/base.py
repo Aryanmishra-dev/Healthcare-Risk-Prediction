@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Any, Dict
 from uuid import UUID
+
 
 class NotificationProvider(ABC):
     """Abstract interface for all notification providers."""
-    
+
     @abstractmethod
     async def send(
         self,
@@ -14,7 +15,7 @@ class NotificationProvider(ABC):
         priority: str,
         title: str,
         message: str,
-        metadata_payload: Dict[str, Any] = None
+        metadata_payload: Dict[str, Any] = None,
     ) -> bool:
         """Send a notification."""
         pass

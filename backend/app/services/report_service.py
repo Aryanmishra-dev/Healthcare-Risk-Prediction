@@ -1,14 +1,15 @@
+import hashlib
 import math
+from datetime import datetime
 from typing import Optional
 from uuid import UUID
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc, or_
-from fastapi import HTTPException, status
-import hashlib
-from datetime import datetime
 
-from backend.app.models.report import UserReport
+from fastapi import HTTPException, status
+from sqlalchemy import desc, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from backend.app.models.base import utc_now
+from backend.app.models.report import UserReport
 
 
 async def get_report_by_id(
@@ -20,15 +21,15 @@ async def get_report_by_id(
     query = select(UserReport).where(
         UserReport.id == report_id,
         UserReport.user_id == user_id,
-        UserReport.deleted_at.is_(None)
+        UserReport.deleted_at.is_(None),
     )
     result = await db.execute(query)
     report = result.scalar_one_or_none()
-    
+
     if not report:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Report not found or you don't have access to it."
+            detail="Report not found or you don't have access to it.",
         )
     return report
 
@@ -45,16 +46,16 @@ async def create_report(
     checksum: str,
 ) -> UserReport:
     """Create a new report in the database."""
-    
+
     # Check for duplicates using checksum and user_id
     query = select(UserReport).where(
         UserReport.user_id == user_id,
         UserReport.checksum == checksum,
-        UserReport.deleted_at.is_(None)
+        UserReport.deleted_at.is_(None),
     )
     result = await db.execute(query)
     existing_report = result.scalar_one_or_none()
-    
+
     if existing_report:
         # If it's the exact same file, return the existing report to prevent duplicates
         return existing_report
@@ -86,7 +87,7 @@ async def soft_delete_report(
     report = await get_report_by_id(db, report_id, user_id)
     report.deleted_at = utc_now()
     await db.commit()
-    
+
 
 def calculate_checksum(content: bytes) -> str:
     """Calculate SHA-256 checksum for duplicate detection."""

@@ -6,24 +6,24 @@ Admin-only routes are protected by RBAC.
 """
 
 import uuid
-from typing import Optional, List
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
+from typing import List, Optional
 
-from backend.app.core.database import get_db
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import desc, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from backend.app.auth.router import get_current_user
-from backend.app.models.user import User
+from backend.app.core.database import get_db
 from backend.app.models.model_version import ModelVersion
-from backend.app.schemas.model_version import (
-    ModelVersionCreate,
-    ModelVersionResponse,
-    ModelComparisonResponse,
-)
-from backend.app.services.model_registry_service import model_registry_service
-from backend.app.services.model_manager import model_manager
-from backend.app.services.model_monitoring_service import model_monitoring_service
+from backend.app.models.user import User
+from backend.app.schemas.model_version import (ModelComparisonResponse,
+                                               ModelVersionCreate,
+                                               ModelVersionResponse)
 from backend.app.services.model_drift_service import model_drift_service
+from backend.app.services.model_manager import model_manager
+from backend.app.services.model_monitoring_service import \
+    model_monitoring_service
+from backend.app.services.model_registry_service import model_registry_service
 
 router = APIRouter(prefix="/models", tags=["Model Registry"])
 
@@ -42,10 +42,13 @@ def require_admin(current_user: User = Depends(get_current_user)) -> User:
 #  Phase 3.10 — Public Model Endpoints
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 @router.get("", response_model=List[ModelVersionResponse])
 async def list_models(
     disease: Optional[str] = Query(None, description="Filter by disease type"),
-    status_filter: Optional[str] = Query(None, alias="status", description="Filter by status"),
+    status_filter: Optional[str] = Query(
+        None, alias="status", description="Filter by status"
+    ),
     limit: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -95,9 +98,11 @@ async def get_model_health(
     """
     health = model_manager.get_health_status()
     return {
-        "status": "healthy" if any(
-            v["status"] == "ready" for v in health["models"].values()
-        ) else "degraded",
+        "status": (
+            "healthy"
+            if any(v["status"] == "ready" for v in health["models"].values())
+            else "degraded"
+        ),
         "models": health["models"],
         "diagnostics": health["diagnostics"],
     }
@@ -138,7 +143,12 @@ async def get_model_version(
 #  Phase 3.10 — Admin-only Model Management
 # ─────────────────────────────────────────────────────────────────────────────
 
-@router.post("/register", response_model=ModelVersionResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/register",
+    response_model=ModelVersionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def register_model(
     schema: ModelVersionCreate,
     admin: User = Depends(require_admin),
