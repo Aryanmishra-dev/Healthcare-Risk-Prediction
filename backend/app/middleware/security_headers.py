@@ -23,7 +23,6 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
-
 # Allowlisted external script origins used by the HTMX UI.
 # These are the CDN hosts that deliver HTMX and Alpine.js.
 _CDN_SCRIPT_HOSTS = "cdn.jsdelivr.net unpkg.com"

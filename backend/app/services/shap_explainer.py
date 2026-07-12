@@ -5,8 +5,8 @@ Generates per-prediction SHAP values so users can understand *why* a model
 produced a specific risk score.
 """
 
-import os
 import logging
+import os
 from pathlib import Path
 
 import joblib
@@ -60,7 +60,9 @@ def load_explainers():
         rng = np.random.default_rng(42)
         n = 100
         bg_data = {
-            "Age": scaler.transform(rng.integers(18, 101, size=(n, 1)).astype(float)).ravel(),
+            "Age": scaler.transform(
+                rng.integers(18, 101, size=(n, 1)).astype(float)
+            ).ravel(),
             "Gender": rng.integers(0, 2, size=n).astype(float),
             "Smoking": rng.integers(0, 2, size=n).astype(float),
             "Yellow Fingers": rng.integers(0, 2, size=n).astype(float),

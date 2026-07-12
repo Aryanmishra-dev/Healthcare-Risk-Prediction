@@ -20,31 +20,36 @@ def parse_pdf(file_bytes: bytes) -> str:
     Uses PyMuPDF (fitz) to iterate all pages and concatenate text.
     If no text is found (e.g., scanned PDF), falls back to OCR.
     """
+    import io
+
     import fitz  # PyMuPDF
     import pytesseract
     from PIL import Image
-    import io
 
     text_parts: list[str] = []
     with fitz.open(stream=file_bytes, filetype="pdf") as doc:
         for page_num, page in enumerate(doc):
             page_text = page.get_text("text")
-            
+
             if not page_text.strip():
-                logger.debug("pdf_page_no_text_falling_back_to_ocr", extra={"page": page_num})
+                logger.debug(
+                    "pdf_page_no_text_falling_back_to_ocr", extra={"page": page_num}
+                )
                 pix = page.get_pixmap(dpi=150)
                 img = Image.open(io.BytesIO(pix.tobytes("png")))
                 page_text = pytesseract.image_to_string(img)
-                
+
             if page_text.strip():
                 text_parts.append(page_text)
-            logger.debug("pdf_page_extracted", extra={"page": page_num, "chars": len(page_text)})
+            logger.debug(
+                "pdf_page_extracted", extra={"page": page_num, "chars": len(page_text)}
+            )
 
         raw_text = "\n".join(text_parts).strip()
 
     if not raw_text:
         logger.warning("pdf_no_text_extracted_even_with_ocr")
-        
+
     return raw_text
 
 
@@ -54,8 +59,8 @@ def parse_image(file_bytes: bytes) -> str:
 
     Uses pytesseract with Pillow for image handling.
     """
-    from PIL import Image
     import pytesseract
+    from PIL import Image
 
     image = Image.open(io.BytesIO(file_bytes))
 

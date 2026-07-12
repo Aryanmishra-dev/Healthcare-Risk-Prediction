@@ -36,13 +36,15 @@ class Experiment:
     results: list[dict] = field(default_factory=list)
 
     def record(self, variant: str, result: dict, latency_ms: float) -> None:
-        self.results.append({
-            "variant": variant,
-            "risk_percentage": result.get("risk_percentage"),
-            "risk_level": result.get("risk_level"),
-            "latency_ms": round(latency_ms, 2),
-            "timestamp": time.time(),
-        })
+        self.results.append(
+            {
+                "variant": variant,
+                "risk_percentage": result.get("risk_percentage"),
+                "risk_level": result.get("risk_level"),
+                "latency_ms": round(latency_ms, 2),
+                "timestamp": time.time(),
+            }
+        )
 
 
 class ABRouter:
@@ -69,10 +71,13 @@ class ABRouter:
         )
         logger.info(
             "A/B experiment registered: %s (challenger gets %d%% traffic)",
-            model_name, traffic_pct,
+            model_name,
+            traffic_pct,
         )
 
-    def route(self, model_name: str, request_id: str = "", **kwargs: Any) -> tuple[dict, str]:
+    def route(
+        self, model_name: str, request_id: str = "", **kwargs: Any
+    ) -> tuple[dict, str]:
         """
         Route a prediction to champion or challenger.
 
@@ -99,7 +104,10 @@ class ABRouter:
         exp.record(variant, result, latency)
         logger.info(
             "A/B routed %s → %s (bucket=%d, latency=%.1fms)",
-            model_name, variant, bucket, latency,
+            model_name,
+            variant,
+            bucket,
+            latency,
         )
         return result, variant
 

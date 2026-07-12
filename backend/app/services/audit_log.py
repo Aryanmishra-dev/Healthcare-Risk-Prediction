@@ -1,5 +1,6 @@
 import uuid
-from typing import Any, Optional, Dict
+from typing import Any, Dict, Optional
+
 from fastapi import Request
 
 from backend.app.core.database import AsyncSessionLocal
@@ -16,8 +17,12 @@ async def log_prediction_to_db(
     shap_values: Optional[Dict] = None,
     processing_time_ms: int = 0,
 ) -> None:
-    request_id = getattr(request.state, "request_id", None) or request.headers.get("x-request-id") or str(uuid.uuid4())
-    
+    request_id = (
+        getattr(request.state, "request_id", None)
+        or request.headers.get("x-request-id")
+        or str(uuid.uuid4())
+    )
+
     # Parse user_id from JWT state if available on the request
     parsed_user_id = None
     if user_id:
@@ -33,7 +38,7 @@ async def log_prediction_to_db(
                 parsed_user_id = uuid.UUID(str(raw_uid))
             except (ValueError, AttributeError):
                 pass
-            
+
     from backend.app.services.prediction_history_service import save_prediction
 
     async with AsyncSessionLocal() as db:

@@ -1,15 +1,18 @@
+import asyncio
 import logging
 from uuid import UUID
+
 from backend.app.core.database import AsyncSessionLocal
-from backend.app.models.report import UserReport
 from backend.app.models.base import utc_now
+from backend.app.models.report import UserReport
 from backend.app.services.document_parser import parse_document
 from backend.app.services.medical_nlp import extract_clinical_entities
+from backend.app.services.notifications.notification_service import \
+    notification_dispatcher
 from backend.app.services.storage import storage_provider
-from backend.app.services.notifications.notification_service import notification_dispatcher
-import asyncio
 
 logger = logging.getLogger(__name__)
+
 
 async def process_report_pipeline(report_id: UUID, user_id: UUID):
     """
@@ -38,7 +41,7 @@ async def process_report_pipeline(report_id: UUID, user_id: UUID):
                     category="Report",
                     priority="LOW",
                     title="Report Processing Started",
-                    message=f"Your report {report.original_filename} is being processed."
+                    message=f"Your report {report.original_filename} is being processed.",
                 )
             )
 
@@ -62,7 +65,7 @@ async def process_report_pipeline(report_id: UUID, user_id: UUID):
                             category="Report",
                             priority="HIGH",
                             title="Report Processing Failed",
-                            message=f"We could not extract text from {report.original_filename}."
+                            message=f"We could not extract text from {report.original_filename}.",
                         )
                     )
                     return
@@ -77,7 +80,7 @@ async def process_report_pipeline(report_id: UUID, user_id: UUID):
                         category="Report",
                         priority="HIGH",
                         title="Report Processing Failed",
-                        message=f"We encountered an error processing {report.original_filename}."
+                        message=f"We encountered an error processing {report.original_filename}.",
                     )
                 )
                 return
@@ -101,7 +104,7 @@ async def process_report_pipeline(report_id: UUID, user_id: UUID):
                         category="Report",
                         priority="HIGH",
                         title="Report Processing Failed",
-                        message=f"We encountered an error extracting data from {report.original_filename}."
+                        message=f"We encountered an error extracting data from {report.original_filename}.",
                     )
                 )
                 return
@@ -111,7 +114,7 @@ async def process_report_pipeline(report_id: UUID, user_id: UUID):
             report.processing_status = "completed"
             report.processed_at = utc_now()
             await db.commit()
-            
+
             asyncio.create_task(
                 notification_dispatcher.dispatch(
                     user_id=user_id,
@@ -119,10 +122,10 @@ async def process_report_pipeline(report_id: UUID, user_id: UUID):
                     category="Report",
                     priority="NORMAL",
                     title="Report Processing Completed",
-                    message=f"Your report {report.original_filename} has been successfully processed."
+                    message=f"Your report {report.original_filename} has been successfully processed.",
                 )
             )
-            
+
             logger.info(f"Report {report_id} processed successfully.")
 
         except Exception as e:

@@ -1,18 +1,20 @@
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
 from uuid import UUID
+
 from backend.app.core.database import AsyncSessionLocal
 from backend.app.models.user import UserSettings
-from backend.app.services.notifications.providers.in_app import InAppProvider
 from backend.app.services.notifications.providers.email import EmailProvider
+from backend.app.services.notifications.providers.in_app import InAppProvider
 
 logger = logging.getLogger(__name__)
+
 
 class NotificationDispatcher:
     def __init__(self):
         self.in_app_provider = InAppProvider()
         self.email_provider = EmailProvider()
-        
+
     async def dispatch(
         self,
         user_id: UUID,
@@ -22,7 +24,7 @@ class NotificationDispatcher:
         title: str,
         message: str,
         metadata_payload: Dict[str, Any] = None,
-        force_email: bool = False
+        force_email: bool = False,
     ):
         """
         Main entry point for dispatching notifications.
@@ -32,13 +34,15 @@ class NotificationDispatcher:
             async with AsyncSessionLocal() as db:
                 settings = await db.get(UserSettings, user_id)
                 if not settings:
-                    logger.warning(f"No settings found for user {user_id}. Using defaults.")
-                    settings = UserSettings(user_id=user_id) # Using defaults
-                    
+                    logger.warning(
+                        f"No settings found for user {user_id}. Using defaults."
+                    )
+                    settings = UserSettings(user_id=user_id)  # Using defaults
+
             # 1. Determine which channels to use based on preferences and category
             send_in_app = settings.in_app_notifications
             send_email = settings.email_notifications or force_email
-            
+
             # Override based on category
             if category == "Security" and not settings.security_alerts:
                 send_in_app = False
@@ -49,7 +53,7 @@ class NotificationDispatcher:
             if category == "System" and not settings.system_notifications:
                 send_in_app = False
                 send_email = False
-                
+
             # 2. Dispatch
             if send_in_app:
                 await self.in_app_provider.send(
@@ -59,9 +63,9 @@ class NotificationDispatcher:
                     priority=priority,
                     title=title,
                     message=message,
-                    metadata_payload=metadata_payload
+                    metadata_payload=metadata_payload,
                 )
-                
+
             if send_email:
                 await self.email_provider.send(
                     user_id=user_id,
@@ -70,9 +74,10 @@ class NotificationDispatcher:
                     priority=priority,
                     title=title,
                     message=message,
-                    metadata_payload=metadata_payload
+                    metadata_payload=metadata_payload,
                 )
         except Exception as e:
             logger.error(f"Failed to dispatch notification: {e}")
+
 
 notification_dispatcher = NotificationDispatcher()

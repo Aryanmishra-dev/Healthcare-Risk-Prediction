@@ -1,0 +1,61 @@
+{
+  "account": {
+    "id": "c98513af-29e0-4454-be73-1360a9b57dc4",
+    "email": "export_test_c98ab8ad-2483-4ab4-973c-33438da47135@example.com",
+    "full_name": "Export Test User",
+    "is_active": true,
+    "is_verified": false,
+    "role": "user",
+    "created_at": "2026-07-12T06:18:32.622635"
+  },
+  "profile": {},
+  "settings": {},
+  "predictions": [],
+  "reports": [],
+  "notifications": [],
+  "security": {
+    "sessions": [
+      {
+        "id": "9f71b035-0387-4175-84c2-1c692542b422",
+        "ip_address": "127.0.0.1",
+        "device_name": "Other",
+        "browser": "Other",
+        "operating_system": "Other",
+        "login_method": "password",
+        "is_revoked": false,
+        "last_activity": "2026-07-12T06:18:32.797607",
+        "created_at": "2026-07-12T06:18:32.794106"
+      }
+    ],
+    "login_history": [
+      {
+        "id": "64fecaa9-ba66-4d60-bf09-a5f87be418f0",
+        "ip_address": "127.0.0.1",
+        "device_name": "Other",
+        "browser": "Other",
+        "operating_system": "Other",
+        "login_method": "password",
+        "status": "success",
+        "login_time": "2026-07-12T06:18:32.793899"
+      }
+    ],
+    "events": [
+      {
+        "id": "1329ebab-be74-41f7-83e0-0ef313f6426c",
+        "event_type": "register",
+        "severity": "info",
+        "description": "Action register performed from IP 127.0.0.1",
+        "metadata": null,
+        "created_at": "2026-07-12T06:18:32.622993"
+      },
+      {
+        "id": "a098e4e4-177a-40d7-b206-f5a15845b056",
+        "event_type": "login",
+        "severity": "info",
+        "description": "Action login performed from IP 127.0.0.1",
+        "metadata": null,
+        "created_at": "2026-07-12T06:18:32.794407"
+      }
+    ]
+  }
+}

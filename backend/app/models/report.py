@@ -1,8 +1,9 @@
 import uuid
-from sqlalchemy import ForeignKey, String, JSON
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.types import Uuid, DateTime
 from datetime import datetime
+
+from sqlalchemy import JSON, ForeignKey, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.types import DateTime, Uuid
 
 from backend.app.models.base import Base, TimestampMixin, UUIDMixin, utc_now
 
@@ -19,20 +20,20 @@ class UserReport(Base, UUIDMixin, TimestampMixin):
     mime_type: Mapped[str] = mapped_column(String(100), default="application/pdf")
     extension: Mapped[str] = mapped_column(String(20), nullable=True)
     file_size: Mapped[int] = mapped_column(default=0)
-    
+
     # Storage
     storage_path: Mapped[str] = mapped_column(String(500))
     checksum: Mapped[str] = mapped_column(String(64), index=True)
-    
+
     # Processing state
     upload_status: Mapped[str] = mapped_column(String(50), default="uploaded")
     processing_status: Mapped[str] = mapped_column(String(50), default="pending")
     parser_version: Mapped[str] = mapped_column(String(50), default="1.0")
-    
+
     # Extracted data
     extracted_entities: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     prediction_count: Mapped[int] = mapped_column(default=0)
-    
+
     # Timestamps
     uploaded_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now

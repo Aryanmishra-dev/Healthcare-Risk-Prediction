@@ -1,21 +1,28 @@
 from datetime import datetime
 from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict, EmailStr
+
+from backend.app.core.enums import UserRole
+
 
 class UserBase(BaseModel):
     email: EmailStr
     full_name: str | None = None
 
+
 class UserCreate(UserBase):
     password: str
+
 
 class UserUpdate(BaseModel):
     full_name: str | None = None
     # Password update can be handled separately
 
+
 class UserResponse(UserBase):
     id: UUID
-    role: str
+    role: UserRole
     is_active: bool
     is_verified: bool
     created_at: datetime

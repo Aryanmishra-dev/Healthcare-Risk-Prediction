@@ -10,8 +10,13 @@ import time
 from collections import defaultdict
 from typing import Any
 
-from fastapi import Depends, HTTPException, Request, Response
+from fastapi import BackgroundTasks, Depends, HTTPException, Request, Response
 from fastapi.security import APIKeyHeader
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.app.core.database import get_db
+from backend.app.core.enums import UserRole
+from backend.app.models.admin_action import AdminAction
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +27,10 @@ _TESTING = os.environ.get("TESTING", "").lower() in ("1", "true", "yes")
 
 # ── In-process fallback rate limiter ─────────────────────────────────────────
 
+
 class _InMemoryBucket:
     """Token-bucket rate limiter slot for a single identifier."""
+
     __slots__ = ("tokens", "last_refill")
 
     def __init__(self, capacity: float) -> None:
@@ -33,7 +40,7 @@ class _InMemoryBucket:
 
 _buckets: dict[str, _InMemoryBucket] = defaultdict(lambda: _InMemoryBucket(0))
 _buckets_lock = asyncio.Lock()
-_fallback_logged_at: float = 0.0   # Rate-limit the warning log itself
+_fallback_logged_at: float = 0.0  # Rate-limit the warning log itself
 
 
 def clear_rate_limit_buckets() -> None:
@@ -68,13 +75,13 @@ async def _in_memory_rate_limit(
             "rate_limiter_fallback_active | Redis unavailable — "
             "using in-process IP-based throttle. "
             "Effective limit per IP per worker: %d/%ds",
-            times, seconds,
+            times,
+            seconds,
         )
         _fallback_logged_at = now
 
-    client_ip = (
-        request.headers.get("x-forwarded-for", "").split(",")[0].strip()
-        or (request.client.host if request.client else "unknown")
+    client_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or (
+        request.client.host if request.client else "unknown"
     )
     key = f"{request.url.path}:{client_ip}"
     refill_rate = times / seconds  # tokens per second
@@ -97,6 +104,7 @@ async def _in_memory_rate_limit(
 
 # ── Hardened rate limiter (replaces OptionalRateLimiter) ─────────────────────
 
+
 class HardenedRateLimiter:
     """
     Distributed rate limiter with automatic fail-closed in-memory fallback.
@@ -118,17 +126,16 @@ class HardenedRateLimiter:
     def _get_redis_limiter(self) -> Any:
         if self._redis_limiter is None:
             from fastapi_limiter.depends import RateLimiter
-            self._redis_limiter = RateLimiter(
-                times=self._times, seconds=self._seconds
-            )
+
+            self._redis_limiter = RateLimiter(times=self._times, seconds=self._seconds)
         return self._redis_limiter
 
     async def __call__(self, request: Request, response: Response) -> None:
         try:
             from fastapi_limiter import FastAPILimiter
+
             redis_connected = (
-                hasattr(FastAPILimiter, "redis")
-                and FastAPILimiter.redis is not None
+                hasattr(FastAPILimiter, "redis") and FastAPILimiter.redis is not None
             )
             if redis_connected:
                 await self._get_redis_limiter()(request, response)
@@ -148,6 +155,83 @@ class HardenedRateLimiter:
 OptionalRateLimiter = HardenedRateLimiter
 
 RATE_LIMIT = int(os.environ.get("RATE_LIMIT_PER_MINUTE", "60"))
+
+# ── RBAC Authorization ────────────────────────────────────────────────────────
+
+
+class RequireRole:
+    """Dependency to enforce role-based access control."""
+
+    def __init__(self, allowed_roles: list[UserRole]):
+        self.allowed_roles = allowed_roles
+
+    def __call__(self, request: Request) -> None:
+        user = getattr(request.state, "user", None)
+        if not user:
+            # We assume get_current_user was already run, but if not, fail.
+            raise HTTPException(status_code=401, detail="Authentication required")
+
+        if user.role not in self.allowed_roles:
+            logger.warning(
+                "rbac_denied | user_id=%s | role=%s | required=%s",
+                user.id,
+                user.role,
+                self.allowed_roles,
+            )
+            raise HTTPException(
+                status_code=403,
+                detail="Insufficient permissions to perform this action.",
+            )
+
+
+async def _log_admin_action(
+    db: AsyncSession,
+    admin_id: str,
+    action_type: str,
+    target_resource: str,
+    metadata: dict,
+):
+    import uuid
+
+    from backend.app.models.admin_action import AdminAction
+
+    try:
+        admin_id_uuid = uuid.UUID(admin_id) if admin_id else None
+        action = AdminAction(
+            admin_id=admin_id_uuid,
+            action_type=action_type,
+            target_resource=target_resource,
+            metadata_payload=metadata,
+        )
+        db.add(action)
+        await db.commit()
+    except Exception as e:
+        logger.error(f"Failed to log admin action: {e}")
+
+
+async def audit_admin_action(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Dependency to log admin mutations (POST/PUT/DELETE/PATCH) into AdminAction.
+    Must be used in combination with get_current_user and RequireRole.
+    """
+    if request.method in ("POST", "PUT", "DELETE", "PATCH"):
+        user = getattr(request.state, "user", None)
+        admin_id = str(user.id) if user else None
+        action_type = f"{request.method} {request.url.path}"
+        metadata = {
+            "method": request.method,
+            "url": str(request.url),
+            "client": request.client.host if request.client else "unknown",
+        }
+        # Run DB insert in background task so we don't block response
+        background_tasks.add_task(
+            _log_admin_action, db, admin_id, action_type, request.url.path, metadata
+        )
+
 
 # ── API Key ───────────────────────────────────────────────────────────────────
 
@@ -196,9 +280,7 @@ def _resolve_api_key() -> str:
 
 
 def get_api_key(
-    api_key: str | None = Depends(
-        APIKeyHeader(name=API_KEY_NAME, auto_error=False)
-    ),
+    api_key: str | None = Depends(APIKeyHeader(name=API_KEY_NAME, auto_error=False)),
 ) -> str:
     expected = _resolve_api_key()
     if not api_key or not secrets.compare_digest(api_key, expected):
@@ -220,6 +302,7 @@ def verify_user_agent(request: Request) -> str:
 
 
 # ── Startup validation ────────────────────────────────────────────────────────
+
 
 def validate_startup_config() -> None:
     """
