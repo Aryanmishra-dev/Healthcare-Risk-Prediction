@@ -92,7 +92,7 @@ jobs:
           python-version: "3.11"
           cache: "pip"
       - name: Install dependencies
-        run: pip install -r backend/requirements.txt pytest pytest-cov
+        run: pip install -r backend/requirements-dev.txt
       - name: Wait for services
         run: sleep 5
       - name: Run Tests

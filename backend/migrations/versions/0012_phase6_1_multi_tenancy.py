@@ -76,7 +76,7 @@ def upgrade() -> None:
     default_tenant_id = uuid.uuid4()
     now = datetime.now(timezone.utc)
     op.execute(
-        f"INSERT INTO tenants (id, name, slug, is_active, "
+        f"INSERT INTO tenants (id, name, slug, is_active, "  # nosec B608
         f"created_at, updated_at) "
         f"VALUES ("
         f"'{default_tenant_id}', "
@@ -104,11 +104,14 @@ def upgrade() -> None:
                 "tenant_id", postgresql.UUID(as_uuid=True), nullable=True
             ),
         )
-        op.execute(f"UPDATE {table} SET tenant_id = '{default_tenant_id}'")
+        op.execute(
+            f"UPDATE {table} "
+            f"SET tenant_id = '{default_tenant_id}'"  # nosec B608
+        )
 
     # 4. Create Memberships for existing users
     op.execute(
-        f"INSERT INTO memberships (id, tenant_id, user_id, "
+        f"INSERT INTO memberships (id, tenant_id, user_id, "  # nosec B608
         f"org_role, created_at, updated_at) "
         f"SELECT gen_random_uuid(), "
         f"'{default_tenant_id}', id, 'MEMBER', "
