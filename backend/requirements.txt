@@ -30,7 +30,7 @@ pytesseract==0.3.13
 Pillow==12.2.0
 python-jose[cryptography]==3.5.0
 bcrypt==5.0.0
-slowapi==0.1.9
+slowapi==0.1.10
 email-validator==2.3.0
 python-dotenv==1.2.2
 httpx==0.28.1
