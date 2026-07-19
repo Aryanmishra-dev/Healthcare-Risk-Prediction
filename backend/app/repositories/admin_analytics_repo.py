@@ -17,14 +17,16 @@ class AdminAnalyticsRepository:
         """Get aggregate counts for the dashboard overview."""
         total_users = await db.scalar(select(func.count(User.id)))
         verified_users = await db.scalar(
-            select(func.count(User.id)).where(User.is_verified == True)
+            select(func.count(User.id)).where(User.is_verified.is_(True))
         )
         active_users = await db.scalar(
-            select(func.count(User.id)).where(User.is_active == True)
+            select(func.count(User.id)).where(User.is_active.is_(True))
         )
 
         # Predictions
-        total_predictions = await db.scalar(select(func.count(PredictionAuditLog.id)))
+        total_predictions = await db.scalar(
+            select(func.count(PredictionAuditLog.id))
+        )
 
         # Reports
         total_reports = await db.scalar(select(func.count(UserReport.id)))
@@ -32,17 +34,22 @@ class AdminAnalyticsRepository:
         # Exports
         total_exports = await db.scalar(select(func.count(DataExport.id)))
 
-        # Latency avg (assuming latency_ms exists, else we can mock or use a similar field)
+        # Latency avg (assuming latency_ms exists, else we can mock or use a
+        # similar field)
         # Assuming PredictionAuditLog has execution_time_ms based on Phase 3
         # Let's check if it has execution_time_ms.
         # Note: If column is missing, this will fail. We'll use 0.0 if None.
         avg_latency = (
-            await db.scalar(select(func.avg(PredictionAuditLog.processing_time_ms)))
+            await db.scalar(
+                select(func.avg(PredictionAuditLog.processing_time_ms))
+            )
             or 0.0
         )
 
         avg_confidence = (
-            await db.scalar(select(func.avg(PredictionAuditLog.confidence_score)))
+            await db.scalar(
+                select(func.avg(PredictionAuditLog.confidence_score))
+            )
             or 0.0
         )
 
@@ -63,7 +70,8 @@ class AdminAnalyticsRepository:
     ) -> List[Dict[str, Any]]:
         """Get daily prediction counts for the last X days."""
         # SQLite compatible date truncation
-        # For cross-compatibility in tests (SQLite) and Prod (Postgres), we cast to Date
+        # For cross-compatibility in tests (SQLite) and Prod (Postgres), we
+        # cast to Date
         cutoff = datetime.utcnow() - timedelta(days=days)
 
         stmt = (
@@ -77,10 +85,14 @@ class AdminAnalyticsRepository:
         )
 
         result = await db.execute(stmt)
-        return [{"date": str(row.day), "count": row.count} for row in result.all()]
+        return [
+            {"date": str(row.day), "count": row.count} for row in result.all()
+        ]
 
     @staticmethod
-    async def get_disease_distribution(db: AsyncSession) -> List[Dict[str, Any]]:
+    async def get_disease_distribution(
+        db: AsyncSession,
+    ) -> List[Dict[str, Any]]:
         """Get count of predictions by disease model."""
         stmt = (
             select(
@@ -93,5 +105,6 @@ class AdminAnalyticsRepository:
 
         result = await db.execute(stmt)
         return [
-            {"disease": row.disease_model, "count": row.count} for row in result.all()
+            {"disease": row.disease_model, "count": row.count}
+            for row in result.all()
         ]

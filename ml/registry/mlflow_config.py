@@ -18,7 +18,9 @@ def init_tracking(experiment_name: str = "healthcare_risk_prediction"):
     """Initialize MLflow tracking with a local file store."""
     import mlflow
 
-    tracking_uri = os.environ.get("MLFLOW_TRACKING_URI", f"file://{MLFLOW_DIR}")
+    tracking_uri = os.environ.get(
+        "MLFLOW_TRACKING_URI", f"file://{MLFLOW_DIR}"
+    )
     mlflow.set_tracking_uri(tracking_uri)
     mlflow.set_experiment(experiment_name)
     return mlflow

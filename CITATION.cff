@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this software in your research, please cite it as below."
+authors:
+  - given-names: "Your"
+    family-names: "Name"
+    email: "your.email@example.com"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+title: "HealthPredict AI: End-to-End Healthcare Risk Prediction Platform"
+version: 3.0.0
+date-released: 2026-07-19
+url: "https://github.com/theogengineer/Healthcare-Risk-Prediction"
+repository-code: "https://github.com/theogengineer/Healthcare-Risk-Prediction"
+license: "MIT"
+type: software
+abstract: "An enterprise-grade ML platform for predicting patient risks for Diabetes, Heart Disease, and Lung Cancer using clinical indicators, with FastAPI backend, XGBoost models, SHAP explainability, and full MLOps infrastructure."
+keywords:
+  - healthcare
+  - machine-learning
+  - risk-prediction
+  - xgboost
+  - fastapi
+  - clinical-nlp

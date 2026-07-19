@@ -7,9 +7,21 @@ logger = logging.getLogger(__name__)
 class ModelMonitoringService:
     def __init__(self):
         self.metrics = {
-            "diabetes": {"prediction_count": 0, "errors": 0, "latency_sum_ms": 0},
-            "heart_disease": {"prediction_count": 0, "errors": 0, "latency_sum_ms": 0},
-            "lung_cancer": {"prediction_count": 0, "errors": 0, "latency_sum_ms": 0},
+            "diabetes": {
+                "prediction_count": 0,
+                "errors": 0,
+                "latency_sum_ms": 0,
+            },
+            "heart_disease": {
+                "prediction_count": 0,
+                "errors": 0,
+                "latency_sum_ms": 0,
+            },
+            "lung_cancer": {
+                "prediction_count": 0,
+                "errors": 0,
+                "latency_sum_ms": 0,
+            },
         }
 
     def record_prediction(self, disease: str, latency_ms: int, success: bool):

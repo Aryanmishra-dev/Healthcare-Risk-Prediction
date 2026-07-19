@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.api.dependencies import RequireRole
-from backend.app.auth.router import get_current_user
 from backend.app.core.database import get_db
 from backend.app.core.enums import UserRole
 from backend.app.services.admin.dashboard_service import AdminDashboardService

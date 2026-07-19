@@ -10,10 +10,12 @@ from backend.app.core.database import get_db
 from backend.app.models.base import utc_now
 from backend.app.models.notification import Notification
 from backend.app.models.user import User
-from backend.app.schemas.notification import (NotificationPaginated,
-                                              NotificationQueryParams,
-                                              NotificationResponse,
-                                              UnreadCountResponse)
+from backend.app.schemas.notification import (
+    NotificationPaginated,
+    NotificationQueryParams,
+    NotificationResponse,
+    UnreadCountResponse,
+)
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
@@ -48,7 +50,9 @@ async def get_notifications(
     # Pagination
     offset = (params.page - 1) * params.size
     query = (
-        query.order_by(desc(Notification.created_at)).offset(offset).limit(params.size)
+        query.order_by(desc(Notification.created_at))
+        .offset(offset)
+        .limit(params.size)
     )
 
     result = await db.execute(query)
@@ -57,7 +61,11 @@ async def get_notifications(
     pages = math.ceil(total / params.size) if total > 0 else 0
 
     return NotificationPaginated(
-        items=items, total=total, page=params.page, size=params.size, pages=pages
+        items=items,  # type: ignore[arg-type]
+        total=total,
+        page=params.page,
+        size=params.size,
+        pages=pages,
     )
 
 
@@ -67,7 +75,8 @@ async def get_unread_count(
     db: AsyncSession = Depends(get_db),
 ):
     query = select(func.count()).where(
-        Notification.user_id == current_user.id, Notification.is_read == False
+        Notification.user_id == current_user.id,
+        Notification.is_read.is_(False),
     )
     count = await db.scalar(query) or 0
     return UnreadCountResponse(unread_count=count)
@@ -109,7 +118,10 @@ async def mark_all_as_read(
 ):
     await db.execute(
         update(Notification)
-        .where(Notification.user_id == current_user.id, Notification.is_read == False)
+        .where(
+            Notification.user_id == current_user.id,
+            Notification.is_read.is_(False),
+        )
         .values(is_read=True, read_at=utc_now())
     )
     await db.commit()

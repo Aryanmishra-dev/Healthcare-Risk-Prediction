@@ -1,7 +1,8 @@
 """
 Phase 3 — Model Registry & MLOps API Routes.
 
-Provides endpoints for managing model versions, monitoring, drift detection, and health checks.
+Provides endpoints for managing model versions, monitoring, drift detection,
+and health checks.
 Admin-only routes are protected by RBAC.
 """
 
@@ -16,13 +17,15 @@ from backend.app.auth.router import get_current_user
 from backend.app.core.database import get_db
 from backend.app.models.model_version import ModelVersion
 from backend.app.models.user import User
-from backend.app.schemas.model_version import (ModelComparisonResponse,
-                                               ModelVersionCreate,
-                                               ModelVersionResponse)
+from backend.app.schemas.model_version import (
+    ModelVersionCreate,
+    ModelVersionResponse,
+)
 from backend.app.services.model_drift_service import model_drift_service
 from backend.app.services.model_manager import model_manager
-from backend.app.services.model_monitoring_service import \
-    model_monitoring_service
+from backend.app.services.model_monitoring_service import (
+    model_monitoring_service,
+)
 from backend.app.services.model_registry_service import model_registry_service
 
 router = APIRouter(prefix="/models", tags=["Model Registry"])
@@ -54,7 +57,11 @@ async def list_models(
     db: AsyncSession = Depends(get_db),
 ):
     """List all registered model versions (any authenticated user)."""
-    query = select(ModelVersion).order_by(desc(ModelVersion.created_at)).limit(limit)
+    query = (
+        select(ModelVersion)
+        .order_by(desc(ModelVersion.created_at))
+        .limit(limit)
+    )
     if disease:
         query = query.where(ModelVersion.disease == disease)
     if status_filter:
@@ -112,7 +119,8 @@ async def get_model_health(
 async def get_model_metrics(
     admin: User = Depends(require_admin),
 ):
-    """Admin only: Return per-model inference metrics (count, latency, error rate)."""
+    """Admin only: Return per-model inference metrics
+    (count, latency, error rate)."""
     return model_monitoring_service.get_metrics()
 
 
@@ -164,7 +172,8 @@ async def promote_model(
     admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """Admin only: Promote a model version to Production, archiving the previous one."""
+    """Admin only: Promote a model version to Production,
+    archiving the previous one."""
     return await model_registry_service.promote_model(db, model_id)
 
 
@@ -174,7 +183,8 @@ async def rollback_model(
     admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """Admin only: Rollback to a specific model version (promotes it, deprecates current)."""
+    """Admin only: Rollback to a specific model version
+    (promotes it, deprecates current)."""
     return await model_registry_service.rollback_model(db, model_id)
 
 
@@ -196,4 +206,6 @@ async def compare_models(
     db: AsyncSession = Depends(get_db),
 ):
     """Admin only: Compare metrics between two model versions."""
-    return await model_registry_service.compare_models(db, model_id_1, model_id_2)
+    return await model_registry_service.compare_models(
+        db, model_id_1, model_id_2
+    )

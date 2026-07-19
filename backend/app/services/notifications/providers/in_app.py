@@ -2,10 +2,10 @@ from typing import Any, Dict
 from uuid import UUID
 
 from backend.app.core.database import AsyncSessionLocal
-from backend.app.models.base import utc_now
 from backend.app.models.notification import Notification
-from backend.app.services.notifications.providers.base import \
-    NotificationProvider
+from backend.app.services.notifications.providers.base import (
+    NotificationProvider,
+)
 
 
 class InAppProvider(NotificationProvider):
@@ -19,7 +19,7 @@ class InAppProvider(NotificationProvider):
         priority: str,
         title: str,
         message: str,
-        metadata_payload: Dict[str, Any] = None,
+        metadata_payload: Dict[str, Any] | None = None,
     ) -> bool:
         async with AsyncSessionLocal() as db:
             notification = Notification(

@@ -1,22 +1,26 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import desc, func, select
+from fastapi import APIRouter, Depends, status
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.auth.router import get_current_session_id, get_current_user
 from backend.app.core.database import get_db
 from backend.app.models.user import User, UserSession
-from backend.app.schemas.security import (DeviceResponse,
-                                          PaginatedLoginHistoryResponse,
-                                          PaginatedSecurityEventResponse,
-                                          PaginatedSessionResponse,
-                                          SecurityQueryParams)
-from backend.app.services.security_service import (get_active_sessions,
-                                                   get_login_history,
-                                                   get_security_events,
-                                                   revoke_all_other_sessions,
-                                                   revoke_session)
+from backend.app.schemas.security import (
+    DeviceResponse,
+    PaginatedLoginHistoryResponse,
+    PaginatedSecurityEventResponse,
+    PaginatedSessionResponse,
+    SecurityQueryParams,
+)
+from backend.app.services.security_service import (
+    get_active_sessions,
+    get_login_history,
+    get_security_events,
+    revoke_all_other_sessions,
+    revoke_session,
+)
 
 router = APIRouter(prefix="/security", tags=["Security"])
 
@@ -30,7 +34,9 @@ async def list_sessions(
     return await get_active_sessions(db, current_user.id, params)
 
 
-@router.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT
+)
 async def delete_session(
     session_id: UUID,
     current_user: User = Depends(get_current_user),
@@ -81,9 +87,14 @@ async def list_devices(
             UserSession.operating_system,
             func.max(UserSession.last_activity).label("last_active"),
         )
-        .where(UserSession.user_id == current_user.id, UserSession.is_revoked == False)
+        .where(
+            UserSession.user_id == current_user.id,
+            UserSession.is_revoked.is_(False),
+        )
         .group_by(
-            UserSession.device_name, UserSession.browser, UserSession.operating_system
+            UserSession.device_name,
+            UserSession.browser,
+            UserSession.operating_system,
         )
     )
     result = await db.execute(query)

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block body %}
-<div class="flex h-screen flex-col overflow-hidden">
+<div class="flex h-screen flex-col overflow-hidden" x-data="authState()">
 
     <!-- Unified Navigation -->
     <header class="border-b border-slate-200 bg-white z-10 sticky top-0 w-full">
@@ -53,6 +53,12 @@
                     <span class="material-symbols-outlined text-[20px]">dashboard</span>
                     <span class="text-sm {% if initial_tab == 'dashboard' %}font-bold{% else %}font-medium{% endif %}">Dashboard</span>
                 </a>
+                <a id="nav-login" href="/login" onclick="switchTab('login');return false"
+                   x-show="!isLoggedIn"
+                   class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'login' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
+                    <span class="material-symbols-outlined text-[20px]">login</span>
+                    <span class="text-sm {% if initial_tab == 'login' %}font-bold{% else %}font-medium{% endif %}">Sign In</span>
+                </a>
                 <a id="nav-contact" href="/contact" onclick="switchTab('contact');return false"
                    class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'contact' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
                     <span class="material-symbols-outlined text-[20px]">mail</span>
@@ -61,7 +67,37 @@
                 </nav>
             </div>
 
-            <!-- Right: Profile -->
+            <!-- Right: Profile / Auth -->
+            <div class="flex-shrink-0 flex items-center gap-2 pl-2 md:pl-4 border-l border-slate-200">
+                <template x-if="isLoggedIn">
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open" class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+                            <div class="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-primary text-sm">person</span>
+                            </div>
+                            <span class="text-sm font-semibold text-slate-700 hidden md:inline" x-text="userName || 'User'"></span>
+                            <span class="material-symbols-outlined text-slate-400 text-sm" x-show="!open">expand_more</span>
+                            <span class="material-symbols-outlined text-slate-400 text-sm" x-show="open">expand_less</span>
+                        </button>
+                        <div x-show="open" @click.outside="open = false"
+                             class="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-lg border border-slate-200 py-1 z-50">
+                            <a href="/dashboard" @click="open=false;switchTab('dashboard')" class="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+                                <span class="material-symbols-outlined text-base">dashboard</span> Dashboard
+                            </a>
+                            <hr class="border-slate-100 my-1">
+                            <button @click="logout()" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                                <span class="material-symbols-outlined text-base">logout</span> Sign Out
+                            </button>
+                        </div>
+                    </div>
+                </template>
+                <template x-if="!isLoggedIn">
+                    <a href="/login" onclick="switchTab('login');return false" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors">
+                        <span class="material-symbols-outlined text-base">login</span>
+                        <span class="hidden md:inline">Sign In</span>
+                    </a>
+                </template>
+            </div>
 
         </div>
     </header>
@@ -91,6 +127,16 @@
         <!-- ══════════════ MODEL CARDS SECTION ══════════════ -->
         <div class="section-panel {% if initial_tab == 'model-cards' %}active{% endif %}" id="section-model-cards">
             {% include "partials/model_cards.html" %}
+        </div>
+
+        <!-- ══════════════ LOGIN SECTION ══════════════ -->
+        <div class="section-panel {% if initial_tab == 'login' %}active{% endif %}" id="section-login">
+            {% include "partials/login_form.html" %}
+        </div>
+
+        <!-- ══════════════ REGISTER SECTION ══════════════ -->
+        <div class="section-panel {% if initial_tab == 'register' %}active{% endif %}" id="section-register">
+            {% include "partials/register_form.html" %}
         </div>
 
         <!-- ══════════════ CONTACT SECTION ══════════════ -->
@@ -167,6 +213,106 @@
 
 {% block scripts %}
 <script>
+/* ── Auth State (Alpine Component) ──────────────────── */
+function authState() {
+    return {
+        isLoggedIn: !!sessionStorage.getItem('user_email'),
+        userName: sessionStorage.getItem('user_name') || '',
+        userEmail: sessionStorage.getItem('user_email') || '',
+        login(email, password) {
+            var self = this;
+            return fetch('/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, password: password })
+            }).then(function(r) {
+                if (!r.ok) { return r.json().then(function(e) { throw new Error(e.detail || 'Login failed'); }); }
+                return r.json();
+            }).then(function() {
+                return fetch('/auth/me');
+            }).then(function(r) { return r.json(); }).then(function(user) {
+                sessionStorage.setItem('user_name', user.full_name || '');
+                sessionStorage.setItem('user_email', user.email || '');
+                self.isLoggedIn = true;
+                self.userName = user.full_name || '';
+                self.userEmail = user.email || '';
+                switchTab('home');
+            });
+        },
+        register(name, email, password) {
+            var self = this;
+            return fetch('/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, password: password, full_name: name || null })
+            }).then(function(r) {
+                if (!r.ok) { return r.json().then(function(e) { throw new Error(e.detail || 'Registration failed'); }); }
+                return r.json();
+            }).then(function() {
+                return self.login(email, password);
+            });
+        },
+        logout() {
+            fetch('/auth/logout', { method: 'POST' }).catch(function(){});
+            sessionStorage.removeItem('user_name');
+            sessionStorage.removeItem('user_email');
+            this.isLoggedIn = false;
+            this.userName = '';
+            this.userEmail = '';
+            switchTab('home');
+        }
+    };
+}
+
+/* ── Login/Register form handlers ──────────────────── */
+document.addEventListener('DOMContentLoaded', function() {
+    var loginForm = document.getElementById('login-form');
+    if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var btn = document.getElementById('login-submit');
+            var err = document.getElementById('login-error');
+            var email = document.getElementById('login-email').value;
+            var password = document.getElementById('login-password').value;
+            err.classList.add('hidden');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="material-symbols-outlined text-base animate-spin">progress_activity</span> Signing in...';
+            var alpine = Alpine.$data(loginForm.closest('[x-data]'));
+            alpine.login(email, password).catch(function(error) {
+                err.textContent = error.message;
+                err.classList.remove('hidden');
+            }).finally(function() {
+                btn.disabled = false;
+                btn.innerHTML = '<span class="material-symbols-outlined text-base">arrow_forward</span> Sign In';
+            });
+        });
+    }
+
+    var regForm = document.getElementById('register-form');
+    if (regForm) {
+        regForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var btn = document.getElementById('register-submit');
+            var err = document.getElementById('register-error');
+            var name = document.getElementById('reg-name').value;
+            var email = document.getElementById('reg-email').value;
+            var password = document.getElementById('reg-password').value;
+            err.classList.add('hidden');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="material-symbols-outlined text-base animate-spin">progress_activity</span> Creating account...';
+            var alpine = Alpine.$data(regForm.closest('[x-data]'));
+            alpine.register(name, email, password).catch(function(error) {
+                err.textContent = error.message;
+                err.classList.remove('hidden');
+            }).finally(function() {
+                btn.disabled = false;
+                btn.innerHTML = '<span class="material-symbols-outlined text-base">person_add</span> Create Account';
+            });
+        });
+    }
+});
+
+/* ── Virtual Doctor Speech Engine ─────────────────────── */
 /* ── Virtual Doctor Speech Engine ─────────────────────── */
 (function () {
     var synthesis = window.speechSynthesis;
@@ -302,7 +448,9 @@ var tabPaths = {
     'contact': '/contact',
     'diabetes': '/diabetes',
     'heart': '/heart-disease',
-    'lung': '/lung-cancer'
+    'lung': '/lung-cancer',
+    'login': '/login',
+    'register': '/register'
 };
 
 var pathTabs = {
@@ -313,7 +461,9 @@ var pathTabs = {
     '/contact': 'contact',
     '/diabetes': 'diabetes',
     '/heart-disease': 'heart',
-    '/lung-cancer': 'lung'
+    '/lung-cancer': 'lung',
+    '/login': 'login',
+    '/register': 'register'
 };
 
 function switchTab(tab, skipHistory) {
@@ -346,7 +496,9 @@ function switchTab(tab, skipHistory) {
         'contact': 'Contact Us',
         'diabetes': 'Diabetes Risk Assessment',
         'heart': 'Heart Disease Risk Assessment',
-        'lung': 'Lung Cancer Risk Assessment'
+        'lung': 'Lung Cancer Risk Assessment',
+        'login': 'Sign In',
+        'register': 'Create Account'
     };
     var ht = document.getElementById('header-title');
     if (ht) {

@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 
 import bcrypt
 import jwt
-from user_agents import parse
+from user_agents import parse  # type: ignore[import-untyped]
 
 from backend.app.core.config import settings
 
@@ -32,7 +32,9 @@ def parse_user_agent(user_agent_string: str) -> dict:
 
     # OS
     os_name = (
-        f"{ua.os.family} {ua.os.version_string}".strip() if ua.os.family else "Unknown"
+        f"{ua.os.family} {ua.os.version_string}".strip()
+        if ua.os.family
+        else "Unknown"
     )
 
     # Device
@@ -45,7 +47,11 @@ def parse_user_agent(user_agent_string: str) -> dict:
     else:
         device_name = ua.device.family if ua.device.family else "Unknown"
 
-    return {"browser": browser, "operating_system": os_name, "device_name": device_name}
+    return {
+        "browser": browser,
+        "operating_system": os_name,
+        "device_name": device_name,
+    }
 
 
 def hash_password(password: str) -> str:

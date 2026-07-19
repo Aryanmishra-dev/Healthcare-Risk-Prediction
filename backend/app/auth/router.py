@@ -2,29 +2,57 @@ import hashlib
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Request,
+)
+from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import update
+from pydantic import BaseModel
+from sqlalchemy import func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from backend.app.api.dependencies import (RATE_LIMIT, OptionalRateLimiter,
-                                          verify_user_agent)
-from backend.app.auth.schemas import (LoginRequest, RegisterRequest,
-                                      TokenResponse)
-from backend.app.auth.utils import (decode_access_token, hash_password,
-                                    verify_password)
+from backend.app.api.dependencies import (
+    RATE_LIMIT,
+    OptionalRateLimiter,
+    verify_user_agent,
+)
+from backend.app.auth.schemas import (
+    LoginRequest,
+    RegisterRequest,
+    TokenResponse,
+)
+from backend.app.auth.utils import (
+    decode_access_token,
+    hash_password,
+    verify_password,
+)
+from backend.app.core.config import settings
 from backend.app.core.database import get_db
 from backend.app.models.prediction import PredictionAuditLog
-from backend.app.models.user import (EmailVerificationToken,
-                                     PasswordResetToken, User, UserSession)
+from backend.app.models.tenant import Membership, Tenant
+from backend.app.models.user import (
+    EmailVerificationToken,
+    PasswordResetToken,
+    User,
+    UserSession,
+)
 from backend.app.schemas.auth import SessionResponse
-from backend.app.schemas.user import UserCreate, UserResponse, UserUpdate
-from backend.app.services.auth_service import (create_session, create_user,
-                                               get_user_by_email,
-                                               get_user_by_id, log_audit)
-from backend.app.services.notifications.notification_service import \
-    notification_dispatcher
+from backend.app.schemas.user import UserCreate, UserResponse
+from backend.app.services.auth_service import (
+    create_session,
+    create_user,
+    get_user_by_email,
+    get_user_by_id,
+    log_audit,
+)
+from backend.app.services.notifications.notification_service import (
+    notification_dispatcher,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 bearer = HTTPBearer(auto_error=False)
@@ -32,11 +60,21 @@ bearer = HTTPBearer(auto_error=False)
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
+    request: Request = None,  # type: ignore[assignment]
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    if credentials is None:
-        raise HTTPException(status_code=401, detail="Missing bearer token")
-    payload = decode_access_token(credentials.credentials)
+    token = None
+    if credentials is not None:
+        token = credentials.credentials
+    elif request is not None:
+        token = request.cookies.get("access_token")
+
+    if token is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Missing bearer token or access_token cookie",
+        )
+    payload = decode_access_token(token)
     if payload is None or not payload.get("sub"):
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
@@ -46,7 +84,9 @@ async def get_current_user(
     # Check session
     session = await db.get(UserSession, session_id)
     if not session or not session.is_active:
-        raise HTTPException(status_code=401, detail="Session revoked or expired")
+        raise HTTPException(
+            status_code=401, detail="Session revoked or expired"
+        )
 
     # Update last activity
     from backend.app.models.base import utc_now
@@ -59,15 +99,28 @@ async def get_current_user(
         raise HTTPException(status_code=401, detail="User no longer exists")
     if not user.is_active:
         raise HTTPException(status_code=401, detail="User is deactivated")
+
+    if request is not None:
+        request.state.user = user
+
     return user
 
 
 async def get_current_session_id(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
+    request: Request = None,  # type: ignore[assignment]
 ) -> uuid.UUID:
-    if credentials is None:
-        raise HTTPException(status_code=401, detail="Missing bearer token")
-    payload = decode_access_token(credentials.credentials)
+    token = None
+    if credentials is not None:
+        token = credentials.credentials
+    elif request is not None:
+        token = request.cookies.get("access_token")
+    if token is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Missing bearer token or access_token cookie",
+        )
+    payload = decode_access_token(token)
     if payload is None or not payload.get("sid"):
         raise HTTPException(status_code=401, detail="Invalid or expired token")
     return uuid.UUID(payload["sid"])
@@ -102,6 +155,24 @@ async def register(
                 full_name=payload.full_name,
             ),
         )
+
+        # Create a default organization (tenant) and membership for the new
+        # user
+        tenant = Tenant(
+            name=f"{payload.full_name or payload.email}'s Organization",
+            slug=f"org-{uuid.uuid4().hex[:12]}",
+            is_active=True,
+        )
+        db.add(tenant)
+        await db.flush()
+
+        membership = Membership(
+            tenant_id=tenant.id,
+            user_id=user.id,
+            org_role="OWNER",
+        )
+        db.add(membership)
+
         await log_audit(db, "register", ip, None, user.id)
         await db.commit()
         await db.refresh(user)
@@ -138,10 +209,14 @@ async def login(
     ip = _get_ip(request)
     user = await get_user_by_email(db, payload.email)
 
-    if user is None or not verify_password(payload.password, user.password_hash):
+    if user is None or not verify_password(
+        payload.password, user.password_hash
+    ):
         await log_audit(db, "failed_login", ip, {"email": payload.email})
         await db.commit()
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+        raise HTTPException(
+            status_code=401, detail="Invalid email or password"
+        )
 
     if not user.is_active:
         raise HTTPException(status_code=401, detail="Account is deactivated")
@@ -161,18 +236,51 @@ async def login(
         title="New Login",
         message=f"A new login was detected from IP {ip}.",
     )
-    return TokenResponse(access_token=access_token, refresh_token=refresh_token)
+    response = JSONResponse(
+        content=TokenResponse(
+            access_token=access_token, refresh_token=refresh_token
+        ).model_dump()
+    )
+    secure = settings.app_env == "production"
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=secure,
+        samesite="lax",
+        max_age=1800,
+        path="/",
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=secure,
+        samesite="lax",
+        max_age=604800,
+        path="/",
+    )
+    return response
 
 
-@router.post("/refresh", response_model=TokenResponse)
+@router.post("/refresh")
 async def refresh(
-    request: Request, refresh_token: str, db: AsyncSession = Depends(get_db)
+    request: Request,
+    refresh_token: str | None = None,
+    db: AsyncSession = Depends(get_db),
 ):
+    if refresh_token is None:
+        refresh_token = request.cookies.get("refresh_token")
+    if refresh_token is None:
+        raise HTTPException(status_code=401, detail="Missing refresh token")
+
     ip = _get_ip(request)
     refresh_hash = hashlib.sha256(refresh_token.encode("utf-8")).hexdigest()
 
     result = await db.execute(
-        select(UserSession).where(UserSession.refresh_token_hash == refresh_hash)
+        select(UserSession).where(
+            UserSession.refresh_token_hash == refresh_hash
+        )
     )
     session = result.scalars().first()
 
@@ -187,7 +295,31 @@ async def refresh(
     )
     await db.commit()
 
-    return TokenResponse(access_token=access_token, refresh_token=new_refresh)
+    response = JSONResponse(
+        content=TokenResponse(
+            access_token=access_token, refresh_token=new_refresh
+        ).model_dump()
+    )
+    secure = settings.app_env == "production"
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=secure,
+        samesite="lax",
+        max_age=1800,
+        path="/",
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=new_refresh,
+        httponly=True,
+        secure=secure,
+        samesite="lax",
+        max_age=604800,
+        path="/",
+    )
+    return response
 
 
 @router.get("/me", response_model=UserResponse)
@@ -230,7 +362,8 @@ async def revoke_session(
 
 
 @router.post(
-    "/logout", dependencies=[Depends(OptionalRateLimiter(times=RATE_LIMIT, seconds=60))]
+    "/logout",
+    dependencies=[Depends(OptionalRateLimiter(times=RATE_LIMIT, seconds=60))],
 )
 async def logout(
     current_user: User = Depends(get_current_user),
@@ -250,7 +383,10 @@ async def logout(
         current_user.id,
     )
     await db.commit()
-    return {"status": "Successfully logged out"}
+    response = JSONResponse(content={"status": "Successfully logged out"})
+    response.delete_cookie("access_token", path="/")
+    response.delete_cookie("refresh_token", path="/")
+    return response
 
 
 @router.get("/history")
@@ -278,25 +414,61 @@ async def history(
     ]
 
 
-# The legacy code had an empty delete history and stats logic that depended on raw DB, adding placeholders/refactors here
+# The legacy code had an empty delete history and stats logic that depended
+# on raw DB, adding placeholders/refactors here
 @router.delete("/history/{history_id}")
 async def delete_history(
     history_id: int,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    raise HTTPException(status_code=404, detail="History entry not found")
+    result = await db.execute(
+        select(PredictionAuditLog).where(
+            PredictionAuditLog.id == history_id,
+            PredictionAuditLog.user_id == user.id,
+        )
+    )
+    entry = result.scalars().first()
+    if entry is None:
+        raise HTTPException(status_code=404, detail="History entry not found")
+    await db.delete(entry)
+    await db.commit()
+    return {"status": "deleted"}
 
 
 @router.get("/stats")
 async def stats(
     user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
-    # Basic stats stub mapped from old code
+    base = select(PredictionAuditLog).where(
+        PredictionAuditLog.user_id == user.id
+    )
+    total_predictions_result = await db.execute(
+        select(func.count()).select_from(base.subquery())
+    )
+    total_predictions = total_predictions_result.scalar() or 0
+
+    uploads_result = await db.execute(
+        select(func.count()).select_from(
+            base.where(PredictionAuditLog.source == "upload").subquery()
+        )
+    )
+    total_uploads = uploads_result.scalar() or 0
+
+    breakdown_result = await db.execute(
+        select(PredictionAuditLog.risk_level, func.count())
+        .where(PredictionAuditLog.user_id == user.id)
+        .group_by(PredictionAuditLog.risk_level)
+    )
+    risk_breakdown = {"low": 0, "medium": 0, "high": 0}
+    for row in breakdown_result.all():
+        key = row[0].lower() if row[0] else "unknown"
+        if key in risk_breakdown:
+            risk_breakdown[key] = row[1]
     return {
-        "total_uploads": 0,
-        "total_predictions": 0,
-        "risk_breakdown": {"low": 0, "medium": 0, "high": 0},
+        "total_uploads": total_uploads,
+        "total_predictions": total_predictions,
+        "risk_breakdown": risk_breakdown,
     }
 
 
@@ -306,11 +478,10 @@ async def uploads(user: User = Depends(get_current_user)):
 
 
 @router.get("/uploads/{upload_id}")
-async def upload_detail(upload_id: str, user: User = Depends(get_current_user)):
+async def upload_detail(
+    upload_id: str, user: User = Depends(get_current_user)
+):
     raise HTTPException(status_code=404, detail="Upload not found")
-
-
-from pydantic import BaseModel
 
 
 class PasswordResetRequest(BaseModel):
@@ -344,7 +515,9 @@ async def password_reset_request(
         )
         user_id = user.id
         db.add(reset)
-        await log_audit(db, "password_reset_request", _get_ip(request), None, user_id)
+        await log_audit(
+            db, "password_reset_request", _get_ip(request), None, user_id
+        )
         await db.commit()
         background_tasks.add_task(
             notification_dispatcher.dispatch,
@@ -357,7 +530,9 @@ async def password_reset_request(
             force_email=True,
         )
     # Always return success to prevent user enumeration
-    return {"status": "If the email is registered, a reset link has been sent."}
+    return {
+        "status": "If the email is registered, a reset link has been sent."
+    }
 
 
 @router.post(
@@ -374,7 +549,7 @@ async def password_reset_confirm(
     result = await db.execute(
         select(PasswordResetToken).where(
             PasswordResetToken.token_hash == token_hash,
-            PasswordResetToken.is_used == False,
+            PasswordResetToken.is_used.is_(False),
         )
     )
     reset = result.scalars().first()
@@ -420,11 +595,13 @@ async def verify_email(
     result = await db.execute(
         select(EmailVerificationToken).where(
             EmailVerificationToken.token_hash == token_hash,
-            EmailVerificationToken.is_used == False,
+            EmailVerificationToken.is_used.is_(False),
         )
     )
     verification = result.scalars().first()
-    if not verification or verification.expires_at < datetime.now(timezone.utc):
+    if not verification or verification.expires_at < datetime.now(
+        timezone.utc
+    ):
         raise HTTPException(
             status_code=400, detail="Invalid or expired verification token"
         )

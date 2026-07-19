@@ -41,9 +41,37 @@ class QuotaService:
     async def get_tenant_quota(
         db: AsyncSession, tenant_id: uuid.UUID
     ) -> Optional[TenantQuota]:
+        cache_key = f"{QuotaService.QUOTA_PREFIX}{tenant_id}"
+        if cache_service._redis and cache_service._enabled:
+            try:
+                cached = await cache_service._redis.hgetall(cache_key)
+                if cached:
+                    return TenantQuota(
+                        tenant_id=tenant_id,
+                        rate_limit_per_minute=int(
+                            cached.get(b"rate_limit_per_minute", 0)
+                        ),
+                        monthly_quota=int(cached.get(b"monthly_quota", 0)),
+                    )
+            except Exception:
+                pass
+
         stmt = select(TenantQuota).where(TenantQuota.tenant_id == tenant_id)
         result = await db.execute(stmt)
-        return result.scalar_one_or_none()
+        quota = result.scalar_one_or_none()
+
+        if quota and cache_service._redis and cache_service._enabled:
+            try:
+                mapping = {
+                    "rate_limit_per_minute": str(quota.rate_limit_per_minute),
+                    "monthly_quota": str(quota.monthly_quota),
+                }
+                await cache_service._redis.hset(cache_key, mapping=mapping)
+                await cache_service._redis.expire(cache_key, 300)
+            except Exception:
+                pass
+
+        return quota
 
     @staticmethod
     async def set_tenant_quota(
@@ -70,6 +98,14 @@ class QuotaService:
         db.add(quota)
         await db.commit()
         await db.refresh(quota)
+
+        cache_key = f"{QuotaService.QUOTA_PREFIX}{tenant_id}"
+        if cache_service._redis and cache_service._enabled:
+            try:
+                await cache_service._redis.delete(cache_key)
+            except Exception:
+                pass
+
         return quota
 
     @staticmethod
@@ -93,8 +129,8 @@ class QuotaService:
             try:
                 count_str = await cache_service._redis.get(key)
                 count = int(count_str) if count_str else 0
-                if count < max_quota:
-                    return True
+                if count >= max_quota:
+                    return False
             except Exception:
                 pass
 
@@ -107,6 +143,32 @@ class QuotaService:
         return db_count < max_quota
 
     @staticmethod
+    async def get_monthly_usage(
+        db: AsyncSession,
+        tenant_id: uuid.UUID,
+    ) -> int:
+        current_month_start = utc_now().replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        )
+
+        if cache_service._redis and cache_service._enabled:
+            current_month = utc_now().strftime("%Y-%m")
+            key = f"{QuotaService.QUOTA_PREFIX}{tenant_id}:{current_month}"
+            try:
+                count_str = await cache_service._redis.get(key)
+                if count_str is not None:
+                    return int(count_str)
+            except Exception:
+                pass
+
+        stmt = select(func.count(UsageRecord.id)).where(
+            UsageRecord.tenant_id == tenant_id,
+            UsageRecord.recorded_at >= current_month_start,
+        )
+        result = await db.execute(stmt)
+        return result.scalar() or 0
+
+    @staticmethod
     async def increment_monthly_counter(
         tenant_id: uuid.UUID,
     ) -> None:
@@ -115,5 +177,6 @@ class QuotaService:
             key = f"{QuotaService.QUOTA_PREFIX}{tenant_id}:{current_month}"
             try:
                 await cache_service._redis.incr(key)
+                await cache_service._redis.expire(key, 86400)
             except Exception:
                 pass

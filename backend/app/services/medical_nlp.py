@@ -14,59 +14,80 @@ logger = logging.getLogger(__name__)
 # Pattern Definitions
 _BMI_PATTERNS = [
     re.compile(
-        r"\b(?:BMI|body\s*mass\s*index)\s*[:=]?\s*(?:of\s+)?(\d+\.?\d*)", re.IGNORECASE
+        r"\b(?:BMI|body\s*mass\s*index)\s*[:=]?\s*(?:of\s+)?(\d+\.?\d*)",
+        re.IGNORECASE,
     )
 ]
 _BP_VALUE_PATTERN = re.compile(
-    r"\b(?:BP|blood\s*pressure)\s*[:=]?\s*(\d{2,3})\s*/\s*(\d{2,3})", re.IGNORECASE
+    r"\b(?:BP|blood\s*pressure)\s*[:=]?\s*(\d{2,3})\s*/\s*(\d{2,3})",
+    re.IGNORECASE,
 )
 _BP_KEYWORD_HIGH = re.compile(
-    r"\b(?:high\s*blood\s*pressure|hypertension|(?:blood\s*pressure|BP)\s*[:=]?\s*(?:elevated|high))",
+    r"\b(?:high\s*blood\s*pressure|hypertension|"
+    r"(?:blood\s*pressure|BP)\s*[:=]?\s*(?:elevated|high))",
     re.IGNORECASE,
 )
 _BP_KEYWORD_NORMAL = re.compile(
-    r"\b(?:normal\s*blood\s*pressure|normotensive|(?:blood\s*pressure|BP)\s*[:=]?\s*normal)",
+    r"\b(?:normal\s*blood\s*pressure|normotensive|"
+    r"(?:blood\s*pressure|BP)\s*[:=]?\s*normal)",
     re.IGNORECASE,
 )
 _CHOL_VALUE_PATTERN = re.compile(
     r"\b(?:cholesterol|total\s*cholesterol)\s*[:=]?\s*(\d{2,3})", re.IGNORECASE
 )
 _CHOL_KEYWORD_HIGH = re.compile(
-    r"\b(?:high\s*cholesterol|hypercholesterol|elevated\s*cholesterol|cholesterol\s*[:=]?\s*(?:elevated|high))",
+    r"\b(?:high\s*cholesterol|hypercholesterol|"
+    r"elevated\s*cholesterol|cholesterol\s*[:=]?\s*(?:elevated|high))",
     re.IGNORECASE,
 )
 _CHOL_KEYWORD_NORMAL = re.compile(
     r"\b(?:normal\s*cholesterol|cholesterol\s*[:=]?\s*normal)", re.IGNORECASE
 )
 _SMOKER_YES = re.compile(
-    r"\b(?:(?:current\s+)?smoker|smoking\s*[:=]?\s*(?:yes|positive|active)|tobacco\s+use|smokes)",
+    r"\b(?:(?:current\s+)?smoker|"
+    r"smoking\s*[:=]?\s*(?:yes|positive|active)|tobacco\s+use|smokes)",
     re.IGNORECASE,
 )
 _SMOKER_NO = re.compile(
-    r"\b(?:non[\-\s]?smoker|no\s+smoking|smoking\s*[:=]?\s*(?:no|negative|none|never|denied)|never\s+smoked|does\s+not\s+smoke)",
+    r"\b(?:non[\-\s]?smoker|no\s+smoking|"
+    r"smoking\s*[:=]?\s*(?:no|negative|none|never|denied)|"
+    r"never\s+smoked|does\s+not\s+smoke)",
     re.IGNORECASE,
 )
 _ACTIVE_YES = re.compile(
-    r"\b(?:physically\s+active|active\s+lifestyle|regular\s+exercise|exercises?\s+regularly|physical\s*activity\s*[:=]?\s*(?:yes|active|regular))",
+    r"\b(?:physically\s+active|active\s+lifestyle|"
+    r"regular\s+exercise|exercises?\s+regularly|"
+    r"physical\s*activity\s*[:=]?\s*(?:yes|active|regular))",
     re.IGNORECASE,
 )
 _ACTIVE_NO = re.compile(
-    r"\b(?:sedentary|physically\s+inactive|no\s+exercise|physical\s*activity\s*[:=]?\s*(?:no|inactive|none|minimal))",
+    r"\b(?:sedentary|physically\s+inactive|no\s+exercise|"
+    r"physical\s*activity\s*[:=]?\s*(?:no|inactive|none|minimal))",
     re.IGNORECASE,
 )
-_HEALTH_KEYWORD = {"excellent": 1, "very good": 2, "good": 3, "fair": 4, "poor": 5}
+_HEALTH_KEYWORD = {
+    "excellent": 1,
+    "very good": 2,
+    "good": 3,
+    "fair": 4,
+    "poor": 5,
+}
 _GENERAL_HEALTH_PATTERN = re.compile(
-    r"\b(?:general\s*health|overall\s*health|health\s*status)\s*[:=]?\s*(excellent|very\s*good|good|fair|poor|\d)",
+    r"\b(?:general\s*health|overall\s*health|health\s*status)\s*[:=]?\s*"
+    r"(excellent|very\s*good|good|fair|poor|\d)",
     re.IGNORECASE,
 )
 _MENTAL_HEALTH_PATTERN = re.compile(
     r"\b(?:mental\s*health)\s*(?:days?\s*)?[:=]?\s*(\d{1,2})", re.IGNORECASE
 )
 _MENTAL_HEALTH_DAYS = re.compile(
-    r"(\d{1,2})\s*(?:days?\s+(?:of\s+)?(?:poor\s+)?mental\s*health)", re.IGNORECASE
+    r"(\d{1,2})\s*(?:days?\s+(?:of\s+)?(?:poor\s+)?mental\s*health)",
+    re.IGNORECASE,
 )
 _AGE_PATTERNS = [
-    re.compile(r"\bage\s*[:=]?\s*(\d{1,3})\b(?!\s*years?\s*old)", re.IGNORECASE),
+    re.compile(
+        r"\bage\s*[:=]?\s*(\d{1,3})\b(?!\s*years?\s*old)", re.IGNORECASE
+    ),
     re.compile(r"\bage\s*[:=]?\s*(\d{1,3})\s*years?\b", re.IGNORECASE),
     re.compile(r"\b(\d{1,3})\s*years?\b", re.IGNORECASE),
     re.compile(r"\b(\d{1,3})\s*(?:years?\s*old|y/?o\b|yr)", re.IGNORECASE),
@@ -74,15 +95,18 @@ _AGE_PATTERNS = [
     re.compile(r"\bpatient.*?(\d{2,3})\s*(?:years?|y/?o)", re.IGNORECASE),
 ]
 _GENDER_MALE = re.compile(
-    r"\b(?:(?:sex|gender)\s*[:=]?\s*(?:male|m\b)|(?:^|\s)male\b(?:\s+patient)?|,\s*Male\b)",
+    r"\b(?:(?:sex|gender)\s*[:=]?\s*(?:male|m\b)|"
+    r"(?:^|\s)male\b(?:\s+patient)?|,\s*Male\b)",
     re.IGNORECASE,
 )
 _GENDER_FEMALE = re.compile(
-    r"\b(?:(?:sex|gender)\s*[:=]?\s*(?:female|f\b)|(?:^|\s)female\b(?:\s+patient)?|,\s*Female\b)",
+    r"\b(?:(?:sex|gender)\s*[:=]?\s*(?:female|f\b)|"
+    r"(?:^|\s)female\b(?:\s+patient)?|,\s*Female\b)",
     re.IGNORECASE,
 )
 _BLOOD_GROUP_PATTERN = re.compile(
-    r"\b(?:blood\s*group|blood\s*type|type)\s*[:=]?\s*(A|B|AB|O)\s*([\+\-]|pos(?:itive)?|neg(?:ative)?)",
+    r"\b(?:blood\s*group|blood\s*type|type)\s*[:=]?\s*"
+    r"(A|B|AB|O)\s*([\+\-]|pos(?:itive)?|neg(?:ative)?)",
     re.IGNORECASE,
 )
 _SECTION_LOOKAHEAD = r"(?=\n\s*[A-Z][A-Za-z\s]+:|\n\s*\n|\Z)"
@@ -92,11 +116,13 @@ _MEDICAL_HISTORY_PATTERN = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 _DIAGNOSIS_PATTERN = re.compile(
-    r"\b(?:diagnosis|assessment|impression)\s*[:=]\s*(.*?)" + _SECTION_LOOKAHEAD,
+    r"\b(?:diagnosis|assessment|impression)\s*[:=]\s*(.*?)"
+    + _SECTION_LOOKAHEAD,
     re.IGNORECASE | re.DOTALL,
 )
 _MEDICATIONS_PATTERN = re.compile(
-    r"\b(?:medications?|rx|prescriptions?)\s*[:=]\s*(.*?)" + _SECTION_LOOKAHEAD,
+    r"\b(?:medications?|rx|prescriptions?)\s*[:=]\s*(.*?)"
+    + _SECTION_LOOKAHEAD,
     re.IGNORECASE | re.DOTALL,
 )
 
@@ -111,7 +137,9 @@ _RANDOM_GLUCOSE_PATTERN = re.compile(
     r"\b(?:random\s*glucose|rbs)\s*[:=]?\s*(\d{2,3})", re.IGNORECASE
 )
 _HBA1C_PATTERN = re.compile(r"\bhba1c\s*[:=]?\s*(\d{1,2}\.\d)", re.IGNORECASE)
-_LDL_PATTERN = re.compile(r"\b(?:ldl|ldl-c)\s*[:=]?\s*(\d{2,3})", re.IGNORECASE)
+_LDL_PATTERN = re.compile(
+    r"\b(?:ldl|ldl-c)\s*[:=]?\s*(\d{2,3})", re.IGNORECASE
+)
 _TRIGLYCERIDES_PATTERN = re.compile(
     r"\b(?:triglycerides|tg)\s*[:=]?\s*(\d{2,3})", re.IGNORECASE
 )
@@ -129,7 +157,9 @@ _FAM_HIST_HEART = re.compile(
     r"\bfamily\s*history\s*(?:of\s*)?(?:heart\s*disease|cvd|cardiovascular)\b",
     re.IGNORECASE,
 )
-_FAM_HIST_CANCER = re.compile(r"\bfamily\s*history\s*(?:of\s*)?cancer\b", re.IGNORECASE)
+_FAM_HIST_CANCER = re.compile(
+    r"\bfamily\s*history\s*(?:of\s*)?cancer\b", re.IGNORECASE
+)
 _HEART_RATE_PATTERN = re.compile(
     r"\b(?:heart\s*rate|hr|pulse)\s*[:=]?\s*(\d{2,3})\b", re.IGNORECASE
 )
@@ -157,7 +187,9 @@ def _extract_blood_pressure(text: str):
     if m:
         systolic, diastolic = int(m.group(1)), int(m.group(2))
         return _make_res(
-            "high" if systolic >= 140 or diastolic >= 90 else "normal", 0.95, m.group(0)
+            "high" if systolic >= 140 or diastolic >= 90 else "normal",
+            0.95,
+            m.group(0),
         )
     m = _BP_KEYWORD_HIGH.search(text)
     if m:
@@ -286,7 +318,7 @@ def _extract_regex(pattern, text, conf=0.8, bool_flag=False, val_type=str):
             return _make_res("yes", conf, m.group(0))
         try:
             return _make_res(val_type(m.group(1)), conf, m.group(0))
-        except:
+        except Exception:
             return None
     if bool_flag:
         return _make_res("no", 0.5, "not found")  # Low confidence negative
@@ -334,8 +366,12 @@ def extract_clinical_entities(raw_text: str) -> dict[str, Any]:
         "family_history_cancer": _extract_regex(
             _FAM_HIST_CANCER, raw_text, bool_flag=True
         ),
-        "heart_rate": _extract_regex(_HEART_RATE_PATTERN, raw_text, val_type=int),
-        "respiratory_rate": _extract_regex(_RESP_RATE_PATTERN, raw_text, val_type=int),
+        "heart_rate": _extract_regex(
+            _HEART_RATE_PATTERN, raw_text, val_type=int
+        ),
+        "respiratory_rate": _extract_regex(
+            _RESP_RATE_PATTERN, raw_text, val_type=int
+        ),
     }
 
     found = {k: v for k, v in entities.items() if v is not None}

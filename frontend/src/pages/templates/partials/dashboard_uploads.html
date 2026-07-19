@@ -43,15 +43,12 @@
 <script>
 function uploadsPage() {
   return {
-    token: null,
     async init() {
-      this.token = localStorage.getItem('access_token');
-      if (!this.token) { window.location.href = '/'; return; }
       await this.load();
     },
     async load() {
-      const res = await window.HealthPredictConfig.fetch('/auth/uploads', { headers: { 'Authorization': 'Bearer ' + this.token } });
-      if (res.status === 401) { localStorage.removeItem('access_token'); window.location.href = '/'; return; }
+      const res = await window.HealthPredictConfig.fetch('/auth/uploads');
+      if (res.status === 401) { window.location.href = '/'; return; }
       const items = await res.json();
       const tbody = document.getElementById('uploads-tbody');
       if (!items.length) {
@@ -86,7 +83,7 @@ function uploadsPage() {
       const content = document.getElementById('upload-detail-content');
       panel.classList.remove('hidden');
       content.innerHTML = '<p class="text-slate-400 text-sm">Loading…</p>';
-      const res = await window.HealthPredictConfig.fetch(`/auth/uploads/${uploadId}`, { headers: { 'Authorization': 'Bearer ' + this.token } });
+      const res = await window.HealthPredictConfig.fetch(`/auth/uploads/${uploadId}`);
       const d = await res.json();
       if (!d.predictions?.length) {
         content.innerHTML = '<p class="text-slate-400 text-sm">No predictions linked to this upload.</p>';
@@ -111,7 +108,8 @@ window._uploadsInst = null;
 document.addEventListener('DOMContentLoaded', () => {
   // Alpine will handle init; expose expand globally
   window.uploadsPage_expand = (id) => {
-    document.querySelector('[x-data]').__x.$data.expand(id);
+    var el = document.querySelector('#uploads-tbody');
+    Alpine.$data(el.closest('[x-data]')).expand(id);
   };
 });
 </script>

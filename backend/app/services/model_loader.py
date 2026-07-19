@@ -8,7 +8,7 @@ import asyncio
 import logging
 
 import numpy as np
-import pandas as pd
+import pandas as pd  # type: ignore[import-untyped]
 from fastapi import HTTPException, Request
 
 from backend.app.services.model_manager import model_manager

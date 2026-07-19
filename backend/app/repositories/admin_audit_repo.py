@@ -1,10 +1,10 @@
-from typing import Any, Dict, List
+from typing import List
 
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.models.admin_action import AdminAction
-from backend.app.models.user import AuditLog, LoginHistory, SecurityEvent
+from backend.app.models.user import LoginHistory, SecurityEvent
 
 
 class AdminAuditRepository:
@@ -14,7 +14,11 @@ class AdminAuditRepository:
         db: AsyncSession, limit: int = 50
     ) -> List[AdminAction]:
         """Get recent actions performed by admins."""
-        stmt = select(AdminAction).order_by(desc(AdminAction.created_at)).limit(limit)
+        stmt = (
+            select(AdminAction)
+            .order_by(desc(AdminAction.created_at))
+            .limit(limit)
+        )
         result = await db.execute(stmt)
         return list(result.scalars().all())
 
@@ -24,7 +28,9 @@ class AdminAuditRepository:
     ) -> List[SecurityEvent]:
         """Get recent high-severity security events."""
         stmt = (
-            select(SecurityEvent).order_by(desc(SecurityEvent.created_at)).limit(limit)
+            select(SecurityEvent)
+            .order_by(desc(SecurityEvent.created_at))
+            .limit(limit)
         )
         result = await db.execute(stmt)
         return list(result.scalars().all())

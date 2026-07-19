@@ -24,14 +24,16 @@ class TimingMiddleware(BaseHTTPMiddleware):
             # Log slow requests
             if process_time > 1.0:
                 logger.warning(
-                    f"Slow request: {request.method} {request.url.path} took {process_time:.3f}s"
+                    f"Slow request: {request.method} {request.url.path} "
+                    f"took {process_time:.3f}s"
                 )
 
             return response
-        except Exception as exc:
+        except Exception:
             process_time = time.time() - start_time
             logger.error(
-                f"Request failed: {request.method} {request.url.path} after {process_time:.3f}s",
+                f"Request failed: {request.method} {request.url.path} "
+                f"after {process_time:.3f}s",
                 exc_info=True,
             )
             # Structured JSON error
@@ -40,6 +42,7 @@ class TimingMiddleware(BaseHTTPMiddleware):
                 content={
                     "error": "Internal Server Error",
                     "path": request.url.path,
-                    "message": "An unexpected error occurred. Please try again later.",
+                    "message": "An unexpected error occurred. "
+                    "Please try again later.",
                 },
             )

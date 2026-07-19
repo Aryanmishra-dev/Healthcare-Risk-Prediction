@@ -10,7 +10,6 @@ from typing import Sequence, Union
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "0004"
@@ -22,11 +21,17 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     # Adding Phase 2.3 fields to prediction_audit_logs
     op.add_column(
-        "prediction_audit_logs", sa.Column("report_id", sa.Uuid(), nullable=True)
+        "prediction_audit_logs",
+        sa.Column("report_id", sa.Uuid(), nullable=True),
     )
     op.add_column(
         "prediction_audit_logs",
-        sa.Column("confidence_score", sa.Float(), server_default="0.0", nullable=False),
+        sa.Column(
+            "confidence_score",
+            sa.Float(),
+            server_default="0.0",
+            nullable=False,
+        ),
     )
     op.add_column(
         "prediction_audit_logs",
@@ -38,12 +43,16 @@ def upgrade() -> None:
         ),
     )
     op.add_column(
-        "prediction_audit_logs", sa.Column("shap_values", sa.JSON(), nullable=True)
+        "prediction_audit_logs",
+        sa.Column("shap_values", sa.JSON(), nullable=True),
     )
     op.add_column(
         "prediction_audit_logs",
         sa.Column(
-            "processing_time_ms", sa.Integer(), server_default="0", nullable=False
+            "processing_time_ms",
+            sa.Integer(),
+            server_default="0",
+            nullable=False,
         ),
     )
     op.add_column(
@@ -58,13 +67,19 @@ def upgrade() -> None:
     op.add_column(
         "prediction_audit_logs",
         sa.Column(
-            "favorite", sa.Boolean(), server_default=sa.text("false"), nullable=False
+            "favorite",
+            sa.Boolean(),
+            server_default=sa.text("false"),
+            nullable=False,
         ),
     )
     op.add_column(
         "prediction_audit_logs",
         sa.Column(
-            "archived", sa.Boolean(), server_default=sa.text("false"), nullable=False
+            "archived",
+            sa.Boolean(),
+            server_default=sa.text("false"),
+            nullable=False,
         ),
     )
     op.add_column(

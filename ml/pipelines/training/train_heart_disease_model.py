@@ -4,10 +4,12 @@
 # In[1]:
 
 
-import pandas as pd
-import numpy as np
-import warnings
 import os
+import warnings
+
+import numpy as np
+import pandas as pd
+
 warnings.filterwarnings("ignore")
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
@@ -39,14 +41,15 @@ print("CVDINFR4 (Heart attack):", dict(df["CVDINFR4"].value_counts().head()))
 print("CVDCRHD4 (Coronary HD):", dict(df["CVDCRHD4"].value_counts().head()))
 
 # Create binary target: 1 = heart disease present, 0 = no heart disease
-df["heart_disease"] = (
-    (df["CVDINFR4"] == 1) |
-    (df["CVDCRHD4"] == 1)
-).astype(int)
+df["heart_disease"] = ((df["CVDINFR4"] == 1) | (df["CVDCRHD4"] == 1)).astype(
+    int
+)
 
 print(f"\nTarget distribution:")
 print(df["heart_disease"].value_counts())
-print(f"\nHeart disease prevalence: {df['heart_disease'].mean():.3f} ({df['heart_disease'].mean()*100:.1f}%)")
+print(
+    f"\nHeart disease prevalence: {df['heart_disease'].mean():.3f} ({df['heart_disease'].mean()*100:.1f}%)"
+)
 
 
 # In[ ]:
@@ -63,20 +66,20 @@ print(f"\nHeart disease prevalence: {df['heart_disease'].mean():.3f} ({df['heart
 
 
 features = [
-    "_AGEG5YR",   # Age group
-    "SEX",        # Gender
-    "_BMI5",      # Body mass index
-    "_RFHYPE5",   # High blood pressure
-    "_RFCHOL",    # High cholesterol
-    "SMOKE100",   # Smoking history
-    "_TOTINDA",   # Physical activity
-    "_FRTLT1",    # Fruit consumption
-    "_VEGLT1",    # Vegetable consumption
-    "_RFDRHV5",   # Heavy alcohol drinking
-    "GENHLTH",    # General health rating
-    "MENTHLTH",   # Mental health days
-    "PHYSHLTH",   # Physical health days
-    "DIABETE3",   # Diabetes diagnosis
+    "_AGEG5YR",  # Age group
+    "SEX",  # Gender
+    "_BMI5",  # Body mass index
+    "_RFHYPE5",  # High blood pressure
+    "_RFCHOL",  # High cholesterol
+    "SMOKE100",  # Smoking history
+    "_TOTINDA",  # Physical activity
+    "_FRTLT1",  # Fruit consumption
+    "_VEGLT1",  # Vegetable consumption
+    "_RFDRHV5",  # Heavy alcohol drinking
+    "GENHLTH",  # General health rating
+    "MENTHLTH",  # Mental health days
+    "PHYSHLTH",  # Physical health days
+    "DIABETE3",  # Diabetes diagnosis
 ]
 
 target = "heart_disease"
@@ -138,7 +141,15 @@ print(f"\n✓ Validation passed: {df_model.shape[0]:,} rows (>200k required)")
 df_model["_BMI5"] = df_model["_BMI5"] / 100
 
 # ── Binary features: BRFSS 1=Yes, 2=No → 1/0 ──────────────────
-binary_cols = ["_RFHYPE5", "_RFCHOL", "SMOKE100", "_TOTINDA", "_FRTLT1", "_VEGLT1", "_RFDRHV5"]
+binary_cols = [
+    "_RFHYPE5",
+    "_RFCHOL",
+    "SMOKE100",
+    "_TOTINDA",
+    "_FRTLT1",
+    "_VEGLT1",
+    "_RFDRHV5",
+]
 for col in binary_cols:
     df_model[col] = df_model[col].map({1: 1, 2: 0})
 
@@ -161,7 +172,9 @@ df_model = df_model.dropna()
 print(f"After feature engineering: {df_model.shape}")
 print(f"\nFeature value ranges:")
 for col in features:
-    print(f"  {col:.<20} min={df_model[col].min():.1f}  max={df_model[col].max():.1f}")
+    print(
+        f"  {col:.<20} min={df_model[col].min():.1f}  max={df_model[col].max():.1f}"
+    )
 
 
 # In[ ]:
@@ -200,7 +213,9 @@ if X.isnull().sum().sum() != 0:
 print("   ✓ No missing values")
 
 # Check 4: All numeric types
-non_numeric = X.select_dtypes(exclude=["int", "float", "bool"]).columns.tolist()
+non_numeric = X.select_dtypes(
+    exclude=["int", "float", "bool"]
+).columns.tolist()
 if non_numeric:
     raise ValueError(f"Non-numeric columns: {non_numeric}")
 print("   ✓ All features numeric")
@@ -231,7 +246,8 @@ print(X.dtypes.value_counts().to_string())
 from sklearn.model_selection import train_test_split
 
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y,
+    X,
+    y,
     test_size=0.2,
     stratify=y,
     random_state=42,
@@ -281,7 +297,8 @@ model = XGBClassifier(
 )
 
 model.fit(
-    X_train, y_train,
+    X_train,
+    y_train,
     eval_set=[(X_test, y_test)],
     verbose=50,
 )
@@ -302,15 +319,23 @@ print(f"Best AUC: {model.best_score:.4f}")
 # In[ ]:
 
 
-from sklearn.metrics import roc_auc_score, classification_report, confusion_matrix
 import matplotlib.pyplot as plt
+from sklearn.metrics import (
+    classification_report,
+    confusion_matrix,
+    roc_auc_score,
+)
 
 y_pred = model.predict(X_test)
 y_prob = model.predict_proba(X_test)[:, 1]
 
 auc = roc_auc_score(y_test, y_prob)
 print(f"ROC-AUC: {auc:.4f}\n")
-print(classification_report(y_test, y_pred, target_names=["No Heart Disease", "Heart Disease"]))
+print(
+    classification_report(
+        y_test, y_pred, target_names=["No Heart Disease", "Heart Disease"]
+    )
+)
 
 # Confusion matrix
 cm = confusion_matrix(y_test, y_pred)
@@ -342,10 +367,9 @@ plt.show()
 
 
 importances = model.get_booster().get_score(importance_type="gain")
-imp_df = (
-    pd.DataFrame.from_dict(importances, orient="index", columns=["gain"])
-    .sort_values("gain", ascending=True)
-)
+imp_df = pd.DataFrame.from_dict(
+    importances, orient="index", columns=["gain"]
+).sort_values("gain", ascending=True)
 
 fig, ax = plt.subplots(figsize=(8, 6))
 imp_df.plot.barh(ax=ax, legend=False, color="steelblue")
@@ -355,7 +379,9 @@ plt.tight_layout()
 plt.show()
 
 print("\nTop 5 features:")
-for feat, gain in imp_df.sort_values("gain", ascending=False).head().iterrows():
+for feat, gain in (
+    imp_df.sort_values("gain", ascending=False).head().iterrows()
+):
     print(f"  {feat}: {gain['gain']:.1f}")
 
 
@@ -378,8 +404,12 @@ calibrator.fit(y_prob, y_test)
 cal_prob = calibrator.predict(y_prob)
 cal_auc = roc_auc_score(y_test, cal_prob)
 
-print(f"Raw probabilities   — mean: {y_prob.mean():.4f}, std: {y_prob.std():.4f}")
-print(f"Calibrated probs    — mean: {cal_prob.mean():.4f}, std: {cal_prob.std():.4f}")
+print(
+    f"Raw probabilities   — mean: {y_prob.mean():.4f}, std: {y_prob.std():.4f}"
+)
+print(
+    f"Calibrated probs    — mean: {cal_prob.mean():.4f}, std: {cal_prob.std():.4f}"
+)
 print(f"Actual positive rate: {y_test.mean():.4f}")
 print(f"Calibrated AUC: {cal_auc:.4f}")
 
@@ -399,7 +429,11 @@ cal_pred = (cal_prob >= 0.5).astype(int)
 
 print(f"Pre-calibration  ROC-AUC: {auc:.4f}")
 print(f"Post-calibration ROC-AUC: {cal_auc:.4f}\n")
-print(classification_report(y_test, cal_pred, target_names=["No Heart Disease", "Heart Disease"]))
+print(
+    classification_report(
+        y_test, cal_pred, target_names=["No Heart Disease", "Heart Disease"]
+    )
+)
 
 
 # In[ ]:
@@ -426,8 +460,12 @@ joblib.dump(model, model_path)
 joblib.dump(calibrator, calibrator_path)
 joblib.dump(X.columns.tolist(), features_path)
 
-print(f"Saved model      → {model_path}  ({os.path.getsize(model_path) / 1024:.0f} KB)")
-print(f"Saved calibrator → {calibrator_path}  ({os.path.getsize(calibrator_path) / 1024:.0f} KB)")
+print(
+    f"Saved model      → {model_path}  ({os.path.getsize(model_path) / 1024:.0f} KB)"
+)
+print(
+    f"Saved calibrator → {calibrator_path}  ({os.path.getsize(calibrator_path) / 1024:.0f} KB)"
+)
 print(f"Saved features   → {features_path}")
 print(f"Features ({len(X.columns)}): {X.columns.tolist()}")
 
@@ -452,7 +490,11 @@ loaded_features = joblib.load(features_path)
 sample = X_test.iloc[[0]]
 raw_prob = loaded_model.predict_proba(sample)[:, 1][0]
 cal_prob_val = loaded_calibrator.predict([raw_prob])[0]
-risk = "High" if cal_prob_val >= 0.6 else ("Moderate" if cal_prob_val >= 0.3 else "Low")
+risk = (
+    "High"
+    if cal_prob_val >= 0.6
+    else ("Moderate" if cal_prob_val >= 0.3 else "Low")
+)
 
 print("=== Sanity Check ===")
 print(f"Sample features: {sample.values[0]}")

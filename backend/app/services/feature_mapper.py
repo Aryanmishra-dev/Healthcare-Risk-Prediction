@@ -76,11 +76,15 @@ def map_to_diabetes_features(entities: dict[str, Any]) -> dict[str, Any]:
     res = {}
     res["age"] = _map_field(entities, "age", _age_to_group)
     res["bmi"] = _map_field(entities, "bmi")
-    res["bp"] = _map_field(entities, "blood_pressure", lambda x: _bool_flag(x, "high"))
+    res["bp"] = _map_field(
+        entities, "blood_pressure", lambda x: _bool_flag(x, "high")
+    )
     res["cholesterol"] = _map_field(
         entities, "cholesterol", lambda x: _bool_flag(x, "high")
     )
-    res["smoker"] = _map_field(entities, "smoking", lambda x: _bool_flag(x, "yes"))
+    res["smoker"] = _map_field(
+        entities, "smoking", lambda x: _bool_flag(x, "yes")
+    )
     res["activity"] = _map_field(
         entities, "physical_activity", lambda x: _bool_flag(x, "active")
     )
@@ -102,7 +106,9 @@ def map_to_heart_features(entities: dict[str, Any]) -> dict[str, Any]:
     """
     res = {}
     res["hd_age"] = _map_field(entities, "age", _age_to_group)
-    res["hd_sex"] = _map_field(entities, "gender", lambda x: 1 if x == "male" else 0)
+    res["hd_sex"] = _map_field(
+        entities, "gender", lambda x: 1 if x == "male" else 0
+    )
     res["hd_bmi"] = _map_field(entities, "bmi")
     res["hd_high_bp"] = _map_field(
         entities, "blood_pressure", lambda x: int(_bool_flag(x, "high"))
@@ -119,9 +125,12 @@ def map_to_heart_features(entities: dict[str, Any]) -> dict[str, Any]:
     res["hd_gen_health"] = _map_field(entities, "general_health", int)
     res["hd_ment_health"] = _map_field(entities, "mental_health", int)
 
-    # Additional mappings based on family history or diabetes history could be added here
+    # Additional mappings based on family history or diabetes history could
+    # be added here
     res["hd_diabetes"] = _map_field(
-        entities, "diagnosis", lambda x: 2 if "diabetes" in str(x).lower() else 0
+        entities,
+        "diagnosis",
+        lambda x: 2 if "diabetes" in str(x).lower() else 0,
     )
 
     return {k: v for k, v in res.items() if v is not None}
@@ -138,7 +147,9 @@ def map_to_lung_features(entities: dict[str, Any]) -> dict[str, Any]:
     """
     res = {}
     res["lc_age"] = _map_field(entities, "age")
-    res["lc_gender"] = _map_field(entities, "gender", lambda x: 1 if x == "male" else 0)
+    res["lc_gender"] = _map_field(
+        entities, "gender", lambda x: 1 if x == "male" else 0
+    )
     res["lc_smoking"] = _map_field(
         entities, "smoking", lambda x: int(_bool_flag(x, "yes"))
     )

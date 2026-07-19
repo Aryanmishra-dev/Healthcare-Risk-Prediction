@@ -63,6 +63,9 @@ class User(Base, UUIDMixin, TimestampMixin):
         back_populates="target_user",
         cascade="all, delete-orphan",
     )
+    memberships = relationship(
+        "Membership", back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class UserProfile(Base, UUIDMixin, TimestampMixin):
@@ -114,7 +117,9 @@ class UserSession(Base, UUIDMixin):
     user_agent: Mapped[str | None] = mapped_column(String(500), nullable=True)
     device_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     browser: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    operating_system: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    operating_system: Mapped[str | None] = mapped_column(
+        String(100), nullable=True
+    )
     country: Mapped[str | None] = mapped_column(String(100), nullable=True)
     city: Mapped[str | None] = mapped_column(String(100), nullable=True)
     login_method: Mapped[str] = mapped_column(String(50), default="password")
@@ -201,7 +206,9 @@ class LoginHistory(Base, UUIDMixin, TimestampMixin):
     user_agent: Mapped[str | None] = mapped_column(String(500), nullable=True)
     device_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     browser: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    operating_system: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    operating_system: Mapped[str | None] = mapped_column(
+        String(100), nullable=True
+    )
     country: Mapped[str | None] = mapped_column(String(100), nullable=True)
     city: Mapped[str | None] = mapped_column(String(100), nullable=True)
     login_method: Mapped[str] = mapped_column(String(50), default="password")

@@ -5,7 +5,6 @@ from pathlib import Path
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -50,7 +49,9 @@ class Settings(BaseSettings):
     smtp_port: int = 587
     smtp_username: str = ""
     smtp_password: str = ""
-    smtp_use_tls: bool = False        # True = implicit TLS (port 465); False = STARTTLS
+    smtp_use_tls: bool = (
+        False  # True = implicit TLS (port 465); False = STARTTLS
+    )
     email_from_address: str = "noreply@healthpredict.ai"
     email_from_name: str = "HealthPredict AI"
 

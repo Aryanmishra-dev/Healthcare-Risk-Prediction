@@ -1,5 +1,6 @@
 """
-SHAP explainability module — provides feature-importance explanations for all models.
+SHAP explainability module — provides feature-importance explanations for all
+models.
 
 Generates per-prediction SHAP values so users can understand *why* a model
 produced a specific risk score.
@@ -9,10 +10,10 @@ import logging
 import os
 from pathlib import Path
 
-import joblib
+import joblib  # type: ignore[import-untyped]
 import numpy as np
-import pandas as pd
-import shap
+import pandas as pd  # type: ignore[import-untyped]
+import shap  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,9 @@ def load_explainers():
         logger.info("Diabetes SHAP explainer loaded from disk.")
     except Exception:
         try:
-            model = joblib.load(os.path.join(MODEL_DIR, "diabetes_xgboost.pkl"))
+            model = joblib.load(
+                os.path.join(MODEL_DIR, "diabetes_xgboost.pkl")
+            )
             _diabetes_explainer = shap.TreeExplainer(model)
             logger.info("Diabetes SHAP explainer created from model.")
         except Exception as e:
@@ -44,7 +47,9 @@ def load_explainers():
 
     # Heart disease — TreeExplainer
     try:
-        model = joblib.load(os.path.join(MODEL_DIR, "heart_disease_xgboost.pkl"))
+        model = joblib.load(
+            os.path.join(MODEL_DIR, "heart_disease_xgboost.pkl")
+        )
         _heart_explainer = shap.TreeExplainer(model)
         logger.info("Heart disease SHAP explainer created.")
     except Exception as e:
@@ -54,7 +59,9 @@ def load_explainers():
     try:
         model = joblib.load(os.path.join(MODEL_DIR, "lung_cancer_model.pkl"))
         scaler = joblib.load(os.path.join(MODEL_DIR, "lung_cancer_scaler.pkl"))
-        features = joblib.load(os.path.join(MODEL_DIR, "lung_cancer_features.pkl"))
+        features = joblib.load(
+            os.path.join(MODEL_DIR, "lung_cancer_features.pkl")
+        )
 
         # Create a background dataset for the linear explainer
         rng = np.random.default_rng(42)

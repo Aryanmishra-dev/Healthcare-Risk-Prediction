@@ -8,19 +8,30 @@ from backend.app.models.export import DataExport
 from backend.app.models.notification import Notification
 from backend.app.models.prediction import PredictionAuditLog
 from backend.app.models.report import UserReport
-from backend.app.models.user import (User, UserProfile, UserSession,
-                                     UserSettings)
-from backend.app.schemas.user_dashboard import (AccountResponse,
-                                                DashboardResponse,
-                                                RecentExport, RecentPrediction,
-                                                RecentReport,
-                                                UserProfileUpdate,
-                                                UserSettingsUpdate,
-                                                UserStatisticsResponse)
+from backend.app.models.user import (
+    User,
+    UserProfile,
+    UserSession,
+    UserSettings,
+)
+from backend.app.schemas.user_dashboard import (
+    AccountResponse,
+    DashboardResponse,
+    RecentExport,
+    RecentPrediction,
+    RecentReport,
+    UserProfileUpdate,
+    UserSettingsUpdate,
+    UserStatisticsResponse,
+)
 
 
-async def get_or_create_profile(db: AsyncSession, user_id: UUID) -> UserProfile:
-    result = await db.execute(select(UserProfile).where(UserProfile.user_id == user_id))
+async def get_or_create_profile(
+    db: AsyncSession, user_id: UUID
+) -> UserProfile:
+    result = await db.execute(
+        select(UserProfile).where(UserProfile.user_id == user_id)
+    )
     profile = result.scalar_one_or_none()
     if not profile:
         profile = UserProfile(user_id=user_id)
@@ -29,7 +40,9 @@ async def get_or_create_profile(db: AsyncSession, user_id: UUID) -> UserProfile:
     return profile
 
 
-async def get_or_create_settings(db: AsyncSession, user_id: UUID) -> UserSettings:
+async def get_or_create_settings(
+    db: AsyncSession, user_id: UUID
+) -> UserSettings:
     result = await db.execute(
         select(UserSettings).where(UserSettings.user_id == user_id)
     )
@@ -55,17 +68,20 @@ async def update_user_profile(
         profile.timezone = data.timezone
 
     if data.language is not None:
-        # Also update in settings for consistency if needed, but keeping it simple based on spec.
+        # Also update in settings for consistency if needed,
+        # but keeping it simple based on spec.
         settings = await get_or_create_settings(db, user.id)
         settings.language = data.language
 
     await db.commit()
     await db.refresh(profile)
-    # Re-attach language since it's mapped to settings according to our schema structure
-    # Wait, the Profile schema expects language. Let's just set it from settings.
+    # Re-attach language since it's mapped to settings according
+    # to our schema structure
+    # Wait, the Profile schema expects language.
+    # Let's just set it from settings.
     settings = await get_or_create_settings(db, user.id)
-    profile.language = settings.language
-    profile.full_name = user.full_name
+    profile.language = settings.language  # type: ignore[attr-defined]
+    profile.full_name = user.full_name  # type: ignore[attr-defined]
     return profile
 
 
@@ -92,7 +108,9 @@ async def update_user_settings(
     return settings
 
 
-async def get_dashboard_data(db: AsyncSession, user: User) -> DashboardResponse:
+async def get_dashboard_data(
+    db: AsyncSession, user: User
+) -> DashboardResponse:
     user_id = user.id
 
     # Total Predictions
@@ -103,7 +121,9 @@ async def get_dashboard_data(db: AsyncSession, user: User) -> DashboardResponse:
     )
 
     # Predictions this month
-    start_of_month = utc_now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    start_of_month = utc_now().replace(
+        day=1, hour=0, minute=0, second=0, microsecond=0
+    )
     preds_this_month = await db.scalar(
         select(func.count())
         .select_from(PredictionAuditLog)
@@ -124,7 +144,9 @@ async def get_dashboard_data(db: AsyncSession, user: User) -> DashboardResponse:
     unread_notifications = await db.scalar(
         select(func.count())
         .select_from(Notification)
-        .where(Notification.user_id == user_id, Notification.is_read.is_(False))
+        .where(
+            Notification.user_id == user_id, Notification.is_read.is_(False)
+        )
     )
     # Recent Predictions
     recent_preds_query = (
@@ -180,7 +202,9 @@ async def get_dashboard_data(db: AsyncSession, user: User) -> DashboardResponse:
             for p in recent_preds
         ],
         recent_reports=[
-            RecentReport(id=r.id, file_name=r.file_name, created_at=r.created_at)
+            RecentReport(
+                id=r.id, file_name=r.filename, created_at=r.created_at
+            )
             for r in recent_reports
         ],
         recent_exports=[
@@ -205,7 +229,9 @@ async def get_account_data(db: AsyncSession, user: User) -> AccountResponse:
     active_sessions = await db.scalar(
         select(func.count())
         .select_from(UserSession)
-        .where(UserSession.user_id == user_id, UserSession.is_revoked.is_(False))
+        .where(
+            UserSession.user_id == user_id, UserSession.is_revoked.is_(False)
+        )
     )
     total_predictions = await db.scalar(
         select(func.count())

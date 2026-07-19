@@ -13,7 +13,6 @@ from backend.app.services.usage_analytics_service import UsageAnalyticsService
 class UsageMeterService:
     """Thin orchestrator for usage metering — delegates to sub-services."""
 
-    # Legacy class-level constants (for backward compatibility)
     RATE_LIMIT_PREFIX = RateLimitService.RATE_LIMIT_PREFIX
     QUOTA_PREFIX = QuotaService.QUOTA_PREFIX
     DEFAULT_RATE_LIMIT = QuotaService.DEFAULT_RATE_LIMIT
@@ -56,9 +55,21 @@ class UsageMeterService:
         db: AsyncSession,
         tenant_id: uuid.UUID,
         max_requests: Optional[int] = None,
+        strategy: str = RateLimitService.STRATEGY_TOKEN_BUCKET,
     ) -> bool:
-        svc = RateLimitService
-        return await svc.check_rate_limit(db, tenant_id, max_requests)
+        return await RateLimitService.check_rate_limit(
+            db, tenant_id, max_requests, strategy=strategy
+        )
+
+    @staticmethod
+    async def get_remaining_tokens(
+        db: AsyncSession,
+        tenant_id: uuid.UUID,
+        max_requests: Optional[int] = None,
+    ) -> int:
+        return await RateLimitService.get_remaining_tokens(
+            tenant_id, max_requests, db=db
+        )
 
     # ── Usage Tracking ───────────────────────────────────────────────────────
 
@@ -85,6 +96,13 @@ class UsageMeterService:
     ) -> bool:
         return await QuotaService.check_quota(db, tenant_id, max_quota)
 
+    @staticmethod
+    async def get_monthly_usage(
+        db: AsyncSession,
+        tenant_id: uuid.UUID,
+    ) -> int:
+        return await QuotaService.get_monthly_usage(db, tenant_id)
+
     # ── Usage Analytics ──────────────────────────────────────────────────────
 
     @staticmethod
@@ -93,5 +111,25 @@ class UsageMeterService:
         tenant_id: uuid.UUID,
         since: Optional[datetime] = None,
     ) -> dict:
-        svc = UsageAnalyticsService
-        return await svc.get_usage_stats(db, tenant_id, since)
+        return await UsageAnalyticsService.get_usage_stats(
+            db, tenant_id, since
+        )
+
+    @staticmethod
+    async def get_endpoint_stats(
+        db: AsyncSession,
+        tenant_id: uuid.UUID,
+        endpoint: str,
+        since: Optional[datetime] = None,
+    ) -> dict:
+        return await UsageAnalyticsService.get_endpoint_stats(
+            db, tenant_id, endpoint, since
+        )
+
+    @staticmethod
+    async def get_daily_usage(
+        db: AsyncSession,
+        tenant_id: uuid.UUID,
+        days: int = 30,
+    ) -> list[dict]:
+        return await UsageAnalyticsService.get_daily_usage(db, tenant_id, days)

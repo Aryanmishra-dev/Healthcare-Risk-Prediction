@@ -2,23 +2,36 @@ import math
 import os
 import uuid
 
-from fastapi import (APIRouter, BackgroundTasks, Depends, File, HTTPException,
-                     UploadFile, status)
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    HTTPException,
+    UploadFile,
+    status,
+)
 from fastapi.responses import Response
-from sqlalchemy import desc, func, or_, select
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.auth.router import get_current_user
 from backend.app.core.database import get_db
 from backend.app.models.report import UserReport
 from backend.app.models.user import User
-from backend.app.schemas.report import (ReportPaginated, ReportQueryParams,
-                                        ReportResponse, ReportUploadResponse)
+from backend.app.schemas.report import (
+    ReportPaginated,
+    ReportQueryParams,
+    ReportResponse,
+    ReportUploadResponse,
+)
 from backend.app.services.document_pipeline import process_report_pipeline
-from backend.app.services.report_service import (calculate_checksum,
-                                                 create_report,
-                                                 get_report_by_id,
-                                                 soft_delete_report)
+from backend.app.services.report_service import (
+    calculate_checksum,
+    create_report,
+    get_report_by_id,
+    soft_delete_report,
+)
 from backend.app.services.storage import storage_provider
 from backend.app.utils.file_validation import validate_upload
 
@@ -26,7 +39,9 @@ router = APIRouter(prefix="/reports", tags=["Reports"])
 
 
 @router.post(
-    "/upload", response_model=ReportUploadResponse, status_code=status.HTTP_201_CREATED
+    "/upload",
+    response_model=ReportUploadResponse,
+    status_code=status.HTTP_201_CREATED,
 )
 async def upload_report(
     background_tasks: BackgroundTasks,
@@ -49,7 +64,9 @@ async def upload_report(
     report_uuid = str(uuid.uuid4())
     original_filename = file.filename or "unknown"
     extension = (
-        os.path.splitext(original_filename)[1].lower() if original_filename else ""
+        os.path.splitext(original_filename)[1].lower()
+        if original_filename
+        else ""
     )
     safe_filename = f"{report_uuid}{extension}"
 
@@ -83,7 +100,9 @@ async def upload_report(
         checksum=checksum,
     )
 
-    background_tasks.add_task(process_report_pipeline, report.id, current_user.id)
+    background_tasks.add_task(
+        process_report_pipeline, report.id, current_user.id
+    )
 
     return report
 
@@ -112,7 +131,9 @@ async def get_reports(
     # Pagination
     offset = (params.page - 1) * params.size
     query = (
-        query.order_by(desc(UserReport.uploaded_at)).offset(offset).limit(params.size)
+        query.order_by(desc(UserReport.uploaded_at))
+        .offset(offset)
+        .limit(params.size)
     )
 
     result = await db.execute(query)
@@ -121,7 +142,11 @@ async def get_reports(
     pages = math.ceil(total / params.size) if total > 0 else 0
 
     return ReportPaginated(
-        items=items, total=total, page=params.page, size=params.size, pages=pages
+        items=items,  # type: ignore[arg-type]
+        total=total,
+        page=params.page,
+        size=params.size,
+        pages=pages,
     )
 
 
@@ -163,6 +188,8 @@ async def download_report(
         content=content,
         media_type=report.mime_type,
         headers={
-            "Content-Disposition": f'attachment; filename="{report.original_filename}"'
+            "Content-Disposition": (
+                f'attachment; filename="{report.original_filename}"'
+            ),
         },
     )

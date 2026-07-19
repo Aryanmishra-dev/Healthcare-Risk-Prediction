@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 import pytest
+from fastapi import Request
 from fastapi.testclient import TestClient
 
 from backend.app.api.dependencies import get_current_tenant
@@ -10,9 +11,11 @@ from backend.app.core.enums import UserRole
 from backend.app.main import app
 from backend.app.models.user import User
 
+MOCK_TENANT_ID = uuid.uuid4()
 
-def mock_get_current_user():
-    return User(
+
+async def mock_get_current_user(request: Request = None):
+    user = User(
         id=uuid.uuid4(),
         email="test@example.com",
         full_name="Test User",
@@ -20,9 +23,9 @@ def mock_get_current_user():
         is_verified=True,
         role=UserRole.SUPER_ADMIN,
     )
-
-
-MOCK_TENANT_ID = uuid.uuid4()
+    if request is not None:
+        request.state.user = user
+    return user
 
 
 def mock_get_current_tenant():
@@ -36,27 +39,9 @@ def override_auth_dependencies(monkeypatch):
 
     from backend.app.services.authorization_service import AuthorizationService
 
-    monkeypatch.setattr(AuthorizationService, "can", lambda *args, **kwargs: True)
-
-    import sys
-
-    auth_module = sys.modules.get("backend.app.auth.router")
-    if not auth_module:
-        import backend.app.auth.router  # noqa: F401
-
-        auth_module = sys.modules["backend.app.auth.router"]
-
-    async def mock_bearer(*args, **kwargs):
-        from fastapi.security import HTTPAuthorizationCredentials
-
-        return HTTPAuthorizationCredentials(scheme="Bearer", credentials="dummy_token")
-
-    monkeypatch.setattr(auth_module, "bearer", mock_bearer)
-
-    async def mock_gcu(*args, **kwargs):
-        return mock_get_current_user()
-
-    monkeypatch.setattr(auth_module, "get_current_user", mock_gcu)
+    monkeypatch.setattr(
+        AuthorizationService, "can", lambda *args, **kwargs: True
+    )
 
     yield
     app.dependency_overrides.clear()
@@ -151,7 +136,8 @@ class TestApiKeyRotation:
         )
 
         detail_resp = client.get(
-            f"/api/v1/api-keys/{key_id}", headers={"X-API-Key": "test-dev-api-key"}
+            f"/api/v1/api-keys/{key_id}",
+            headers={"X-API-Key": "test-dev-api-key"},
         )
         assert detail_resp.status_code == 200
         assert detail_resp.json()["is_active"] is False
@@ -170,20 +156,25 @@ class TestApiKeyRevocation:
         _, key_id = created_key
 
         del_resp = client.delete(
-            f"/api/v1/api-keys/{key_id}", headers={"X-API-Key": "test-dev-api-key"}
+            f"/api/v1/api-keys/{key_id}",
+            headers={"X-API-Key": "test-dev-api-key"},
         )
         assert del_resp.status_code == 204
 
         get_resp = client.get(
-            f"/api/v1/api-keys/{key_id}", headers={"X-API-Key": "test-dev-api-key"}
+            f"/api/v1/api-keys/{key_id}",
+            headers={"X-API-Key": "test-dev-api-key"},
         )
         assert get_resp.json()["is_active"] is False
 
-    def test_revoked_key_cannot_authenticate(self, client: TestClient, created_key):
+    def test_revoked_key_cannot_authenticate(
+        self, client: TestClient, created_key
+    ):
         raw_key, key_id = created_key
 
         client.delete(
-            f"/api/v1/api-keys/{key_id}", headers={"X-API-Key": "test-dev-api-key"}
+            f"/api/v1/api-keys/{key_id}",
+            headers={"X-API-Key": "test-dev-api-key"},
         )
 
         auth_resp = client.get("/api/v1/", headers={"X-API-Key": raw_key})
@@ -192,7 +183,8 @@ class TestApiKeyRevocation:
     def test_revoke_nonexistent_key_returns_404(self, client: TestClient):
         fake_id = str(uuid.uuid4())
         resp = client.delete(
-            f"/api/v1/api-keys/{fake_id}", headers={"X-API-Key": "test-dev-api-key"}
+            f"/api/v1/api-keys/{fake_id}",
+            headers={"X-API-Key": "test-dev-api-key"},
         )
         assert resp.status_code == 404
 
@@ -233,9 +225,13 @@ class TestTenantIsolation:
             )
             return resp
         finally:
-            app.dependency_overrides[get_current_tenant] = mock_get_current_tenant
+            app.dependency_overrides[get_current_tenant] = (
+                mock_get_current_tenant
+            )
 
-    def test_keys_from_different_tenants_are_isolated(self, client: TestClient):
+    def test_keys_from_different_tenants_are_isolated(
+        self, client: TestClient
+    ):
         tenant_a = MOCK_TENANT_ID
         tenant_b = uuid.uuid4()
 
@@ -268,7 +264,8 @@ class TestTenantIsolation:
 
         app.dependency_overrides[get_current_tenant] = mock_tenant_a
         del_resp = client.delete(
-            f"/api/v1/api-keys/{key_b_id}", headers={"X-API-Key": "test-dev-api-key"}
+            f"/api/v1/api-keys/{key_b_id}",
+            headers={"X-API-Key": "test-dev-api-key"},
         )
         app.dependency_overrides[get_current_tenant] = mock_get_current_tenant
         assert del_resp.status_code == 404
@@ -300,7 +297,8 @@ class TestExpiredKeys:
         key_id = create_resp.json()["id"]
 
         get_resp = client.get(
-            f"/api/v1/api-keys/{key_id}", headers={"X-API-Key": "test-dev-api-key"}
+            f"/api/v1/api-keys/{key_id}",
+            headers={"X-API-Key": "test-dev-api-key"},
         )
         assert get_resp.status_code == 200
         assert get_resp.json()["is_active"] is True
@@ -347,7 +345,8 @@ class TestApiKeyListing:
     def test_get_single_key(self, client: TestClient, created_key):
         _, key_id = created_key
         resp = client.get(
-            f"/api/v1/api-keys/{key_id}", headers={"X-API-Key": "test-dev-api-key"}
+            f"/api/v1/api-keys/{key_id}",
+            headers={"X-API-Key": "test-dev-api-key"},
         )
         assert resp.status_code == 200
         assert resp.json()["id"] == key_id
@@ -362,5 +361,7 @@ class TestApiKeyListing:
 
 class TestKeyAuthentication:
     def test_dev_api_key_authenticates(self, client: TestClient):
-        response = client.get("/api/v1/", headers={"X-API-Key": "test-dev-api-key"})
+        response = client.get(
+            "/api/v1/", headers={"X-API-Key": "test-dev-api-key"}
+        )
         assert response.status_code == 200

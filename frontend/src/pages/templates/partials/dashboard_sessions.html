@@ -5,7 +5,7 @@
       <h2 class="text-xl font-black text-slate-900">Active Sessions</h2>
       <p class="text-sm text-slate-500 mt-1">All devices currently logged in to your account.</p>
     </div>
-    <button onclick="document.querySelector('[x-data]').__x.$data.revokeAll()"
+    <button onclick="sessionsPage_revokeAll(this)"
       class="flex items-center gap-2 bg-rose-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-rose-600 transition-colors shadow-sm">
       <span class="material-symbols-outlined text-[18px]">logout</span>
       Logout All Devices
@@ -34,16 +34,13 @@
 <script>
 function sessionsPage() {
   return {
-    token: null,
     sessions: [],
     async init() {
-      this.token = localStorage.getItem('access_token');
-      if (!this.token) { window.location.href = '/'; return; }
       await this.load();
     },
     async load() {
-      const res = await window.HealthPredictConfig.fetch('/auth/sessions', { headers: { 'Authorization': 'Bearer ' + this.token } });
-      if (res.status === 401) { localStorage.removeItem('access_token'); window.location.href = '/'; return; }
+      const res = await window.HealthPredictConfig.fetch('/auth/sessions');
+      if (res.status === 401) { window.location.href = '/'; return; }
       this.sessions = await res.json();
       const tbody = document.getElementById('sessions-tbody');
       if (!this.sessions.length) {
@@ -75,20 +72,23 @@ function sessionsPage() {
     },
     async revoke(sessionId) {
       if (!confirm('Revoke this session?')) return;
-      await window.HealthPredictConfig.fetch('/auth/sessions/' + sessionId, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + this.token } });
+      await window.HealthPredictConfig.fetch('/auth/sessions/' + sessionId, { method: 'DELETE' });
       await this.load();
     },
     async revokeAll() {
       if (!confirm('Logout from all devices? You will be logged out here too.')) return;
       for (const s of this.sessions) {
-        await window.HealthPredictConfig.fetch('/auth/sessions/' + s.id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + this.token } });
+        await window.HealthPredictConfig.fetch('/auth/sessions/' + s.id, { method: 'DELETE' });
       }
-      localStorage.removeItem('access_token');
       window.location.href = '/';
     }
   }
 }
 window.sessionsPage_revoke = (id) => {
-  document.querySelector('[x-data]').__x.$data.revoke(id);
+  var el = document.querySelector('#sessions-tbody');
+  Alpine.$data(el.closest('[x-data]')).revoke(id);
+};
+window.sessionsPage_revokeAll = (el) => {
+  Alpine.$data(el.closest('[x-data]')).revokeAll();
 };
 </script>

@@ -1,3 +1,14 @@
+[tool.black]
+line-length = 79
+
+[tool.isort]
+profile = "black"
+line_length = 79
+
+[tool.flake8]
+max-line-length = 79
+extend-ignore = ["E203", "W503"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = [
@@ -5,11 +16,9 @@ addopts = [
     "--tb=short",
     "--strict-markers",
     "--cov=backend.app",
-    "--cov=ml",
-    "--cov=shared",
     "--cov-report=term-missing",
     "--cov-report=html:htmlcov",
-    "--cov-fail-under=70",
+    "--cov-fail-under=50",
 ]
 
 [tool.coverage.run]

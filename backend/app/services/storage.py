@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from uuid import UUID
 
-import aiofiles
+import aiofiles  # type: ignore[import-untyped]
 
 
 class StorageProvider(ABC):
@@ -50,11 +50,8 @@ class LocalStorageProvider(StorageProvider):
         return str(file_path)
 
     async def get_file(self, storage_path: str) -> bytes:
-        path = Path(storage_path)
+        path = Path(storage_path).resolve()
         # Security: Prevent traversing out of base_dir
-        if not path.is_absolute():
-            path = path.resolve()
-
         if not path.is_relative_to(self.base_dir.resolve()):
             raise ValueError("Invalid storage path")
 
@@ -62,10 +59,7 @@ class LocalStorageProvider(StorageProvider):
             return await f.read()
 
     async def delete_file(self, storage_path: str) -> bool:
-        path = Path(storage_path)
-        if not path.is_absolute():
-            path = path.resolve()
-
+        path = Path(storage_path).resolve()
         if not path.is_relative_to(self.base_dir.resolve()):
             raise ValueError("Invalid storage path")
 

@@ -7,8 +7,9 @@ from backend.app.models.base import utc_now
 from backend.app.models.report import UserReport
 from backend.app.services.document_parser import parse_document
 from backend.app.services.medical_nlp import extract_clinical_entities
-from backend.app.services.notifications.notification_service import \
-    notification_dispatcher
+from backend.app.services.notifications.notification_service import (
+    notification_dispatcher,
+)
 from backend.app.services.storage import storage_provider
 
 logger = logging.getLogger(__name__)
@@ -41,7 +42,10 @@ async def process_report_pipeline(report_id: UUID, user_id: UUID):
                     category="Report",
                     priority="LOW",
                     title="Report Processing Started",
-                    message=f"Your report {report.original_filename} is being processed.",
+                    message=(
+                        f"Your report {report.original_filename} "
+                        "is being processed."
+                    ),
                 )
             )
 
@@ -50,7 +54,9 @@ async def process_report_pipeline(report_id: UUID, user_id: UUID):
             await db.commit()
 
             try:
-                file_bytes = await storage_provider.get_file(report.storage_path)
+                file_bytes = await storage_provider.get_file(
+                    report.storage_path
+                )
                 # B5: CPU-bound PDF/image parsing — offload to thread pool
                 raw_text = await asyncio.to_thread(
                     parse_document, file_bytes, report.mime_type
@@ -65,11 +71,14 @@ async def process_report_pipeline(report_id: UUID, user_id: UUID):
                             category="Report",
                             priority="HIGH",
                             title="Report Processing Failed",
-                            message=f"We could not extract text from {report.original_filename}.",
+                            message=(
+                                f"We could not extract text from "
+                                f"{report.original_filename}."
+                            ),
                         )
                     )
                     return
-            except Exception as e:
+            except Exception:
                 logger.exception(f"OCR failed for report {report_id}")
                 report.processing_status = "failed"
                 await db.commit()
@@ -80,7 +89,10 @@ async def process_report_pipeline(report_id: UUID, user_id: UUID):
                         category="Report",
                         priority="HIGH",
                         title="Report Processing Failed",
-                        message=f"We encountered an error processing {report.original_filename}.",
+                        message=(
+                            f"We encountered an error processing "
+                            f"{report.original_filename}."
+                        ),
                     )
                 )
                 return
@@ -91,9 +103,11 @@ async def process_report_pipeline(report_id: UUID, user_id: UUID):
 
             try:
                 # B5: CPU-bound NLP — offload to thread pool
-                entities = await asyncio.to_thread(extract_clinical_entities, raw_text)
+                entities = await asyncio.to_thread(
+                    extract_clinical_entities, raw_text
+                )
                 report.extracted_entities = entities
-            except Exception as e:
+            except Exception:
                 logger.exception(f"NLP failed for report {report_id}")
                 report.processing_status = "failed"
                 await db.commit()
@@ -104,12 +118,16 @@ async def process_report_pipeline(report_id: UUID, user_id: UUID):
                         category="Report",
                         priority="HIGH",
                         title="Report Processing Failed",
-                        message=f"We encountered an error extracting data from {report.original_filename}.",
+                        message=(
+                            f"We encountered an error extracting data "
+                            f"from {report.original_filename}."
+                        ),
                     )
                 )
                 return
 
-            # Stage: Feature Extraction -> Not strictly stored on report, usually mapped at prediction time
+            # Stage: Feature Extraction -> Not stored on report,
+            # usually mapped at prediction time
             # Stage: Completed
             report.processing_status = "completed"
             report.processed_at = utc_now()
@@ -122,12 +140,15 @@ async def process_report_pipeline(report_id: UUID, user_id: UUID):
                     category="Report",
                     priority="NORMAL",
                     title="Report Processing Completed",
-                    message=f"Your report {report.original_filename} has been successfully processed.",
+                    message=(
+                        f"Your report {report.original_filename} "
+                        "has been successfully processed."
+                    ),
                 )
             )
 
             logger.info(f"Report {report_id} processed successfully.")
 
-        except Exception as e:
+        except Exception:
             logger.exception(f"Pipeline failed for report {report_id}")
             await db.rollback()

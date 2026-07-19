@@ -1,18 +1,20 @@
 import pytest
+
+import backend.app.core.config
 from backend.app.services.email_service import (
-    build_email,
-    render_welcome,
-    render_password_reset,
-    render_email_verification,
-    render_new_login,
-    render_security_alert,
-    render_generic,
-    create_email_backend,
     DevelopmentEmailBackend,
     SMTPEmailBackend,
-    email_backend
+    build_email,
+    create_email_backend,
+    email_backend,
+    render_email_verification,
+    render_generic,
+    render_new_login,
+    render_password_reset,
+    render_security_alert,
+    render_welcome,
 )
-import backend.app.core.config
+
 
 @pytest.mark.anyio
 async def test_email_rendering():
@@ -33,7 +35,9 @@ async def test_email_rendering():
     assert "Browser" in html
     assert subject == "New login detected — HealthPredict AI"
 
-    subject, html = render_security_alert("Alert!", "Bad stuff", "http://test.com")
+    subject, html = render_security_alert(
+        "Alert!", "Bad stuff", "http://test.com"
+    )
     assert "Alert!" in html
     assert "Bad stuff" in html
     assert subject == "Security Alert: Alert! — HealthPredict AI"
@@ -43,25 +47,35 @@ async def test_email_rendering():
     assert "Hello" in html
     assert subject == "Info — HealthPredict AI"
 
+
 @pytest.mark.anyio
 async def test_build_email():
-    subj, html = build_email("password_reset_request", "title", "msg", {"reset_url": "url"}, "base")
+    subj, html = build_email(
+        "password_reset_request", "title", "msg", {"reset_url": "url"}, "base"
+    )
     assert "url" in html
-    
-    subj, html = build_email("email_verification", "title", "msg", {"verify_url": "url"}, "base")
+
+    subj, html = build_email(
+        "email_verification", "title", "msg", {"verify_url": "url"}, "base"
+    )
     assert "url" in html
-    
-    subj, html = build_email("user_registration", "title", "msg", {"full_name": "Bob"}, "base")
+
+    subj, html = build_email(
+        "user_registration", "title", "msg", {"full_name": "Bob"}, "base"
+    )
     assert "Bob" in html
-    
-    subj, html = build_email("new_login", "title", "msg", {"ip_address": "8.8.8.8"}, "base")
+
+    subj, html = build_email(
+        "new_login", "title", "msg", {"ip_address": "8.8.8.8"}, "base"
+    )
     assert "8.8.8.8" in html
-    
+
     subj, html = build_email("account_locked", "title", "msg", None, "base")
     assert "title" in html
-    
+
     subj, html = build_email("other", "title", "msg", None, "base")
     assert "title" in html
+
 
 @pytest.mark.anyio
 async def test_providers():
@@ -69,7 +83,7 @@ async def test_providers():
     provider = create_email_backend()
     assert isinstance(provider, DevelopmentEmailBackend)
     await provider.send_email("to@example.com", "Subj", "Body")
-    
+
     backend.app.core.config.settings.email_backend = "smtp"
     backend.app.core.config.settings.smtp_host = "test"
     backend.app.core.config.settings.smtp_username = "test"
@@ -77,7 +91,6 @@ async def test_providers():
     backend.app.core.config.settings.email_from_address = "test@example.com"
     provider2 = create_email_backend()
     assert isinstance(provider2, SMTPEmailBackend)
-    
+
     # Try sending with a mock
     await provider2.send_email("to@example.com", "Subj", "Body")
-

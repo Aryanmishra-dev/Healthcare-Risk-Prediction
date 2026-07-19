@@ -9,7 +9,7 @@ on:
 env:
   # CI-specific service credentials — set these in GitHub repo secrets
   PG_USER: ${{ secrets.PG_USER || 'admin_test' }}
-  PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
+  PG_PASSWORD: ${{ secrets.PG_PASSWORD || 'test_password' }}
   PG_DB: ${{ secrets.PG_DB || 'healthcare_audit_test' }}
   TEST_SECRET_KEY: ${{ secrets.TEST_SECRET_KEY || 'test-secret-key-ci' }}
 
@@ -24,7 +24,9 @@ jobs:
           python-version: "3.11"
           cache: "pip"
       - name: Install dependencies
-        run: pip install -r backend/requirements.txt
+        run: |
+          pip install -r backend/requirements.txt
+          pip install black isort flake8
       - name: Run Black
         run: black --check backend/
       - name: Run isort
@@ -90,7 +92,7 @@ jobs:
           python-version: "3.11"
           cache: "pip"
       - name: Install dependencies
-        run: pip install -r backend/requirements.txt pytest pytest-cov
+        run: pip install -r backend/requirements-dev.txt
       - name: Wait for services
         run: sleep 5
       - name: Run Tests

@@ -8,7 +8,6 @@ Create Date: 2026-07-11 12:35:00.000000
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "0009"
@@ -29,7 +28,9 @@ def upgrade() -> None:
         sa.Column("algorithm", sa.String(length=100), nullable=False),
         sa.Column("training_dataset", sa.String(length=255), nullable=True),
         sa.Column("dataset_version", sa.String(length=50), nullable=True),
-        sa.Column("feature_schema_version", sa.String(length=50), nullable=True),
+        sa.Column(
+            "feature_schema_version", sa.String(length=50), nullable=True
+        ),
         sa.Column("hyperparameters", sa.JSON(), nullable=True),
         sa.Column("metrics", sa.JSON(), nullable=True),
         sa.Column("training_date", sa.DateTime(timezone=True), nullable=True),
@@ -62,19 +63,29 @@ def upgrade() -> None:
         unique=False,
     )
     op.create_index(
-        op.f("ix_model_versions_disease"), "model_versions", ["disease"], unique=False
+        op.f("ix_model_versions_disease"),
+        "model_versions",
+        ["disease"],
+        unique=False,
     )
     op.create_index(
-        op.f("ix_model_versions_status"), "model_versions", ["status"], unique=False
+        op.f("ix_model_versions_status"),
+        "model_versions",
+        ["status"],
+        unique=False,
     )
 
-    # 2. Add fields to prediction_audit_logs for AB testing, drift, and calibration
+    # 2. Add fields to prediction_audit_logs for AB testing,
+    # drift, and calibration
     op.add_column(
-        "prediction_audit_logs", sa.Column("model_version_id", sa.Uuid(), nullable=True)
+        "prediction_audit_logs",
+        sa.Column("model_version_id", sa.Uuid(), nullable=True),
     )
     op.add_column(
         "prediction_audit_logs",
-        sa.Column("is_calibrated", sa.Boolean(), server_default="0", nullable=False),
+        sa.Column(
+            "is_calibrated", sa.Boolean(), server_default="0", nullable=False
+        ),
     )
     op.add_column(
         "prediction_audit_logs",
@@ -82,7 +93,9 @@ def upgrade() -> None:
     )
     op.add_column(
         "prediction_audit_logs",
-        sa.Column("drift_detected", sa.Boolean(), server_default="0", nullable=False),
+        sa.Column(
+            "drift_detected", sa.Boolean(), server_default="0", nullable=False
+        ),
     )
 
 
@@ -92,7 +105,13 @@ def downgrade() -> None:
     op.drop_column("prediction_audit_logs", "is_calibrated")
     op.drop_column("prediction_audit_logs", "model_version_id")
 
-    op.drop_index(op.f("ix_model_versions_status"), table_name="model_versions")
-    op.drop_index(op.f("ix_model_versions_disease"), table_name="model_versions")
-    op.drop_index(op.f("ix_model_versions_model_name"), table_name="model_versions")
+    op.drop_index(
+        op.f("ix_model_versions_status"), table_name="model_versions"
+    )
+    op.drop_index(
+        op.f("ix_model_versions_disease"), table_name="model_versions"
+    )
+    op.drop_index(
+        op.f("ix_model_versions_model_name"), table_name="model_versions"
+    )
     op.drop_table("model_versions")

@@ -2,8 +2,24 @@ import uuid
 from typing import Any, Dict, Optional
 
 from fastapi import Request
+from sqlalchemy import select
 
 from backend.app.core.database import AsyncSessionLocal
+
+
+async def _resolve_tenant_id(
+    db, user_id: uuid.UUID | None
+) -> uuid.UUID | None:
+    if user_id is None:
+        return None
+    from backend.app.models.tenant import Membership
+
+    result = await db.execute(
+        select(Membership.tenant_id)
+        .where(Membership.user_id == user_id)
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
 
 
 async def log_prediction_to_db(
@@ -42,9 +58,11 @@ async def log_prediction_to_db(
     from backend.app.services.prediction_history_service import save_prediction
 
     async with AsyncSessionLocal() as db:
+        tenant_id = await _resolve_tenant_id(db, parsed_user_id)
         await save_prediction(
             db=db,
             user_id=parsed_user_id,
+            tenant_id=tenant_id,
             disease_model=disease_model,
             source=source,
             risk_percentage=float(risk_percentage),

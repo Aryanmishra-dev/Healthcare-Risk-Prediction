@@ -65,7 +65,8 @@ def cached(expire: int = 30):
             if not cache_service._enabled:
                 return await func(*args, **kwargs)
 
-            # Create a simple cache key from func name and args (excluding complex objects)
+            # Create a simple cache key from func name and args (excluding
+            # complex objects)
             # For admin endpoints, usually no args or simple kwargs are used.
             key_parts = [func.__name__]
             for arg in args:
@@ -87,7 +88,9 @@ def cached(expire: int = 30):
             result = await func(*args, **kwargs)
 
             try:
-                await cache_service.set(cache_key, json.dumps(result), expire=expire)
+                await cache_service.set(
+                    cache_key, json.dumps(result), expire=expire
+                )
             except Exception:
                 pass
 

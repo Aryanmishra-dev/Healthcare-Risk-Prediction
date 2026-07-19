@@ -155,9 +155,9 @@ When neither `API_KEY` nor `DEV_API_KEY` was set, `get_api_key()` called `secret
 ## 5. File Upload Security
 
 All uploaded files pass through `backend/app/utils/file_validation.py`:
-- Extension allowlist: `.pdf`, `.png`, `.jpg`, `.jpeg`, `.tiff`
+- Extension allowlist: `.pdf`, `.jpg`, `.jpeg`, `.png`
 - MIME type validation against extension
-- Maximum file size enforced (configurable, default 10 MB)
+- Maximum file size enforced (configurable, default 5 MB)
 - Filename sanitised via `os.path.basename()`
 
 ---

@@ -217,7 +217,9 @@ class TestApiKeyService:
         mock_db = AsyncMock()
         mock_db.execute.return_value = mock_result
 
-        result = await ApiKeyService.revoke_api_key(mock_db, uuid.uuid4(), uuid.uuid4())
+        result = await ApiKeyService.revoke_api_key(
+            mock_db, uuid.uuid4(), uuid.uuid4()
+        )
         assert result is False
 
     @pytest.mark.asyncio

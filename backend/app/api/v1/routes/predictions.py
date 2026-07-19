@@ -1,5 +1,4 @@
-from typing import Any, Dict, List, Optional
-from uuid import UUID
+from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,9 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.app.auth.router import get_current_user
 from backend.app.core.database import get_db
 from backend.app.models.user import User
-from backend.app.schemas.prediction import (PredictionHistoryPaginated,
-                                            PredictionHistoryParams,
-                                            PredictionHistoryResponse)
+from backend.app.schemas.prediction import (
+    PredictionHistoryPaginated,
+    PredictionHistoryParams,
+    PredictionHistoryResponse,
+)
 from backend.app.services import prediction_history_service
 
 router = APIRouter(prefix="/predictions", tags=["Prediction History"])
@@ -22,7 +23,9 @@ async def get_history(
     db: AsyncSession = Depends(get_db),
 ):
     """Get paginated prediction history with filters."""
-    return await prediction_history_service.get_history(db, current_user.id, params)
+    return await prediction_history_service.get_history(
+        db, current_user.id, params
+    )
 
 
 @router.get("/{prediction_id}", response_model=PredictionHistoryResponse)
@@ -50,7 +53,9 @@ async def delete_prediction(
     return None
 
 
-@router.post("/{prediction_id}/favorite", response_model=PredictionHistoryResponse)
+@router.post(
+    "/{prediction_id}/favorite", response_model=PredictionHistoryResponse
+)
 async def favorite_prediction(
     prediction_id: int,
     current_user: User = Depends(get_current_user),
@@ -62,7 +67,9 @@ async def favorite_prediction(
     )
 
 
-@router.delete("/{prediction_id}/favorite", response_model=PredictionHistoryResponse)
+@router.delete(
+    "/{prediction_id}/favorite", response_model=PredictionHistoryResponse
+)
 async def unfavorite_prediction(
     prediction_id: int,
     current_user: User = Depends(get_current_user),
@@ -102,7 +109,10 @@ async def get_prediction_explanation(
     if not shap_values or not shap_values.get("features"):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="SHAP explanation not available for this prediction. It may have been made before Phase 3 was deployed.",
+            detail=(
+                "SHAP explanation not available for this prediction. "
+                "It may have been made before Phase 3 was deployed."
+            ),
         )
 
     features: List[str] = shap_values.get("features", [])
@@ -125,9 +135,10 @@ async def get_prediction_explanation(
     )
 
     # Human-readable summary of top factors
-    top_factors = [r["feature"] for r in ranked[:3]]
+    top_factors: list[str] = [str(r["feature"]) for r in ranked[:3]]
     summary = (
-        f"The top factors influencing this {prediction.disease_model} risk prediction were: "
+        f"The top factors influencing this "
+        f"{prediction.disease_model} risk prediction were: "
         + ", ".join(top_factors)
         + f". The model baseline risk is {base_value:.2%}."
     )
@@ -140,10 +151,10 @@ async def get_prediction_explanation(
             {
                 "feature": r["feature"],
                 "value": r["shap_value"],
-                "cumulative": running + r["shap_value"],
+                "cumulative": float(running) + float(r["shap_value"]),
             }
         )
-        running += r["shap_value"]
+        running = float(running) + float(r["shap_value"])
 
     return {
         "prediction_id": prediction_id,

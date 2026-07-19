@@ -1,0 +1,18 @@
+# Exclude tooling and vendored scripts from language stats
+.agents/** linguist-vendored=true
+
+# Mark notebooks as generated if they are exploratory or archival
+ml/experiments/*.ipynb linguist-vendored=true
+
+# Defensive excludes for build and generated artifacts (if they ever get tracked)
+node_modules/** linguist-vendored=true
+dist/** linguist-generated=true
+build/** linguist-generated=true
+frontend/dist/** linguist-generated=true
+htmlcov/** linguist-generated=true
+backend/htmlcov/** linguist-generated=true
+__pycache__/** linguist-generated=true
+
+# Mark documentation
+docs/** linguist-documentation=true
+

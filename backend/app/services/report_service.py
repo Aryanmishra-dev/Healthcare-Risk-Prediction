@@ -1,11 +1,8 @@
 import hashlib
-import math
-from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import desc, func, or_, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.models.base import utc_now
@@ -57,7 +54,8 @@ async def create_report(
     existing_report = result.scalar_one_or_none()
 
     if existing_report:
-        # If it's the exact same file, return the existing report to prevent duplicates
+        # If it's the exact same file, return the existing
+        # report to prevent duplicates
         return existing_report
 
     report = UserReport(

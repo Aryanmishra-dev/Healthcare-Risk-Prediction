@@ -15,8 +15,8 @@ import sys
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.isotonic import IsotonicRegression
 from sklearn.calibration import calibration_curve
+from sklearn.isotonic import IsotonicRegression
 from sklearn.metrics import brier_score_loss
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
@@ -45,7 +45,9 @@ def main():
         "Chronic Disease": rng.integers(0, 2, size=n_samples).astype(float),
         "Fatigue": rng.integers(0, 2, size=n_samples).astype(float),
         "Wheezing": rng.integers(0, 2, size=n_samples).astype(float),
-        "Shortness of Breath": rng.integers(0, 2, size=n_samples).astype(float),
+        "Shortness of Breath": rng.integers(0, 2, size=n_samples).astype(
+            float
+        ),
     }
     df = pd.DataFrame(data)[features].copy()
     df["Age"] = scaler.transform(df[["Age"]])

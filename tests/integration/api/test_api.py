@@ -9,11 +9,12 @@ Covers:
   - Pydantic schema validation edge cases
 """
 
-import pytest
 from unittest.mock import patch
 
+import pytest
 
 # ── Root & Info ────────────────────────────────────────────────────────────
+
 
 class TestRootEndpoints:
     def test_homepage_returns_200(self, client):
@@ -30,7 +31,11 @@ class TestRootEndpoints:
         assert resp.status_code == 200
         body = resp.json()
         assert body["status"] == "running"
-        assert set(body["models"]) == {"diabetes", "heart_disease", "lung_cancer"}
+        assert set(body["models"]) == {
+            "diabetes",
+            "heart_disease",
+            "lung_cancer",
+        }
 
     def test_swagger_docs(self, client):
         resp = client.get("/api/docs")
@@ -52,10 +57,17 @@ class TestRootEndpoints:
 
 # ── Diabetes JSON API ─────────────────────────────────────────────────────
 
+
 class TestDiabetesAPI:
     VALID_PAYLOAD = {
-        "age": 7, "bmi": 25.0, "bp": 0, "cholesterol": 0,
-        "smoker": 0, "activity": 1, "health": 3, "mental": 0,
+        "age": 7,
+        "bmi": 25.0,
+        "bp": 0,
+        "cholesterol": 0,
+        "smoker": 0,
+        "activity": 1,
+        "health": 3,
+        "mental": 0,
     }
 
     def test_predict_returns_200(self, client):
@@ -77,8 +89,14 @@ class TestDiabetesAPI:
 
     def test_high_risk_patient(self, client):
         payload = {
-            "age": 13, "bmi": 45.0, "bp": 1, "cholesterol": 1,
-            "smoker": 1, "activity": 0, "health": 5, "mental": 30,
+            "age": 13,
+            "bmi": 45.0,
+            "bp": 1,
+            "cholesterol": 1,
+            "smoker": 1,
+            "activity": 0,
+            "health": 5,
+            "mental": 30,
         }
         resp = client.post("/api/predict", json=payload)
         body = resp.json()
@@ -86,8 +104,14 @@ class TestDiabetesAPI:
 
     def test_low_risk_patient(self, client):
         payload = {
-            "age": 1, "bmi": 22.0, "bp": 0, "cholesterol": 0,
-            "smoker": 0, "activity": 1, "health": 1, "mental": 0,
+            "age": 1,
+            "bmi": 22.0,
+            "bp": 0,
+            "cholesterol": 0,
+            "smoker": 0,
+            "activity": 1,
+            "health": 1,
+            "mental": 0,
         }
         resp = client.post("/api/predict", json=payload)
         assert resp.json()["risk_level"] == "Low"
@@ -162,12 +186,23 @@ class TestDiabetesAPI:
 
 # ── Heart Disease JSON API ────────────────────────────────────────────────
 
+
 class TestHeartDiseaseAPI:
     VALID_PAYLOAD = {
-        "age": 7, "sex": 1, "bmi": 25.0, "high_bp": 0, "high_chol": 0,
-        "smoker": 0, "phys_activity": 1, "fruits": 1, "veggies": 1,
-        "heavy_drinker": 0, "gen_health": 3, "ment_health": 0,
-        "phys_health": 0, "diabetes": 0,
+        "age": 7,
+        "sex": 1,
+        "bmi": 25.0,
+        "high_bp": 0,
+        "high_chol": 0,
+        "smoker": 0,
+        "phys_activity": 1,
+        "fruits": 1,
+        "veggies": 1,
+        "heavy_drinker": 0,
+        "gen_health": 3,
+        "ment_health": 0,
+        "phys_health": 0,
+        "diabetes": 0,
     }
 
     def test_predict_returns_200(self, client):
@@ -207,10 +242,20 @@ class TestHeartDiseaseAPI:
 
     def test_high_risk_patient(self, client):
         payload = {
-            "age": 13, "sex": 1, "bmi": 42.0, "high_bp": 1, "high_chol": 1,
-            "smoker": 1, "phys_activity": 0, "fruits": 0, "veggies": 0,
-            "heavy_drinker": 1, "gen_health": 5, "ment_health": 30,
-            "phys_health": 30, "diabetes": 1,
+            "age": 13,
+            "sex": 1,
+            "bmi": 42.0,
+            "high_bp": 1,
+            "high_chol": 1,
+            "smoker": 1,
+            "phys_activity": 0,
+            "fruits": 0,
+            "veggies": 0,
+            "heavy_drinker": 1,
+            "gen_health": 5,
+            "ment_health": 30,
+            "phys_health": 30,
+            "diabetes": 1,
         }
         resp = client.post("/api/predict-heart", json=payload)
         assert resp.json()["risk_percentage"] > 5
@@ -227,10 +272,16 @@ class TestHeartDiseaseAPI:
 
 # ── Lung Cancer JSON API ─────────────────────────────────────────────────
 
+
 class TestLungCancerAPI:
     VALID_PAYLOAD = {
-        "age": 50, "gender": 1, "smoking": 0, "yellow_fingers": 0,
-        "chronic_disease": 0, "fatigue": 0, "wheezing": 0,
+        "age": 50,
+        "gender": 1,
+        "smoking": 0,
+        "yellow_fingers": 0,
+        "chronic_disease": 0,
+        "fatigue": 0,
+        "wheezing": 0,
         "shortness_of_breath": 0,
     }
 
@@ -291,63 +342,124 @@ class TestLungCancerAPI:
 
 # ── HTMX Endpoints ────────────────────────────────────────────────────────
 
+
 class TestHTMXEndpoints:
     def test_diabetes_htmx_returns_html(self, client):
-        resp = client.post("/predict/diabetes", data={
-            "age": "7", "bmi": "25.0", "bp": "0", "cholesterol": "0",
-            "smoker": "0", "activity": "1", "health": "3", "mental": "0",
-        }, cookies={"csrf_token": "test"}, headers={"X-CSRFToken": "test"})
+        resp = client.post(
+            "/predict/diabetes",
+            data={
+                "age": "7",
+                "bmi": "25.0",
+                "bp": "0",
+                "cholesterol": "0",
+                "smoker": "0",
+                "activity": "1",
+                "health": "3",
+                "mental": "0",
+            },
+            cookies={"csrf_token": "test"},
+            headers={"X-CSRFToken": "test"},
+        )
         assert resp.status_code == 200
         assert "Risk" in resp.text
         assert "text/html" in resp.headers["content-type"]
 
     def test_heart_htmx_returns_html(self, client):
-        resp = client.post("/predict/heart", data={
-            "hd_age": "7", "hd_sex": "1", "hd_bmi": "25.0",
-            "hd_high_bp": "0", "hd_high_chol": "0", "hd_smoker": "0",
-            "hd_phys_activity": "1", "hd_fruits": "1", "hd_veggies": "1",
-            "hd_heavy_drinker": "0", "hd_gen_health": "3",
-            "hd_ment_health": "0", "hd_phys_health": "0", "hd_diabetes": "0",
-        }, cookies={"csrf_token": "test"}, headers={"X-CSRFToken": "test"})
+        resp = client.post(
+            "/predict/heart",
+            data={
+                "hd_age": "7",
+                "hd_sex": "1",
+                "hd_bmi": "25.0",
+                "hd_high_bp": "0",
+                "hd_high_chol": "0",
+                "hd_smoker": "0",
+                "hd_phys_activity": "1",
+                "hd_fruits": "1",
+                "hd_veggies": "1",
+                "hd_heavy_drinker": "0",
+                "hd_gen_health": "3",
+                "hd_ment_health": "0",
+                "hd_phys_health": "0",
+                "hd_diabetes": "0",
+            },
+            cookies={"csrf_token": "test"},
+            headers={"X-CSRFToken": "test"},
+        )
         assert resp.status_code == 200
         assert "Risk" in resp.text
 
     def test_lung_htmx_returns_html(self, client):
-        resp = client.post("/predict/lung", data={
-            "lc_age": "50", "lc_gender": "1", "lc_smoking": "0",
-            "lc_yellow_fingers": "0", "lc_chronic_disease": "0",
-            "lc_fatigue": "0", "lc_wheezing": "0",
-            "lc_shortness_of_breath": "0",
-        }, cookies={"csrf_token": "test"}, headers={"X-CSRFToken": "test"})
+        resp = client.post(
+            "/predict/lung",
+            data={
+                "lc_age": "50",
+                "lc_gender": "1",
+                "lc_smoking": "0",
+                "lc_yellow_fingers": "0",
+                "lc_chronic_disease": "0",
+                "lc_fatigue": "0",
+                "lc_wheezing": "0",
+                "lc_shortness_of_breath": "0",
+            },
+            cookies={"csrf_token": "test"},
+            headers={"X-CSRFToken": "test"},
+        )
         assert resp.status_code == 200
         assert "Risk" in resp.text
 
     def test_diabetes_htmx_gauge_content(self, client):
-        resp = client.post("/predict/diabetes", data={
-            "age": "7", "bmi": "25.0", "bp": "0", "cholesterol": "0",
-            "smoker": "0", "activity": "1", "health": "3", "mental": "0",
-        }, cookies={"csrf_token": "test"}, headers={"X-CSRFToken": "test"})
+        resp = client.post(
+            "/predict/diabetes",
+            data={
+                "age": "7",
+                "bmi": "25.0",
+                "bp": "0",
+                "cholesterol": "0",
+                "smoker": "0",
+                "activity": "1",
+                "health": "3",
+                "mental": "0",
+            },
+            cookies={"csrf_token": "test"},
+            headers={"X-CSRFToken": "test"},
+        )
         assert "%" in resp.text
 
     def test_htmx_high_risk_returns_result(self, client):
-        resp = client.post("/predict/diabetes", data={
-            "age": "13", "bmi": "45.0", "bp": "1", "cholesterol": "1",
-            "smoker": "1", "activity": "0", "health": "5", "mental": "30",
-        }, cookies={"csrf_token": "test"}, headers={"X-CSRFToken": "test"})
+        resp = client.post(
+            "/predict/diabetes",
+            data={
+                "age": "13",
+                "bmi": "45.0",
+                "bp": "1",
+                "cholesterol": "1",
+                "smoker": "1",
+                "activity": "0",
+                "health": "5",
+                "mental": "30",
+            },
+            cookies={"csrf_token": "test"},
+            headers={"X-CSRFToken": "test"},
+        )
         assert resp.status_code == 200
         assert "Risk" in resp.text
 
 
 # ── Rate Limiting ─────────────────────────────────────────────────────────
 
+
 class TestRateLimiting:
-    @pytest.mark.skip(reason="Rate limiting now uses Redis via fastapi_limiter")
+    @pytest.mark.skip(
+        reason="Rate limiting now uses Redis via fastapi_limiter"
+    )
     def test_rate_limit_returns_429(self, client):
         """When rate limit is set to 2, the third request should be rejected."""
         pass
 
 
 # ── CORS & Security ───────────────────────────────────────────────────────
+
 
 class TestCORSSecurity:
     def test_cors_allowed_origin(self, client):
@@ -361,34 +473,64 @@ class TestCORSSecurity:
         assert resp.status_code == 200
 
     def test_post_only_on_predict_endpoints(self, client):
-        for path in ["/api/predict", "/api/predict-heart", "/api/predict-lung"]:
+        for path in [
+            "/api/predict",
+            "/api/predict-heart",
+            "/api/predict-lung",
+        ]:
             resp = client.get(path)
             assert resp.status_code == 405
 
 
 # ── Pydantic Schema Validation ────────────────────────────────────────────
 
+
 class TestSchemaValidation:
     def test_diabetes_string_type_rejected(self, client):
-        bad = {"age": "seven", "bmi": 25, "bp": 0, "cholesterol": 0,
-               "smoker": 0, "activity": 1, "health": 3, "mental": 0}
+        bad = {
+            "age": "seven",
+            "bmi": 25,
+            "bp": 0,
+            "cholesterol": 0,
+            "smoker": 0,
+            "activity": 1,
+            "health": 3,
+            "mental": 0,
+        }
         resp = client.post("/api/predict", json=bad)
         assert resp.status_code == 422
 
     def test_heart_float_sex_coerced(self, client):
         payload = {
-            "age": 7, "sex": 1.0, "bmi": 25.0, "high_bp": 0, "high_chol": 0,
-            "smoker": 0, "phys_activity": 1, "fruits": 1, "veggies": 1,
-            "heavy_drinker": 0, "gen_health": 3, "ment_health": 0,
-            "phys_health": 0, "diabetes": 0,
+            "age": 7,
+            "sex": 1.0,
+            "bmi": 25.0,
+            "high_bp": 0,
+            "high_chol": 0,
+            "smoker": 0,
+            "phys_activity": 1,
+            "fruits": 1,
+            "veggies": 1,
+            "heavy_drinker": 0,
+            "gen_health": 3,
+            "ment_health": 0,
+            "phys_health": 0,
+            "diabetes": 0,
         }
         resp = client.post("/api/predict-heart", json=payload)
         assert resp.status_code == 200
 
     def test_lung_null_field_rejected(self, client):
-        bad = {"age": 50, "gender": None, "smoking": 0, "yellow_fingers": 0,
-               "chronic_disease": 0, "fatigue": 0, "wheezing": 0,
-               "shortness_of_breath": 0}
+        bad = {
+            "age": 50,
+            "gender": None,
+            "smoking": 0,
+            "yellow_fingers": 0,
+            "chronic_disease": 0,
+            "fatigue": 0,
+            "wheezing": 0,
+            "shortness_of_breath": 0,
+        }
         resp = client.post("/api/predict-lung", json=bad)
         assert resp.status_code == 422
 

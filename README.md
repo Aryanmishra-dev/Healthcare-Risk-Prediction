@@ -1,21 +1,81 @@
-# HealthPredict AI: End-to-End Healthcare Risk Prediction Platform
+<p align="center">
+  <img src="frontend/src/assets/dr_ai_avatar_v2.png" alt="HealthPredict AI" width="180"/>
+</p>
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](#)
-[![Python Version](https://img.shields.io/badge/python-3.12%20%7C%203.13-blue.svg)](#)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](#)
-[![Docker Support](https://img.shields.io/badge/docker-ready-blue.svg)](#)
-[![Kubernetes Support](https://img.shields.io/badge/kubernetes-helm-blue.svg)](#)
+<h1 align="center">HealthPredict AI</h1>
 
-An enterprise-grade, end-to-end Machine Learning, Web, and MLOps ecosystem designed to predict patient risks for **Diabetes**, **Heart Disease**, and **Lung Cancer** based on clinical indicators. This platform combines a highly interactive **FastAPI & HTMX** web interface, robust versioned REST APIs, natural language clinical document ingestion, A/B testing capability, model explainability (SHAP), algorithmic fairness calibration, and comprehensive observability (Prometheus & Grafana).
+<p align="center">
+  <em>End-to-End Healthcare Risk Prediction Platform</em>
+</p>
+
+<p align="center">
+  <a href="#"><img src="https://img.shields.io/badge/build-passing-brightgreen.svg" alt="Build Status"></a>
+  <a href="#"><img src="https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg" alt="Python Version"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
+  <a href="#"><img src="https://img.shields.io/badge/docker-ready-blue.svg" alt="Docker"></a>
+  <a href="#"><img src="https://img.shields.io/badge/kubernetes-helm-blue.svg" alt="Kubernetes"></a>
+  <a href="#"><img src="https://img.shields.io/badge/coverage-76%25-green.svg" alt="Coverage"></a>
+  <a href="https://github.com/theogengineer/Healthcare-Risk-Prediction/releases"><img src="https://img.shields.io/badge/release-v3.0.0-orange.svg" alt="Release"></a>
+  <a href="CODE_OF_CONDUCT.md"><img src="https://img.shields.io/badge/code%20of%20conduct-contributor%20covenant-ff69b4.svg" alt="Code of Conduct"></a>
+</p>
 
 ---
 
-##  System Architecture
+Predict patient risks for **Diabetes**, **Heart Disease**, and **Lung Cancer** using clinical indicators. This platform combines a FastAPI + HTMX web interface, versioned REST APIs, clinical NLP document ingestion, XGBoost models, SHAP explainability, fairness calibration, and full MLOps observability.
+
+---
+
+## Screenshots
+
+<p align="center">
+  <i>Demo GIF (coming soon)</i>
+</p>
+
+<p align="center">
+  <img src="docs/images/architecture.png" alt="Architecture Diagram" width="800"/>
+  <br/><em>System Architecture</em>
+</p>
+
+<p align="center">
+  <img src="docs/images/system_flow.png" alt="System Flow" width="800"/>
+  <br/><em>Request Lifecycle Sequence</em>
+</p>
+
+<p align="center">
+  <img src="docs/images/ml_pipeline.png" alt="ML Pipeline" width="800"/>
+  <br/><em>ML Training & Inference Pipeline</em>
+</p>
+
+---
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [ER Diagram](#er-diagram)
+- [Deployment Architecture](#deployment-architecture)
+- [Project Tree](#project-tree)
+- [Features](#features)
+- [Technology Stack](#technology-stack)
+- [Installation](#installation)
+- [Docker](#docker)
+- [Kubernetes](#kubernetes)
+- [API Reference](#api-reference)
+- [Authentication](#authentication)
+- [ML Pipeline](#ml-pipeline)
+- [MLOps](#mlops)
+- [Monitoring](#monitoring)
+- [Testing](#testing)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
+
+## Architecture
 
 ```mermaid
 flowchart TB
     User(["Client / Web Browser"])
-    
+
     subgraph Edge ["Edge & Security Layer (Nginx)"]
         NginxProxy["Nginx Reverse Proxy\n(SSL Termination, Headers, Rate Limiting)"]
     end
@@ -41,302 +101,422 @@ flowchart TB
         Grafana["Grafana Dashboards\n(System & ML Health Visuals)"]
     end
 
-    %% Client Interactions
     User -->|"HTTPS (443)"| NginxProxy
     NginxProxy -->|"Internal Proxy (8000)"| Router
-    
-    %% Application Flow
     Router <--> AuthService
     Router --> NLPService
     Router --> ABService
     Router --> ModelMgr
     ModelMgr --> ExplainService
-    
-    %% Data Store Interactions
     AuthService <--> DB
     NLPService -.-> DB
     ModelMgr <--> MLflow
     ModelMgr <--> DVCStore
     Router <--> RedisCache
-    
-    %% Monitoring Exporters
     Router -.->|"Scrapes"| Prometheus
     Prometheus --> Grafana
 ```
 
 ---
 
-##  Key Features & Capabilities
+## ER Diagram
 
-### 1. Advanced Machine Learning & Algorithmic Fairness
-*   **Multi-Model Predictions:** Live inference for **Diabetes**, **Heart Disease**, and **Lung Cancer** risks using production-trained XGBoost classifiers.
-*   **Model Explainability (SHAP):** Live generation of SHAP (SHapley Additive exPlanations) values, converting complex ensemble predictions into interpretable local feature importance visualizations for clinicians.
-*   **Model Calibration & Bias Reductions:** All models feature probability calibration (e.g., Isotonic Regression in `calibrate_lung_model.py`) and algorithmic fairness evaluations (`fairness_eval.py`) to reduce demographics-based prediction disparities.
-*   **Warmup & Lifecycle Management:** Built-in `ModelManager` runs asynchronous startup warmups, registers memory footfalls, assesses pipeline readiness latency, and transitions model stages automatically.
+The database schema spans 14 models across tenants, users, predictions, audits, exports, webhooks, and ML model versions.
+
+<p align="center">
+  <img src="docs/images/database.png" alt="ER Diagram" width="800"/>
+  <br/><em>Entity-Relationship Diagram</em>
+</p>
+
+See [docs/architecture/er_diagram.md](docs/architecture/er_diagram.md) for the textual schema reference.
+
+Key entities:
+- **Tenant** — Multi-tenant isolation for organizations
+- **User** — Authentication, roles, memberships
+- **Prediction** — Model inference input/output audit trail
+- **AuditEvent** — Immutable security and compliance log
+- **ApiKey** — Scoped API key authentication
+- **Webhook** — Event-driven integration callbacks
+- **ModelVersion** — ML model registry version tracking
+- **Export** — Data export request records
+- **UsageRecord** — Per-tenant usage metering
+
+---
+
+## Deployment Architecture
+
+```mermaid
+flowchart LR
+    subgraph Client
+        Browser["Web Browser"]
+        CLI["cURL / API Client"]
+    end
+
+    subgraph AWS ["AWS Cloud"]
+        subgraph VPC ["VPC"]
+            ALB["Application Load Balancer"]
+            subgraph ECS ["ECS Fargate"]
+                App["FastAPI App\n(Gunicorn + Uvicorn)"]
+            end
+            RDS[(RDS PostgreSQL)]
+            ElastiCache[(ElastiCache Redis)]
+            EFS[(EFS / Models)]
+        end
+    end
+
+    subgraph Monitoring
+        Prom["Prometheus"]
+        Graf["Grafana"]
+    end
+
+    Browser -->|HTTPS| ALB
+    CLI -->|HTTPS| ALB
+    ALB --> App
+    App --> RDS
+    App --> ElastiCache
+    App --> EFS
+    App -.->|metrics| Prom
+    Prom --> Graf
+```
+
+Alternative deployments: Render single-container, Docker Compose, or Kubernetes (Helm).
+
+---
+
+## Project Tree
+
+```
+Healthcare-Risk-Prediction/
+├── .github/
+├── backend/
+├── frontend/
+├── deployment/
+├── docs/
+├── monitoring/
+├── config/
+├── scripts/
+├── shared/
+├── tests/
+├── data/
+├── ml/
+│
+├── README.md
+├── LICENSE
+├── CONTRIBUTING.md
+├── CODE_OF_CONDUCT.md
+├── SECURITY.md
+├── CHANGELOG.md
+├── CITATION.cff
+│
+├── Dockerfile
+├── docker-compose.yml
+│
+├── pyproject.toml
+├── requirements.txt
+├── requirements-dev.txt
+├── Makefile
+│
+├── .gitignore
+├── .gitattributes
+```
+
+---
+
+## Features
+
+### 1. Advanced Machine Learning
+- **Multi-Model Predictions:** XGBoost classifiers for Diabetes, Heart Disease, Lung Cancer
+- **SHAP Explainability:** Real-time feature importance visualizations for clinicians
+- **Calibration & Fairness:** Isotonic regression calibration, demographic parity evaluation
+- **Model Lifecycle:** Async warmup, health diagnostics, stage transitions
 
 ### 2. Clinical NLP Document Ingestion
-*   **Structured Parser:** Handles PDF and image uploads containing clinical reports (utilizing PyMuPDF, Pillow, and Tesseract OCR).
-*   **NLP Entity Extraction:** Automates the extraction of patient metrics (such as BMI, high blood pressure, smoker status, and age groups) from raw clinical unstructured texts, pre-populating risk evaluation forms.
+- **PDF & Image Parsing:** PyMuPDF, Pillow, Tesseract OCR
+- **Entity Extraction:** BMI, blood pressure, smoker status, age from free-text reports
+- **Auto-Population:** Extracted values pre-fill risk evaluation forms
 
-### 3. Integrated Full-Stack Web App (FastAPI & HTMX)
-*   **Interactive Web UI:** Developed a single-page-like interactive dashboard using **HTMX** for asynchronous form submission and partial page rendering without heavy frontend JS frameworks.
-*   **A/B Testing Framework:** Embedded variant router (`backend/app/services/ab_testing.py`) to compare different UI layouts and form structures, recording engagement metrics dynamically.
+### 3. Full-Stack Web App
+- **HTMX Frontend:** Dynamic partial page updates, no JS framework needed
+- **A/B Testing:** Variant routing for UI experiments
+- **Responsive Design:** Mobile-friendly dashboard
 
-### 4. Enterprise Security & Quality Compliance
-*   **Multiple Auth Schemes:** Secure user session management via encrypted cookies/JWT and API Key headers (`X-API-Key`) for developer integrations.
-*   **Defensive Security:** Implements CSRF tokens on forms, Trusted Host header validation, CORS strict configurations, and Redis-backed IP rate-limiting (`slowapi`).
-*   **Security Scanning:** Integrated SAST via `bandit` and dependency auditing via `pip-audit` directly into local workflows and CI check-steps.
+### 4. Enterprise Security
+- **Multi-Auth:** JWT cookies, API keys (X-API-Key), session management
+- **Defenses:** CSRF tokens, CORS, trusted hosts, Redis rate-limiting
+- **Multi-Tenancy:** Tenant-isolated data access
 
-### 5. Production Telemetry & Observability
-*   **Live Metrics:** Exposes a `/metrics` scrape endpoint for Prometheus, monitoring api latencies, request error rates, model warmups, and DB query times.
-*   **Grafana Visualization:** Auto-configured dashboards present system resources alongside predictive throughput and classification latencies.
-
----
-
-##  Technology Stack
-
-| Component | Technologies & Frameworks | Description |
-| :--- | :--- | :--- |
-| **Backend Core** | FastAPI, Pydantic v2, SQLAlchemy 2.0 (Async), Alembic | High-performance async APIs, request validation, and database ORM/Migrations. |
-| **Machine Learning**| XGBoost, Scikit-Learn, SHAP, Pandas, NumPy, Joblib | Model architectures, explainability plots, and data pre-processing. |
-| **MLOps / Registry**| MLflow, DVC (Data Version Control) | Experiment tracking, model registry, and pipeline run reproducibility. |
-| **Frontend UI** | HTMX, Jinja2 Templates, Vanilla CSS | Interactive single-page UI, partial HTML updates, and typography. |
-| **DevOps / Infra** | Docker, Nginx, Kubernetes (Helm), Terraform | Container builds, reverse proxy/SSL, orchestration, and AWS ECS IaC. |
-| **Security** | Redis, Slowapi, PyJWT, Bandit, Pip-Audit | Rate-limiting, token-based auth, SAST, and dependency verification. |
-| **Monitoring** | Prometheus Client, Grafana | Custom metrics logging, scraping dashboarding. |
+### 5. Observability
+- **Prometheus Metrics:** Request latencies, error rates, model health
+- **Grafana Dashboards:** System resources + ML throughput visualizations
 
 ---
 
-##  Getting Started (Local Development)
+## Technology Stack
+
+| Component | Technologies |
+|-----------|-------------|
+| **Backend** | FastAPI, Pydantic v2, SQLAlchemy 2.0 (async), Alembic |
+| **Machine Learning** | XGBoost, Scikit-Learn, SHAP, Pandas, NumPy, Joblib |
+| **MLOps** | MLflow, DVC |
+| **Frontend** | HTMX, Jinja2, Alpine.js, CSS |
+| **Database** | PostgreSQL 15, Redis 7 |
+| **Infrastructure** | Docker, Nginx, Kubernetes (Helm), Terraform |
+| **Security** | Redis (rate-limit), PyJWT, Bandit, pip-audit |
+| **Monitoring** | Prometheus, Grafana |
+
+---
+
+## Installation
 
 ### Prerequisites
-*   Python 3.12 or 3.13
-*   macOS or Linux shell environment
-*   Docker & Docker Compose (Optional, for containerized run)
-*   Tesseract OCR (Required locally for NLP document parser: `brew install tesseract` on macOS / `apt-get install tesseract-ocr` on Linux)
+- Python 3.11+
+- Docker & Docker Compose
+- Tesseract OCR (`brew install tesseract` / `apt-get install tesseract-ocr`)
 
-### 1. Setup Virtual Environment & Install Dependencies
-Clone the repository and initialize a virtual environment:
+### Quick Start
+
 ```bash
-git clone <repo-url>
+# Clone
+git clone https://github.com/theogengineer/Healthcare-Risk-Prediction.git
 cd Healthcare-Risk-Prediction
 
-# Option A: Standard Python venv
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -r backend/requirements-dev.txt
+# Setup environment
+python -m venv .venv && source .venv/bin/activate
+pip install -r backend/requirements-dev.txt
 
-# Option B: Conda (Recommended for scripts referencing .venv-1)
-conda create -p .venv-1 python=3.13 -y
-conda activate ./.venv-1
-python -m pip install --upgrade pip
-python -m pip install -r backend/requirements-dev.txt
-```
-
-### 2. Configure Environment Variables & Database
-Copy the template configuration files and modify environment variables as required:
-```bash
-# Setup root, backend, and config environment files
+# Configure
 cp .env.example .env
-cp backend/.env.example backend/.env
+
+# Start infrastructure
+make docker-dev
+
+# Run migrations
+make db-migrate
+
+# Start dev server
+make dev
 ```
 
-Start the local PostgreSQL database using Docker Compose:
-```bash
-docker compose -f deployment/docker/docker-compose.yml up -d db redis
-```
-
-Apply the database migrations:
-```bash
-cd backend
-alembic upgrade head
-cd ..
-```
-
-### 3. Generate Local Stub Models (DVC Pipeline)
-Before first launch, run DVC to generate the offline-friendly deterministic stub models required to boot the application and pass smoke tests:
-```bash
-# Install DVC dependencies (kept separate due to upstream security-alert isolation)
-python -m pip install -r ml/requirements-dvc.txt
-
-# Regenerate local stub model artifacts
-dvc repro ml/dvc.yaml
-dvc status ml/dvc.yaml
-```
-
-### 4. Run the Development Server
-You can launch the server using our dev start script or execute Uvicorn directly:
-```bash
-# Workflow A: Via startup utility script (checks port 8000, runs live hot-reload)
-chmod +x deployment/scripts/start.sh
-./deployment/scripts/start.sh
-
-# Workflow B: Via direct Uvicorn execution
-python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
-```
-
-Once running, navigate to:
-*   **Web Portal UI:** [http://localhost:8000/](http://localhost:8000/)
-*   **JSON API Base:** [http://localhost:8000/api](http://localhost:8000/api)
-*   **Interactive API Docs (Swagger):** [http://localhost:8000/docs](http://localhost:8000/docs) (or `/api/docs`)
+Open [http://localhost:8000](http://localhost:8000).
 
 ---
 
-##  REST API Reference
+## Docker
 
-All production-grade JSON API requests (under `/api/v1/`) require authentication. Provide your API Key in the `X-API-Key` header.
-> [!NOTE]
-> During development, if `API_KEY` is not set in `.env`, define a key in `DEV_API_KEY` and use that for local authorization.
-
-### Route Mapping Summary
-| Method | Endpoint | Auth | Description |
-| :--- | :--- | :--- | :--- |
-| **GET** | `/healthz` | Public | Liveness check (shallow). |
-| **GET** | `/api/v1/health/ready` | Public | Readiness check (validates model weights & DB connection status). |
-| **GET** | `/metrics` | Public | Prometheus raw metrics endpoint. |
-| **POST** | `/api/predict` | Legacy/Public | Predicts Diabetes risk (legacy input format). |
-| **POST** | `/api/predict/diabetes` | `X-API-Key` | Predicts Diabetes risk. |
-| **POST** | `/api/predict/heart` | `X-API-Key` | Predicts Heart Disease risk. |
-| **POST** | `/api/predict/lung` | `X-API-Key` | Predicts Lung Cancer risk (calibrated). |
-| **POST** | `/api/upload` | `X-API-Key` | Uploads clinical PDFs/images for automated NLP feature extraction. |
-
-### cURL CLI Examples
-
-<details>
-<summary><b>1. Readiness & Model Diagnostic Check</b></summary>
+### Development (app runs locally, only DB + Redis in containers)
 
 ```bash
-curl -X GET http://localhost:8000/api/v1/health/ready
+docker compose -f deployment/docker/docker-compose.dev.yml up -d
 ```
-*Response:*
-```json
-{
-  "status": "ready",
-  "database": "connected",
-  "models": {
-    "diabetes": { "status": "loaded", "version": "v1.0-stub" },
-    "heart_disease": { "status": "loaded", "version": "v1.0-stub" },
-    "lung_cancer": { "status": "loaded", "version": "v1.0-stub" }
-  }
-}
-```
-</details>
 
-<details>
-<summary><b>2. Predict Diabetes Risk</b></summary>
+### Production (full stack)
 
 ```bash
-curl -X POST http://localhost:8000/api/predict/diabetes \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: your-dev-api-key" \
-  -d '{
-    "age": 45,
-    "bmi": 28.4,
-    "bp": 1,
-    "cholesterol": 1,
-    "smoker": 0,
-    "activity": 1,
-    "health": 3,
-    "mental": 2
-  }'
-```
-</details>
-
-<details>
-<summary><b>3. Clinical Document Parsing</b></summary>
-
-```bash
-curl -X POST http://localhost:8000/api/upload \
-  -H "X-API-Key: your-dev-api-key" \
-  -F "file=@/path/to/patient_report.pdf"
-```
-</details>
-
----
-
-##  MLflow Experiment Tracking & Registry
-
-The platform is integrated with **MLflow** for tracking parameter tunings and registering verified classifiers. 
-*   **Start MLflow Server locally:**
-    ```bash
-    mlflow ui --host 127.0.0.1 --port 5000
-    ```
-*   **Migrate local stub models to MLflow:**
-    Run the migration utility script to log local stub artifacts directly into your MLflow instance so they can be registered and warmed up by the API:
-    ```bash
-    python ml/scripts/migrate_to_mlflow.py
-    ```
-
-For detailed guides on model configurations, calibration curves, and fairness checks, refer to `ml/README.md` (if present) or our [Troubleshooting Guide](./docs/TROUBLESHOOTING.md).
-
----
-
-##  Production Deployment & Orchestration
-
-### 1. Docker Compose
-Containerized builds include an Nginx SSL termination reverse proxy, Redis cache, Prometheus exporter, Grafana dashboards, and the FastAPI application.
-
-```bash
-# Build and spin up the core platform (App + Nginx Proxy)
 docker compose -f deployment/docker/docker-compose.yml up -d --build
-
-# Launch with full telemetry support (Prometheus + Grafana enabled)
-./deployment/scripts/deploy.sh --with-monitoring
-
-# Tear down all running containers
-docker compose -f deployment/docker/docker-compose.yml down
 ```
 
-### 2. Kubernetes (Helm Chart)
-Deploy HealthPredict AI dynamically to a Kubernetes cluster using the configured Helm chart inside `deployment/kubernetes/healthpredict`:
+Services: FastAPI (Gunicorn), PostgreSQL, Redis, Nginx, MLflow, Prometheus, Grafana.
+
 ```bash
-# Validate chart configurations
+# With monitoring stack
+docker compose -f deployment/docker/docker-compose.yml --profile monitoring up -d
+```
+
+---
+
+## Kubernetes
+
+Deploy via Helm chart:
+
+```bash
 helm lint deployment/kubernetes/healthpredict
 
-# Install / Upgrade release on cluster
 helm upgrade --install healthpredict deployment/kubernetes/healthpredict \
   --namespace production --create-namespace \
   -f deployment/kubernetes/healthpredict/values.yaml
 ```
 
-### 3. Terraform (Cloud Infrastructure)
-Manage cloud infrastructure (AWS ECS, VPC, ALB, Security Groups) using Terraform configurations located in `deployment/infrastructure/`:
-```bash
-cd deployment/infrastructure
-terraform init
-terraform plan
-terraform apply
-```
-
-###  Production Deployment Considerations
-*   **Render Cold Starts:** In resource-constrained environments (like Render free tiers), XGBoost models and SHAP explainers might trigger slow initialization. The production Gunicorn wrapper in the `Dockerfile` sets `--timeout 120` to prevent worker OOM crashes.
-*   **Out of Memory (OOM) Safety:** Concurrent loads of multi-model XGBoost/sklearn weights can spike past 512MB RAM. If memory footprints exceed limits, consult [TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md) to disable unused predictors or adjust worker allocations.
+The chart includes Deployment, HPA, Service, Ingress, ConfigMap, Secret, and PVC templates.
 
 ---
 
-##  Testing & Code Quality Assurance
+## API Reference
 
-To keep code robust, secure, and compliant, run verification suites before pushing updates:
+### Authentication
+
+| Method | Header | Description |
+|--------|--------|-------------|
+| `X-API-Key` | Header | API key-based auth for all `/api/v1/` endpoints |
+| `Authorization: Bearer <jwt>` | Header | JWT-based auth for web sessions |
+| Session cookie | Cookie | Encrypted cookie for HTMX browser sessions |
+
+> **Dev:** Set `DEV_API_KEY` in `.env` and use it as `X-API-Key` header.
+
+### Endpoints
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/healthz` | Public | Liveness check |
+| `GET` | `/api/v1/health/ready` | Public | Readiness (DB + models) |
+| `GET` | `/metrics` | Public | Prometheus metrics |
+| `POST` | `/api/v1/predict/diabetes` | API Key | Diabetes risk prediction |
+| `POST` | `/api/v1/predict/heart` | API Key | Heart disease risk prediction |
+| `POST` | `/api/v1/predict/lung` | API Key | Lung cancer risk prediction |
+| `POST` | `/api/v1/upload` | API Key | Upload clinical document |
+| `GET` | `/api/v1/models` | API Key | Model registry listing |
+| `GET` | `/api/v1/audit` | API Key | Audit event log |
+| `GET` | `/api/v1/users/me` | Session | Current user profile |
+| `POST` | `/auth/register` | Public | User registration |
+| `POST` | `/auth/login` | Public | User login |
+
+### Example
 
 ```bash
-# Run the entire test suite (Unit, Integration, & E2E)
-pytest
+curl -X POST http://localhost:8000/api/v1/predict/diabetes \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-dev-api-key" \
+  -d '{"age": 45, "bmi": 28.4, "bp": 1, "cholesterol": 1, "smoker": 0, "activity": 1, "health": 3, "mental": 2}'
+```
 
-# Run tests with test-coverage report
-pytest --cov=backend/app --cov-report=html tests/
+Interactive docs at [http://localhost:8000/docs](http://localhost:8000/docs).
 
-# Scan backend code for security vulnerabilities (SAST)
-bandit -r backend/app ml shared -x tests,ml/experiments
+---
 
-# Check dependencies for known CVEs / vulnerabilities
-pip-audit -r backend/requirements.txt
-pip-audit -r backend/requirements-dev.txt
+## Authentication
+
+The platform supports three authentication modes:
+
+### 1. API Key Auth
+Used by external services and CLI tools. Pass `X-API-Key` header. Keys are scoped to specific endpoints and tenant-isolated.
+
+### 2. JWT Session Auth
+Used by the web UI. Users register/login via `/auth/register` and `/auth/login`. Sessions are managed via encrypted cookies.
+
+### 3. Multi-Tenancy
+Every resource is scoped to a tenant. Users belong to tenants via membership records. API keys and audit logs are tenant-isolated.
+
+---
+
+## ML Pipeline
+
+```mermaid
+flowchart LR
+    Data["BRFSS Survey Data"] --> Preprocess["Preprocessing"]
+    Preprocess --> FeatureEng["Feature Engineering"]
+    FeatureEng --> Train["XGBoost Training"]
+    Train --> Calibrate["Probability Calibration\n(Isotonic Regression)"]
+    Calibrate --> Fairness["Fairness Evaluation"]
+    Fairness --> Registry["MLflow Registry"]
+    Registry --> Inference["Prediction API"]
+    Inference --> Explain["SHAP Explainability"]
+```
+
+- **Data Source:** CDC BRFSS survey data
+- **Feature Engineering:** One-hot encoding, scaling, interaction terms
+- **Training:** XGBoost with hyperparameter optimization (Optuna)
+- **Calibration:** Isotonic regression for well-calibrated probabilities
+- **Fairness:** Demographic parity evaluation across groups
+- **Explainability:** SHAP values with force plots and summary plots
+- **Models:** Diabetes (v1), Heart Disease (v1), Lung Cancer (v1, calibrated)
+
+---
+
+## MLOps
+
+| Component | Tool | Purpose |
+|-----------|------|---------|
+| **Experiment Tracking** | MLflow | Parameter tuning, metric logging |
+| **Model Registry** | MLflow + local | Versioning, staging, production promotion |
+| **Data Versioning** | DVC | Pipeline reproducibility, artifact tracking |
+| **Pipeline Automation** | DVC repro | Reproducible training pipelines |
+| **Model Serving** | In-process (Joblib) | Async model loading with health checks |
+| **Monitoring** | Prometheus + Grafana | Prediction latency, drift detection, error rates |
+
+### MLflow Server
+
+```bash
+# Start local MLflow
+mlflow ui --host 127.0.0.1 --port 5000
+
+# Register local models
+python ml/scripts/migrate_to_mlflow.py
 ```
 
 ---
 
-##  Additional Resources
-*   [Security Architecture Guide](./docs/SECURITY.md) — Comprehensive overview of multi-layered security.
-*   [Troubleshooting & Recovery](./docs/TROUBLESHOOTING.md) — Common error resolution steps, cold-start limits, and MLflow setups.
-*   [Contributing Guidelines](./docs/CONTRIBUTING.md) — Code styles, DVC model workflows, and guidelines.
+## Monitoring
+
+| Stack | Component | Port |
+|-------|-----------|------|
+| **Prometheus** | Metrics collection, alerting | 9090 |
+| **Grafana** | Dashboards, visualization | 3000 |
+
+```bash
+# Enable monitoring profile
+docker compose -f deployment/docker/docker-compose.yml --profile monitoring up -d
+```
+
+Pre-configured dashboards:
+- System resources (CPU, memory, requests)
+- Model prediction throughput and latency
+- Error rates and health check status
+- Database connection pool usage
+
+---
+
+## Testing
+
+```bash
+# Full suite
+make test                    # 659 tests, SQLite (no external deps)
+
+# With coverage
+make coverage                # 76% coverage, HTML report in htmlcov/
+
+# Linting
+make lint                    # black + isort + flake8
+
+# Security
+make security                # bandit SAST + pip-audit
+```
+
+Test structure:
+- `tests/unit/` — Isolated service/component tests
+- `tests/integration/` — API endpoint and DB integration tests
+- `tests/e2e/` — Locust load tests
+
+---
+
+## Contributing
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on:
+- Development setup
+- Branch naming (`feat/`, `fix/`, `docs/`, etc.)
+- Conventional Commits
+- PR process
+- Coding standards (black, isort, flake8, mypy)
+- Testing requirements
+
+---
+
+## License
+
+Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
+
+---
+
+## Citation
+
+If you use this project in your research, please cite:
+
+```bibtex
+@software{healthpredict2026,
+  author = {{Your Name}},
+  title = {{HealthPredict AI}: End-to-End Healthcare Risk Prediction Platform},
+  version = {3.0.0},
+  year = {2026},
+  url = {https://github.com/theogengineer/Healthcare-Risk-Prediction}
+}
+```
+
+See [CITATION.cff](CITATION.cff) for the standard citation metadata.

@@ -9,7 +9,9 @@ Usage:
     from backend.app.services.ab_testing import ab_router
 
     # Register a challenger for the diabetes model:
-    ab_router.register("diabetes", challenger_fn=my_new_predict, traffic_pct=10)
+    ab_router.register(
+        "diabetes", challenger_fn=my_new_predict, traffic_pct=10
+    )
 
     # Route prediction through A/B splitter:
     result, variant = ab_router.route("diabetes", **kwargs)
@@ -127,7 +129,8 @@ class ABRouter:
                 "count": len(records),
                 "avg_latency_ms": round(sum(latencies) / len(latencies), 2),
                 "avg_risk": round(
-                    sum(r["risk_percentage"] for r in records) / len(records), 2
+                    sum(r["risk_percentage"] for r in records) / len(records),
+                    2,
                 ),
             }
 

@@ -10,20 +10,20 @@ WHY: The ml/models/ directory may not have trained weights (.pkl files).
 """
 
 import pytest
-from backend.app.main import app
 
+from backend.app.main import app
 from ml.models.stubs import (
+    HEART_FEATURES,
+    LUNG_FEATURES,
+    StubCalibrator,
     StubDiabetesClassifier,
     StubHeartClassifier,
     StubLungClassifier,
-    StubCalibrator,
     StubScaler,
-    HEART_FEATURES,
-    LUNG_FEATURES,
 )
 
-
 # ── Fixture: inject stubs into app.state.models before tests run ──────────
+
 
 @pytest.fixture(scope="module", autouse=True)
 def _load_stub_models():

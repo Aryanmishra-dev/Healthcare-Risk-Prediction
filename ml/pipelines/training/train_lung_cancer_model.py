@@ -8,37 +8,37 @@ Run from the project root:
 
 import os
 import warnings
+
+import matplotlib
 import numpy as np
 import pandas as pd
-import matplotlib
+
 matplotlib.use("Agg")
+import joblib
 import matplotlib.pyplot as plt
 import seaborn as sns
-import joblib
-
-from sklearn.model_selection import (
-    train_test_split,
-    StratifiedKFold,
-    cross_validate,
-    GridSearchCV,
-)
-from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import SVC
-from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import (
     accuracy_score,
+    classification_report,
+    confusion_matrix,
+    f1_score,
     precision_score,
     recall_score,
-    f1_score,
     roc_auc_score,
-    confusion_matrix,
-    classification_report,
 )
-
+from sklearn.model_selection import (
+    GridSearchCV,
+    StratifiedKFold,
+    cross_validate,
+    train_test_split,
+)
+from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
 from xgboost import XGBClassifier
 
 warnings.filterwarnings("ignore")
@@ -78,7 +78,9 @@ df["LUNG_CANCER"] = df["LUNG_CANCER"].map({"YES": 1, "NO": 0})
 df = df.drop(columns=["Anxiety", "Allergy"])
 print(f"After dropping Anxiety & Allergy: {df.shape}")
 print(f"\nClass distribution:\n{df['LUNG_CANCER'].value_counts()}")
-print(f"Class balance: {df['LUNG_CANCER'].value_counts(normalize=True).to_dict()}")
+print(
+    f"Class balance: {df['LUNG_CANCER'].value_counts(normalize=True).to_dict()}"
+)
 
 # Separate features and target
 FEATURE_COLS = [c for c in df.columns if c != "LUNG_CANCER"]
@@ -112,8 +114,12 @@ models = {
     "Decision Tree": DecisionTreeClassifier(random_state=42),
     "Random Forest": RandomForestClassifier(n_estimators=200, random_state=42),
     "XGBoost": XGBClassifier(
-        n_estimators=200, learning_rate=0.1, max_depth=5,
-        eval_metric="logloss", random_state=42, use_label_encoder=False,
+        n_estimators=200,
+        learning_rate=0.1,
+        max_depth=5,
+        eval_metric="logloss",
+        random_state=42,
+        use_label_encoder=False,
     ),
     "KNN": KNeighborsClassifier(n_neighbors=5),
     "SVM": SVC(kernel="rbf", probability=True, random_state=42),
@@ -135,10 +141,16 @@ for name, model in models.items():
     auc = roc_auc_score(y_test, y_prob)
     cm = confusion_matrix(y_test, y_pred)
 
-    results.append({
-        "Model": name, "Accuracy": acc, "Precision": prec,
-        "Recall": rec, "F1": f1, "ROC-AUC": auc,
-    })
+    results.append(
+        {
+            "Model": name,
+            "Accuracy": acc,
+            "Precision": prec,
+            "Recall": rec,
+            "F1": f1,
+            "ROC-AUC": auc,
+        }
+    )
     trained_models[name] = {"model": model, "cm": cm}
 
     print(f"\n--- {name} ---")
@@ -189,7 +201,9 @@ best_name = best_row["Model"]
 best_model = trained_models[best_name]["model"]
 
 print(f"\nBest Model: {best_name}")
-print(f"  Reason: Highest combined Recall ({best_row['Recall']:.4f}) + ROC-AUC ({best_row['ROC-AUC']:.4f})")
+print(
+    f"  Reason: Highest combined Recall ({best_row['Recall']:.4f}) + ROC-AUC ({best_row['ROC-AUC']:.4f})"
+)
 print(f"\nFull Classification Report for {best_name}:")
 y_pred_best = best_model.predict(X_test)
 print(classification_report(y_test, y_pred_best))
@@ -210,12 +224,15 @@ elif hasattr(best_model, "coef_"):
 else:
     # For models without native feature importances, use permutation importance
     from sklearn.inspection import permutation_importance
-    perm = permutation_importance(best_model, X_test, y_test, n_repeats=10, random_state=42)
+
+    perm = permutation_importance(
+        best_model, X_test, y_test, n_repeats=10, random_state=42
+    )
     importances = perm.importances_mean
 
-feat_imp = pd.DataFrame({
-    "Feature": FEATURE_COLS, "Importance": importances
-}).sort_values("Importance", ascending=False)
+feat_imp = pd.DataFrame(
+    {"Feature": FEATURE_COLS, "Importance": importances}
+).sort_values("Importance", ascending=False)
 print(feat_imp.to_string(index=False))
 
 plt.figure(figsize=(10, 6))
@@ -237,10 +254,19 @@ print("=" * 70)
 
 cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 cv_results = cross_validate(
-    best_model, X, y, cv=cv, scoring=["accuracy", "f1"], return_train_score=False
+    best_model,
+    X,
+    y,
+    cv=cv,
+    scoring=["accuracy", "f1"],
+    return_train_score=False,
 )
-print(f"Accuracy — Mean: {cv_results['test_accuracy'].mean():.4f}, Std: {cv_results['test_accuracy'].std():.4f}")
-print(f"F1 Score — Mean: {cv_results['test_f1'].mean():.4f}, Std: {cv_results['test_f1'].std():.4f}")
+print(
+    f"Accuracy — Mean: {cv_results['test_accuracy'].mean():.4f}, Std: {cv_results['test_accuracy'].std():.4f}"
+)
+print(
+    f"F1 Score — Mean: {cv_results['test_f1'].mean():.4f}, Std: {cv_results['test_f1'].std():.4f}"
+)
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -304,8 +330,7 @@ else:
     tuning_model = SVC(probability=True, random_state=42)
 
 grid_search = GridSearchCV(
-    tuning_model, param_grid, cv=5, scoring="recall",
-    n_jobs=-1, verbose=0
+    tuning_model, param_grid, cv=5, scoring="recall", n_jobs=-1, verbose=0
 )
 grid_search.fit(X_train, y_train)
 tuned_model = grid_search.best_estimator_
@@ -321,7 +346,9 @@ print(f"  Precision: {precision_score(y_test, y_pred_tuned):.4f}")
 print(f"  Recall:    {recall_score(y_test, y_pred_tuned):.4f}")
 print(f"  F1 Score:  {f1_score(y_test, y_pred_tuned):.4f}")
 print(f"  ROC-AUC:   {roc_auc_score(y_test, y_prob_tuned):.4f}")
-print(f"\nClassification Report:\n{classification_report(y_test, y_pred_tuned)}")
+print(
+    f"\nClassification Report:\n{classification_report(y_test, y_pred_tuned)}"
+)
 
 
 # ══════════════════════════════════════════════════════════════════════════

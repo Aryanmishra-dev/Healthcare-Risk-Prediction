@@ -25,20 +25,23 @@ from starlette.responses import Response
 
 # Allowlisted external script origins used by the HTMX UI.
 # These are the CDN hosts that deliver HTMX and Alpine.js.
-_CDN_SCRIPT_HOSTS = "cdn.jsdelivr.net unpkg.com"
-_CDN_STYLE_HOSTS = "cdn.jsdelivr.net"
+_CDN_SCRIPT_HOSTS = "cdn.jsdelivr.net unpkg.com cdn.tailwindcss.com"
+_CDN_STYLE_HOSTS = "cdn.jsdelivr.net fonts.googleapis.com"
+_CDN_FONT_HOSTS = "fonts.gstatic.com"
 
 # Build CSP based on environment.  In production we lock down further.
 _APP_ENV = os.environ.get("APP_ENV", "development")
 
 if _APP_ENV == "production":
-    # Production: strict CSP — only allow known CDN origins for scripts
+    # Production: strict CSP
+    # Alpine.js standard build requires 'unsafe-eval' (expression evaluation).
+    # Switch to @alpinejs/csp and remove 'unsafe-eval' for stricter CSP.
     _CSP = (
         "default-src 'self'; "
-        f"script-src 'self' {_CDN_SCRIPT_HOSTS}; "
+        f"script-src 'self' 'unsafe-eval' {_CDN_SCRIPT_HOSTS}; "
         f"style-src 'self' 'unsafe-inline' {_CDN_STYLE_HOSTS}; "
         "img-src 'self' data: blob:; "
-        "font-src 'self'; "
+        f"font-src 'self' {_CDN_FONT_HOSTS}; "
         "connect-src 'self'; "
         "frame-ancestors 'none'; "
         "base-uri 'self'; "
@@ -46,13 +49,14 @@ if _APP_ENV == "production":
         "object-src 'none';"
     )
 else:
-    # Development: slightly relaxed (allow localhost dev servers)
+    # Development: relaxed for local dev servers
     _CSP = (
         "default-src 'self'; "
-        f"script-src 'self' 'unsafe-inline' {_CDN_SCRIPT_HOSTS} localhost:*; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' "
+        f"{_CDN_SCRIPT_HOSTS} localhost:*; "
         f"style-src 'self' 'unsafe-inline' {_CDN_STYLE_HOSTS}; "
         "img-src 'self' data: blob:; "
-        "font-src 'self'; "
+        f"font-src 'self' {_CDN_FONT_HOSTS}; "
         "connect-src 'self' localhost:* ws://localhost:*; "
         "frame-ancestors 'none'; "
         "base-uri 'self'; "
@@ -115,7 +119,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         h.setdefault("Cross-Origin-Opener-Policy", "same-origin")
 
         # COEP: 'unsafe-none' because we load CDN scripts that don't set CORP.
-        # When all CDN resources are brought in-house, switch to 'require-corp'.
+        # When all CDN resources are brought in-house, switch to
+        # 'require-corp'.
         h.setdefault("Cross-Origin-Embedder-Policy", "unsafe-none")
 
         return response

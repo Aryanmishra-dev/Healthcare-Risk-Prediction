@@ -66,7 +66,10 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
-        op.f("ix_notifications_user_id"), "notifications", ["user_id"], unique=False
+        op.f("ix_notifications_user_id"),
+        "notifications",
+        ["user_id"],
+        unique=False,
     )
 
     # 4. user_reports
@@ -84,7 +87,10 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
-        op.f("ix_user_reports_user_id"), "user_reports", ["user_id"], unique=False
+        op.f("ix_user_reports_user_id"),
+        "user_reports",
+        ["user_id"],
+        unique=False,
     )
 
     # 5. data_exports
@@ -101,7 +107,10 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
-        op.f("ix_data_exports_user_id"), "data_exports", ["user_id"], unique=False
+        op.f("ix_data_exports_user_id"),
+        "data_exports",
+        ["user_id"],
+        unique=False,
     )
 
 

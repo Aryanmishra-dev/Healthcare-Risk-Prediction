@@ -39,11 +39,33 @@ DIABETES_FEATURES: list[FeatureSpec] = [
     FeatureSpec("bmi", "float64", 10.0, 80.0, "Body Mass Index"),
     FeatureSpec("age_group", "float64", 1.0, 13.0, "BRFSS age group (1-13)"),
     FeatureSpec("high_bp", "float64", 0.0, 1.0, "High blood pressure (0/1)"),
-    FeatureSpec("smoker", "float64", 0.0, 1.0, "Has smoked 100+ cigarettes (0/1)"),
-    FeatureSpec("high_cholesterol", "float64", 0.0, 1.0, "High cholesterol (0/1)"),
-    FeatureSpec("physical_activity", "float64", 0.0, 1.0, "Physical activity in past 30d (0/1)"),
-    FeatureSpec("general_health", "float64", 1.0, 5.0, "Self-rated health (1=Excellent..5=Poor)"),
-    FeatureSpec("mental_health", "float64", 0.0, 30.0, "Days of poor mental health (0-30)"),
+    FeatureSpec(
+        "smoker", "float64", 0.0, 1.0, "Has smoked 100+ cigarettes (0/1)"
+    ),
+    FeatureSpec(
+        "high_cholesterol", "float64", 0.0, 1.0, "High cholesterol (0/1)"
+    ),
+    FeatureSpec(
+        "physical_activity",
+        "float64",
+        0.0,
+        1.0,
+        "Physical activity in past 30d (0/1)",
+    ),
+    FeatureSpec(
+        "general_health",
+        "float64",
+        1.0,
+        5.0,
+        "Self-rated health (1=Excellent..5=Poor)",
+    ),
+    FeatureSpec(
+        "mental_health",
+        "float64",
+        0.0,
+        30.0,
+        "Days of poor mental health (0-30)",
+    ),
     # Interaction features
     FeatureSpec("bmi_age", "float64", description="BMI × age_group"),
     FeatureSpec("bmi_bp", "float64", description="BMI × high_bp"),
@@ -56,13 +78,23 @@ HEART_FEATURES: list[FeatureSpec] = [
     FeatureSpec("_AGEG5YR", "float64", 1.0, 13.0, "Age group"),
     FeatureSpec("SEX", "float64", 0.0, 1.0, "Sex (0=female, 1=male)"),
     FeatureSpec("_BMI5", "float64", 10.0, 80.0, "BMI"),
-    FeatureSpec("_RFHYPE5", "float64", 0.0, 1.0, "No high BP risk (BRFSS coded)"),
-    FeatureSpec("_RFCHOL", "float64", 0.0, 1.0, "No high cholesterol risk (BRFSS coded)"),
+    FeatureSpec(
+        "_RFHYPE5", "float64", 0.0, 1.0, "No high BP risk (BRFSS coded)"
+    ),
+    FeatureSpec(
+        "_RFCHOL",
+        "float64",
+        0.0,
+        1.0,
+        "No high cholesterol risk (BRFSS coded)",
+    ),
     FeatureSpec("SMOKE100", "float64", 0.0, 1.0, "Smoked 100+ cigarettes"),
     FeatureSpec("_TOTINDA", "float64", 0.0, 1.0, "Physical activity"),
     FeatureSpec("_FRTLT1", "float64", 0.0, 1.0, "Fruit consumption"),
     FeatureSpec("_VEGLT1", "float64", 0.0, 1.0, "Vegetable consumption"),
-    FeatureSpec("_RFDRHV5", "float64", 0.0, 1.0, "No heavy drinking (BRFSS coded)"),
+    FeatureSpec(
+        "_RFDRHV5", "float64", 0.0, 1.0, "No heavy drinking (BRFSS coded)"
+    ),
     FeatureSpec("GENHLTH", "float64", 1.0, 5.0, "General health"),
     FeatureSpec("MENTHLTH", "float64", 0.0, 30.0, "Mental health days"),
     FeatureSpec("PHYSHLTH", "float64", 0.0, 30.0, "Physical health days"),
@@ -77,7 +109,9 @@ LUNG_FEATURES: list[FeatureSpec] = [
     FeatureSpec("Chronic Disease", "float64", 0.0, 1.0, "Has chronic disease"),
     FeatureSpec("Fatigue", "float64", 0.0, 1.0, "Fatigue"),
     FeatureSpec("Wheezing", "float64", 0.0, 1.0, "Wheezing"),
-    FeatureSpec("Shortness of Breath", "float64", 0.0, 1.0, "Shortness of breath"),
+    FeatureSpec(
+        "Shortness of Breath", "float64", 0.0, 1.0, "Shortness of breath"
+    ),
 ]
 
 _FEATURE_REGISTRY: dict[str, list[FeatureSpec]] = {
@@ -120,9 +154,13 @@ class FeatureStore:
                 continue
             col = df[spec.name]
             if spec.min_val is not None and (col < spec.min_val).any():
-                errors.append(f"{spec.name}: values below minimum {spec.min_val}")
+                errors.append(
+                    f"{spec.name}: values below minimum {spec.min_val}"
+                )
             if spec.max_val is not None and (col > spec.max_val).any():
-                errors.append(f"{spec.name}: values above maximum {spec.max_val}")
+                errors.append(
+                    f"{spec.name}: values above maximum {spec.max_val}"
+                )
 
         return errors
 

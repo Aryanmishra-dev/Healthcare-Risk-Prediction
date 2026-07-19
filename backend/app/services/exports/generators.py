@@ -9,12 +9,19 @@ from sqlalchemy.orm import selectinload
 from backend.app.models.notification import Notification
 from backend.app.models.prediction import PredictionAuditLog
 from backend.app.models.report import UserReport
-from backend.app.models.user import (LoginHistory, SecurityEvent, User,
-                                     UserProfile, UserSession, UserSettings)
+from backend.app.models.user import (
+    LoginHistory,
+    SecurityEvent,
+    User,
+    UserSession,
+)
 
 
-async def generate_user_data_json(db: AsyncSession, user_id: uuid.UUID) -> bytes:
-    """Extracts all user data from the database and returns a JSON byte string."""
+async def generate_user_data_json(
+    db: AsyncSession, user_id: uuid.UUID
+) -> bytes:
+    """Extracts all user data from the database and returns a JSON
+    byte string."""
 
     # User Profile & Settings
     result = await db.execute(
@@ -34,7 +41,9 @@ async def generate_user_data_json(db: AsyncSession, user_id: uuid.UUID) -> bytes
             "is_active": user.is_active,
             "is_verified": user.is_verified,
             "role": user.role,
-            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "created_at": (
+                user.created_at.isoformat() if user.created_at else None
+            ),
         },
         "profile": {},
         "settings": {},
@@ -67,16 +76,18 @@ async def generate_user_data_json(db: AsyncSession, user_id: uuid.UUID) -> bytes
         export_data["predictions"].append(
             {
                 "id": str(p.id),
-                "disease_type": p.disease_type,
-                "prediction_label": p.prediction_label,
-                "probability": p.probability,
+                "disease_type": p.disease_model,
+                "prediction_label": p.risk_level,
+                "probability": p.risk_percentage,
                 "confidence_score": p.confidence_score,
                 "model_version": p.model_version,
                 "shap_values": p.shap_values,
-                "input_payload": p.input_payload,
+                "input_payload": p.input_json,
                 "processing_time_ms": p.processing_time_ms,
                 "prediction_status": p.prediction_status,
-                "created_at": p.created_at.isoformat() if p.created_at else None,
+                "created_at": (
+                    p.created_at.isoformat() if p.created_at else None
+                ),
             }
         )
 
@@ -91,12 +102,14 @@ async def generate_user_data_json(db: AsyncSession, user_id: uuid.UUID) -> bytes
             {
                 "id": str(r.id),
                 "filename": r.filename,
-                "status": r.status,
-                "content_type": r.content_type,
+                "status": r.upload_status,
+                "content_type": r.mime_type,
                 "file_size": r.file_size,
-                "parsed_text": r.parsed_text,
-                "structured_data": r.structured_data,
-                "created_at": r.created_at.isoformat() if r.created_at else None,
+                "parsed_text": r.extracted_entities,
+                "structured_data": r.extracted_entities,
+                "created_at": (
+                    r.created_at.isoformat() if r.created_at else None
+                ),
             }
         )
 
@@ -114,7 +127,9 @@ async def generate_user_data_json(db: AsyncSession, user_id: uuid.UUID) -> bytes
                 "title": n.title,
                 "message": n.message,
                 "is_read": n.is_read,
-                "created_at": n.created_at.isoformat() if n.created_at else None,
+                "created_at": (
+                    n.created_at.isoformat() if n.created_at else None
+                ),
             }
         )
 
@@ -135,7 +150,9 @@ async def generate_user_data_json(db: AsyncSession, user_id: uuid.UUID) -> bytes
                 "last_activity": (
                     s.last_activity.isoformat() if s.last_activity else None
                 ),
-                "created_at": s.created_at.isoformat() if s.created_at else None,
+                "created_at": (
+                    s.created_at.isoformat() if s.created_at else None
+                ),
             }
         )
 
@@ -153,7 +170,9 @@ async def generate_user_data_json(db: AsyncSession, user_id: uuid.UUID) -> bytes
                 "operating_system": lh.operating_system,
                 "login_method": lh.login_method,
                 "status": lh.status,
-                "login_time": lh.login_time.isoformat() if lh.login_time else None,
+                "login_time": (
+                    lh.login_time.isoformat() if lh.login_time else None
+                ),
             }
         )
 
@@ -169,7 +188,9 @@ async def generate_user_data_json(db: AsyncSession, user_id: uuid.UUID) -> bytes
                 "severity": se.severity,
                 "description": se.description,
                 "metadata": se.metadata_payload,
-                "created_at": se.created_at.isoformat() if se.created_at else None,
+                "created_at": (
+                    se.created_at.isoformat() if se.created_at else None
+                ),
             }
         )
 

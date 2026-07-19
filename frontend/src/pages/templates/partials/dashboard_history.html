@@ -23,7 +23,7 @@
         <option value="lung_cancer">Lung Cancer</option>
       </select>
     </div>
-    <button onclick="document.querySelector('[x-data]').__x.$data.load()"
+    <button onclick="historyPage_load(this)"
       class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-sky-700 transition-colors">
       Apply Filter
     </button>
@@ -54,17 +54,14 @@
 var _histData = [];
 function historyPage() {
   return {
-    token: null,
     async init() {
-      this.token = localStorage.getItem('access_token');
-      if (!this.token) { window.location.href = '/'; return; }
       await this.load();
     },
     async load() {
       const type = document.getElementById('hist-filter-type')?.value || '';
       const url = '/auth/history' + (type ? '?disease_type=' + type : '');
-      const res = await window.HealthPredictConfig.fetch(url, { headers: { 'Authorization': 'Bearer ' + this.token } });
-      if (res.status === 401) { localStorage.removeItem('access_token'); window.location.href = '/'; return; }
+      const res = await window.HealthPredictConfig.fetch(url);
+      if (res.status === 401) { window.location.href = '/'; return; }
       _histData = await res.json();
       const tbody = document.getElementById('history-tbody');
       if (!_histData.length) {
@@ -103,13 +100,17 @@ function historyPage() {
     },
     async deleteRecord(id) {
       if (!confirm('Delete this prediction record?')) return;
-      await window.HealthPredictConfig.fetch('/auth/history/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + this.token } });
+      await window.HealthPredictConfig.fetch('/auth/history/' + id, { method: 'DELETE' });
       await this.load();
     }
   }
 }
 window.historyPage_delete = (id) => {
-  document.querySelector('[x-data]').__x.$data.deleteRecord(id);
+  var el = document.querySelector('#history-tbody');
+  Alpine.$data(el.closest('[x-data]')).deleteRecord(id);
+};
+window.historyPage_load = (el) => {
+  Alpine.$data(el.closest('[x-data]')).load();
 };
 window.historyPage_exportCsv = () => {
   if (!_histData.length) return alert('No data to export.');

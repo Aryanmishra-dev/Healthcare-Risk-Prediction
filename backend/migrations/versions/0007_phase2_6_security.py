@@ -8,7 +8,6 @@ Create Date: 2026-07-11 12:00:00.000000
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "0007"
@@ -20,20 +19,24 @@ depends_on = None
 def upgrade() -> None:
     # 1. Update user_sessions table
     op.add_column(
-        "user_sessions", sa.Column("device_name", sa.String(length=100), nullable=True)
+        "user_sessions",
+        sa.Column("device_name", sa.String(length=100), nullable=True),
     )
     op.add_column(
-        "user_sessions", sa.Column("browser", sa.String(length=100), nullable=True)
+        "user_sessions",
+        sa.Column("browser", sa.String(length=100), nullable=True),
     )
     op.add_column(
         "user_sessions",
         sa.Column("operating_system", sa.String(length=100), nullable=True),
     )
     op.add_column(
-        "user_sessions", sa.Column("country", sa.String(length=100), nullable=True)
+        "user_sessions",
+        sa.Column("country", sa.String(length=100), nullable=True),
     )
     op.add_column(
-        "user_sessions", sa.Column("city", sa.String(length=100), nullable=True)
+        "user_sessions",
+        sa.Column("city", sa.String(length=100), nullable=True),
     )
     op.add_column(
         "user_sessions",

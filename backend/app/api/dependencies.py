@@ -7,16 +7,26 @@ import logging
 import os
 import secrets
 import time
+import uuid
 from collections import defaultdict
 from typing import Any
 
-from fastapi import BackgroundTasks, Depends, HTTPException, Request, Response
+from fastapi import (
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Request,
+    Response,
+    status,
+)
 from fastapi.security import APIKeyHeader
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.core.database import get_db
 from backend.app.core.enums import UserRole
-from backend.app.models.admin_action import AdminAction
+from backend.app.models.tenant import Membership
+from backend.app.services.authorization_service import AuthorizationService
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +48,7 @@ class _InMemoryBucket:
         self.last_refill: float = time.monotonic()
 
 
-_buckets: dict[str, _InMemoryBucket] = defaultdict(lambda: _InMemoryBucket(0))
+_buckets: dict[str, _InMemoryBucket] = defaultdict(lambda: _InMemoryBucket(60))
 _buckets_lock = asyncio.Lock()
 _fallback_logged_at: float = 0.0  # Rate-limit the warning log itself
 
@@ -80,9 +90,9 @@ async def _in_memory_rate_limit(
         )
         _fallback_logged_at = now
 
-    client_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or (
-        request.client.host if request.client else "unknown"
-    )
+    client_ip = request.headers.get("x-forwarded-for", "").split(",")[
+        0
+    ].strip() or (request.client.host if request.client else "unknown")
     key = f"{request.url.path}:{client_ip}"
     refill_rate = times / seconds  # tokens per second
 
@@ -127,7 +137,9 @@ class HardenedRateLimiter:
         if self._redis_limiter is None:
             from fastapi_limiter.depends import RateLimiter
 
-            self._redis_limiter = RateLimiter(times=self._times, seconds=self._seconds)
+            self._redis_limiter = RateLimiter(
+                times=self._times, seconds=self._seconds
+            )
         return self._redis_limiter
 
     async def __call__(self, request: Request, response: Response) -> None:
@@ -135,13 +147,15 @@ class HardenedRateLimiter:
             from fastapi_limiter import FastAPILimiter
 
             redis_connected = (
-                hasattr(FastAPILimiter, "redis") and FastAPILimiter.redis is not None
+                hasattr(FastAPILimiter, "redis")
+                and FastAPILimiter.redis is not None
             )
             if redis_connected:
                 await self._get_redis_limiter()(request, response)
                 return
         except HTTPException:
-            # Re-raise 429 responses from the Redis limiter — do not swallow them
+            # Re-raise 429 responses from the Redis limiter — do not
+            # swallow them
             raise
         except Exception:
             # Redis call failed mid-flight — fall through to in-memory backup
@@ -156,7 +170,7 @@ OptionalRateLimiter = HardenedRateLimiter
 
 RATE_LIMIT = int(os.environ.get("RATE_LIMIT_PER_MINUTE", "60"))
 
-# ── RBAC Authorization ────────────────────────────────────────────────────────
+# ── RBAC Authorization ────────────────────────────────────────────────────
 
 
 class RequireRole:
@@ -169,7 +183,9 @@ class RequireRole:
         user = getattr(request.state, "user", None)
         if not user:
             # We assume get_current_user was already run, but if not, fail.
-            raise HTTPException(status_code=401, detail="Authentication required")
+            raise HTTPException(
+                status_code=401, detail="Authentication required"
+            )
 
         if user.role not in self.allowed_roles:
             logger.warning(
@@ -178,6 +194,25 @@ class RequireRole:
                 user.role,
                 self.allowed_roles,
             )
+            raise HTTPException(
+                status_code=403,
+                detail="Insufficient permissions to perform this action.",
+            )
+
+
+class RequirePermission:
+    """Dependency to enforce permission-based access control."""
+
+    def __init__(self, permission: str):
+        self.permission = permission
+
+    def __call__(self, request: Request) -> None:
+        user = getattr(request.state, "user", None)
+        if not user:
+            raise HTTPException(
+                status_code=401, detail="Authentication required"
+            )
+        if not AuthorizationService.can(user, self.permission):
             raise HTTPException(
                 status_code=403,
                 detail="Insufficient permissions to perform this action.",
@@ -220,7 +255,7 @@ async def audit_admin_action(
     """
     if request.method in ("POST", "PUT", "DELETE", "PATCH"):
         user = getattr(request.state, "user", None)
-        admin_id = str(user.id) if user else None
+        admin_id = str(user.id) if user else ""
         action_type = f"{request.method} {request.url.path}"
         metadata = {
             "method": request.method,
@@ -229,11 +264,16 @@ async def audit_admin_action(
         }
         # Run DB insert in background task so we don't block response
         background_tasks.add_task(
-            _log_admin_action, db, admin_id, action_type, request.url.path, metadata
+            _log_admin_action,
+            db,
+            admin_id,
+            action_type,
+            request.url.path,
+            metadata,
         )
 
 
-# ── API Key ───────────────────────────────────────────────────────────────────
+# ── API Key ───────────────────────────────────────────────────────────────
 
 API_KEY_NAME = "X-API-Key"
 _api_key_warning_logged = False
@@ -269,18 +309,20 @@ def _resolve_api_key() -> str:
         return dev_key
 
     # No key configured at all — raise immediately so the problem is visible
-    app_env = os.environ.get("APP_ENV", "development")
     raise HTTPException(
         status_code=503,
         detail=(
             "Service misconfigured: API_KEY is not set. "
-            "Set API_KEY (production) or DEV_API_KEY (development) in environment."
+            "Set API_KEY (production) or "
+            "DEV_API_KEY (development) in environment."
         ),
     )
 
 
 def get_api_key(
-    api_key: str | None = Depends(APIKeyHeader(name=API_KEY_NAME, auto_error=False)),
+    api_key: str | None = Depends(
+        APIKeyHeader(name=API_KEY_NAME, auto_error=False)
+    ),
 ) -> str:
     expected = _resolve_api_key()
     if not api_key or not secrets.compare_digest(api_key, expected):
@@ -295,13 +337,39 @@ def get_api_key(
 def verify_user_agent(request: Request) -> str:
     user_agent = request.headers.get("user-agent", "").lower()
     if not user_agent or any(
-        bot in user_agent for bot in ["python-requests", "curl", "wget", "scrapy"]
+        bot in user_agent
+        for bot in ["python-requests", "curl", "wget", "scrapy"]
     ):
         raise HTTPException(status_code=403, detail="Bot traffic not allowed")
     return user_agent
 
 
-# ── Startup validation ────────────────────────────────────────────────────────
+async def get_current_tenant(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+) -> uuid.UUID:
+    """Resolve the tenant ID for the current user."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required",
+        )
+    result = await db.execute(
+        select(Membership.tenant_id)
+        .where(Membership.user_id == user.id)
+        .limit(1)
+    )
+    row = result.scalar_one_or_none()
+    if not row:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User is not associated with any tenant",
+        )
+    return row
+
+
+# ── Startup validation ────────────────────────────────────────────────────
 
 
 def validate_startup_config() -> None:
@@ -323,24 +391,32 @@ def validate_startup_config() -> None:
         if not api_key:
             errors.append("API_KEY must be set in production.")
         elif len(api_key) < 32:
-            errors.append("API_KEY must be at least 32 characters in production.")
+            errors.append(
+                "API_KEY must be at least 32 characters in production."
+            )
 
-        jwt_key = os.environ.get("JWT_SECRET_KEY") or os.environ.get("SECRET_KEY", "")
+        jwt_key = os.environ.get("JWT_SECRET_KEY") or os.environ.get(
+            "SECRET_KEY", ""
+        )
         if not jwt_key or "dev-only" in jwt_key:
-            errors.append("JWT_SECRET_KEY must be set to a secure value in production.")
+            errors.append(
+                "JWT_SECRET_KEY must be set to a secure value in production."
+            )
 
         db_url = os.environ.get("DATABASE_URL", "")
         if not db_url or "sqlite" in db_url:
             errors.append(
                 "DATABASE_URL must be set to a Postgres connection string in "
-                "production. The SQLite fallback is for local development only."
+                "production. The SQLite fallback is for local "
+                "development only."
             )
 
         email_backend = os.environ.get("EMAIL_BACKEND", "development")
         if email_backend != "smtp":
             warnings.append(
                 "EMAIL_BACKEND is not 'smtp'. "
-                "Email delivery (password reset, verification) will be disabled."
+                "Email delivery (password reset, verification) "
+                "will be disabled."
             )
 
     else:
@@ -357,8 +433,8 @@ def validate_startup_config() -> None:
         for error in errors:
             logger.critical("startup_config_error | %s", error)
         raise RuntimeError(
-            f"Application startup aborted due to {len(errors)} configuration error(s). "
-            f"See logs for details."
+            f"Application startup aborted due to {len(errors)} "
+            "configuration error(s). See logs for details."
         )
 
     logger.info(

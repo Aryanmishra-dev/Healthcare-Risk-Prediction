@@ -16,5 +16,6 @@ async def get_system_health(
     db: AsyncSession = Depends(get_db),
     _=Depends(RequireRole([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
 ):
-    """Get comprehensive system health including DB, Redis, MLflow, and System Resources."""
+    """Get comprehensive system health including DB, Redis, MLflow, and System
+    Resources."""
     return await AdminHealthService.get_system_health(db)

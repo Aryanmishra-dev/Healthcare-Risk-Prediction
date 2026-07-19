@@ -43,7 +43,8 @@ class ApiKeyService:
         scopes: Optional[List[str]] = None,
         expires_at: Optional[datetime] = None,
     ) -> Tuple[ApiKey, str]:
-        """Create a new API key. Returns the ApiKey object and the raw (plaintext) key."""
+        """Create a new API key. Returns the ApiKey object and the raw
+        (plaintext) key."""
         if scopes is None:
             scopes = ["read-only"]
 
@@ -68,7 +69,9 @@ class ApiKeyService:
         return api_key, raw_key
 
     @staticmethod
-    async def validate_api_key(db: AsyncSession, raw_key: str) -> Optional[ApiKey]:
+    async def validate_api_key(
+        db: AsyncSession, raw_key: str
+    ) -> Optional[ApiKey]:
         """Validate an API key and update its last_used_at timestamp.
         Returns the ApiKey object if valid, else None."""
         prefix = ApiKeyService.get_prefix(raw_key)
@@ -104,7 +107,9 @@ class ApiKeyService:
         db: AsyncSession, tenant_id: uuid.UUID, key_id: uuid.UUID
     ) -> bool:
         """Revoke an API key by setting is_active to False."""
-        stmt = select(ApiKey).where(ApiKey.id == key_id, ApiKey.tenant_id == tenant_id)
+        stmt = select(ApiKey).where(
+            ApiKey.id == key_id, ApiKey.tenant_id == tenant_id
+        )
         result = await db.execute(stmt)
         api_key = result.scalar_one_or_none()
 
@@ -152,8 +157,8 @@ class ApiKeyService:
         key_id: uuid.UUID,
         created_by: uuid.UUID,
     ) -> Tuple[ApiKey, str]:
-        """Revoke the existing key and create a new one with identical metadata.
-        Returns the new (ApiKey, raw_key) pair."""
+        """Revoke the existing key and create a new one with identical
+        metadata. Returns the new (ApiKey, raw_key) pair."""
         existing = await ApiKeyService.get_api_key_by_id(db, key_id, tenant_id)
         if not existing:
             raise ValueError("API Key not found")

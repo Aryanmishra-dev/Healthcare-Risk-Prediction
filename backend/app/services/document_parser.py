@@ -22,8 +22,8 @@ def parse_pdf(file_bytes: bytes) -> str:
     """
     import io
 
-    import fitz  # PyMuPDF
-    import pytesseract
+    import fitz  # type: ignore[import-untyped]  # PyMuPDF
+    import pytesseract  # type: ignore[import-untyped]
     from PIL import Image
 
     text_parts: list[str] = []
@@ -33,7 +33,8 @@ def parse_pdf(file_bytes: bytes) -> str:
 
             if not page_text.strip():
                 logger.debug(
-                    "pdf_page_no_text_falling_back_to_ocr", extra={"page": page_num}
+                    "pdf_page_no_text_falling_back_to_ocr",
+                    extra={"page": page_num},
                 )
                 pix = page.get_pixmap(dpi=150)
                 img = Image.open(io.BytesIO(pix.tobytes("png")))
@@ -42,7 +43,8 @@ def parse_pdf(file_bytes: bytes) -> str:
             if page_text.strip():
                 text_parts.append(page_text)
             logger.debug(
-                "pdf_page_extracted", extra={"page": page_num, "chars": len(page_text)}
+                "pdf_page_extracted",
+                extra={"page": page_num, "chars": len(page_text)},
             )
 
         raw_text = "\n".join(text_parts).strip()
@@ -66,7 +68,7 @@ def parse_image(file_bytes: bytes) -> str:
 
     # Convert to RGB if necessary (e.g. RGBA PNGs)
     if image.mode not in ("L", "RGB"):
-        image = image.convert("RGB")
+        image = image.convert("RGB")  # type: ignore[assignment]
 
     raw_text = pytesseract.image_to_string(image).strip()
     if not raw_text:
