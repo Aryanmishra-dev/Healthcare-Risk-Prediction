@@ -5,7 +5,7 @@ from sqlalchemy import JSON, Boolean, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import DateTime, Uuid
 
-from backend.app.models.base import Base, TimestampMixin, UUIDMixin, utc_now
+from backend.app.models.base import Base, TimestampMixin, UUIDMixin
 
 
 class Notification(Base, UUIDMixin, TimestampMixin):

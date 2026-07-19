@@ -21,8 +21,10 @@ class AdminReportsRepository:
 
         # Total storage size
         # Assuming file_size exists on UserReport or we mock it for now.
-        # Check if file_size is on UserReport in models/report.py. If not, default to 0.
-        # We will assume it might not exist and return 0 for now to avoid crashes.
+        # Check if file_size is on UserReport in models/report.py.
+        # If not, default to 0.
+        # We will assume it might not exist and return 0 for now
+        # to avoid crashes.
 
         return {"statuses": stats, "total_reports": sum(stats.values())}
 

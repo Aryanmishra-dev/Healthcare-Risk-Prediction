@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import AsyncGenerator
 
-import aiofiles
+import aiofiles  # type: ignore[import-untyped]
 
 
 class ExportProvider(ABC):

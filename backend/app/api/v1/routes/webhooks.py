@@ -59,7 +59,11 @@ async def list_webhooks(
     )
     pages = math.ceil(total / size) if total > 0 else 0
     return WebhookPaginated(
-        items=items, total=total, page=page, size=size, pages=pages
+        items=items,  # type: ignore[arg-type]
+        total=total,
+        page=page,
+        size=size,
+        pages=pages,
     )
 
 
@@ -70,7 +74,7 @@ async def create_webhook(
     body: WebhookCreate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    request: Request = None,
+    request: Request | None = None,
 ):
     tenant_id = await _get_tenant_id(current_user, db)
     webhook = await webhook_service.create_webhook(
@@ -123,7 +127,7 @@ async def update_webhook(
     body: WebhookUpdate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    request: Request = None,
+    request: Request | None = None,
 ):
     tenant_id = await _get_tenant_id(current_user, db)
     before = await webhook_service.get_webhook(db, webhook_id, tenant_id)
@@ -166,7 +170,7 @@ async def delete_webhook(
     webhook_id: UUID,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    request: Request = None,
+    request: Request | None = None,
 ):
     tenant_id = await _get_tenant_id(current_user, db)
     before = await webhook_service.get_webhook(db, webhook_id, tenant_id)
@@ -198,7 +202,7 @@ async def rotate_webhook_secret(
     webhook_id: UUID,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    request: Request = None,
+    request: Request | None = None,
 ):
     tenant_id = await _get_tenant_id(current_user, db)
     new_secret = await webhook_security_service.rotate_secret(
@@ -236,7 +240,11 @@ async def list_webhook_events(
     )
     pages = math.ceil(total / size) if total > 0 else 0
     return WebhookEventPaginated(
-        items=items, total=total, page=page, size=size, pages=pages
+        items=items,  # type: ignore[arg-type]
+        total=total,
+        page=page,
+        size=size,
+        pages=pages,
     )
 
 
@@ -245,7 +253,7 @@ async def replay_webhook_event(
     event_id: UUID,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    request: Request = None,
+    request: Request | None = None,
 ):
     tenant_id = await _get_tenant_id(current_user, db)
     new_event = await webhook_delivery_service.replay_webhook_event(

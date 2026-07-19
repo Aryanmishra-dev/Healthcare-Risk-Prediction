@@ -1,9 +1,8 @@
 import uuid
-from datetime import datetime
 
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.types import JSON, DateTime, Uuid
+from sqlalchemy.types import JSON, Uuid
 
 from backend.app.models.base import Base, TimestampMixin, UUIDMixin
 

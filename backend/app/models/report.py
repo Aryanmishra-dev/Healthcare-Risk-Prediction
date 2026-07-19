@@ -52,5 +52,5 @@ class UserReport(Base, UUIDMixin, TimestampMixin):
     )
 
     user = relationship("User", back_populates="reports")
-    # Removed implicit back_populates to avoid requiring a backref on PredictionAuditLog if it doesn't exist yet
-    # predictions = relationship("PredictionAuditLog", backref="report")
+    # Removed implicit back_populates to avoid requiring a backref on
+    # PredictionAuditLog if it doesn't exist yet

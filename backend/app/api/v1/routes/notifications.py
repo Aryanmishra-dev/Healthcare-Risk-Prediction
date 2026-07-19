@@ -61,7 +61,7 @@ async def get_notifications(
     pages = math.ceil(total / params.size) if total > 0 else 0
 
     return NotificationPaginated(
-        items=items,
+        items=items,  # type: ignore[arg-type]
         total=total,
         page=params.page,
         size=params.size,
@@ -75,7 +75,8 @@ async def get_unread_count(
     db: AsyncSession = Depends(get_db),
 ):
     query = select(func.count()).where(
-        Notification.user_id == current_user.id, Notification.is_read == False
+        Notification.user_id == current_user.id,
+        Notification.is_read.is_(False),
     )
     count = await db.scalar(query) or 0
     return UnreadCountResponse(unread_count=count)
@@ -119,7 +120,7 @@ async def mark_all_as_read(
         update(Notification)
         .where(
             Notification.user_id == current_user.id,
-            Notification.is_read == False,
+            Notification.is_read.is_(False),
         )
         .values(is_read=True, read_at=utc_now())
     )

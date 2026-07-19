@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from uuid import UUID
 
-import aiofiles
+import aiofiles  # type: ignore[import-untyped]
 
 
 class StorageProvider(ABC):

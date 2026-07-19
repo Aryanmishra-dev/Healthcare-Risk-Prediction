@@ -43,7 +43,8 @@ class ApiKeyService:
         scopes: Optional[List[str]] = None,
         expires_at: Optional[datetime] = None,
     ) -> Tuple[ApiKey, str]:
-        """Create a new API key. Returns the ApiKey object and the raw (plaintext) key."""
+        """Create a new API key. Returns the ApiKey object and the raw
+        (plaintext) key."""
         if scopes is None:
             scopes = ["read-only"]
 
@@ -156,8 +157,8 @@ class ApiKeyService:
         key_id: uuid.UUID,
         created_by: uuid.UUID,
     ) -> Tuple[ApiKey, str]:
-        """Revoke the existing key and create a new one with identical metadata.
-        Returns the new (ApiKey, raw_key) pair."""
+        """Revoke the existing key and create a new one with identical
+        metadata. Returns the new (ApiKey, raw_key) pair."""
         existing = await ApiKeyService.get_api_key_by_id(db, key_id, tenant_id)
         if not existing:
             raise ValueError("API Key not found")

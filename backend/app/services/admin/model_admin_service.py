@@ -1,6 +1,7 @@
 import uuid
-from typing import Any, Dict, List
+from typing import List
 
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.models.model_version import ModelVersion
@@ -28,13 +29,20 @@ class AdminModelsService:
         db: AsyncSession, disease_type: str
     ) -> ModelVersion:
         """Rollback to the previous production model."""
-        return await model_registry_service.rollback_model(db, disease_type)
+        model = await model_registry_service.get_active_model(db, disease_type)
+        if not model:
+            raise HTTPException(
+                status_code=404,
+                detail="No active model found for disease",
+            )
+        return await model_registry_service.rollback_model(db, model.id)
 
     @staticmethod
     async def get_model_versions(
-        db: AsyncSession, disease_type: str = None
+        db: AsyncSession, disease_type: str | None = None
     ) -> List[ModelVersion]:
-        """List all model versions, optionally filtered by disease."""
+        """List all model versions, optionally filtered by
+        disease."""
         return await model_registry_service.list_models(
             db, disease_type=disease_type
         )

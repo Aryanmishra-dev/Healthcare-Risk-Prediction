@@ -1,7 +1,7 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import desc, func, select
+from fastapi import APIRouter, Depends, status
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.auth.router import get_current_session_id, get_current_user
@@ -89,7 +89,7 @@ async def list_devices(
         )
         .where(
             UserSession.user_id == current_user.id,
-            UserSession.is_revoked == False,
+            UserSession.is_revoked.is_(False),
         )
         .group_by(
             UserSession.device_name,

@@ -10,7 +10,8 @@ from backend.app.models.base import Base, TimestampMixin
 class PredictionAuditLog(Base, TimestampMixin):
     __tablename__ = "prediction_audit_logs"
 
-    # We use Integer as primary key to match the legacy SQLite schema that used AUTOINCREMENT.
+    # We use Integer as primary key to match the legacy SQLite schema that
+    # used AUTOINCREMENT.
     id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
     )

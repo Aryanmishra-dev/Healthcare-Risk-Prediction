@@ -17,14 +17,13 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-import os
-import sys
-from pathlib import Path
+import sys  # noqa: E402
+from pathlib import Path  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from backend.app.core.config import settings
-from backend.app.models import Base
+from backend.app.core.config import settings  # noqa: E402
+from backend.app.models import Base  # noqa: E402
 
 target_metadata = Base.metadata
 

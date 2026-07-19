@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 
 import bcrypt
 import jwt
-from user_agents import parse
+from user_agents import parse  # type: ignore[import-untyped]
 
 from backend.app.core.config import settings
 

@@ -1,5 +1,4 @@
-from typing import Any, Dict, List, Optional
-from uuid import UUID
+from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -110,7 +109,10 @@ async def get_prediction_explanation(
     if not shap_values or not shap_values.get("features"):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="SHAP explanation not available for this prediction. It may have been made before Phase 3 was deployed.",
+            detail=(
+                "SHAP explanation not available for this prediction. "
+                "It may have been made before Phase 3 was deployed."
+            ),
         )
 
     features: List[str] = shap_values.get("features", [])
@@ -133,9 +135,10 @@ async def get_prediction_explanation(
     )
 
     # Human-readable summary of top factors
-    top_factors = [r["feature"] for r in ranked[:3]]
+    top_factors: list[str] = [str(r["feature"]) for r in ranked[:3]]
     summary = (
-        f"The top factors influencing this {prediction.disease_model} risk prediction were: "
+        f"The top factors influencing this "
+        f"{prediction.disease_model} risk prediction were: "
         + ", ".join(top_factors)
         + f". The model baseline risk is {base_value:.2%}."
     )
@@ -148,10 +151,10 @@ async def get_prediction_explanation(
             {
                 "feature": r["feature"],
                 "value": r["shap_value"],
-                "cumulative": running + r["shap_value"],
+                "cumulative": float(running) + float(r["shap_value"]),
             }
         )
-        running += r["shap_value"]
+        running = float(running) + float(r["shap_value"])
 
     return {
         "prediction_id": prediction_id,

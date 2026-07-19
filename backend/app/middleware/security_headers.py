@@ -52,7 +52,8 @@ else:
     # Development: relaxed for local dev servers
     _CSP = (
         "default-src 'self'; "
-        f"script-src 'self' 'unsafe-inline' 'unsafe-eval' {_CDN_SCRIPT_HOSTS} localhost:*; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' "
+        f"{_CDN_SCRIPT_HOSTS} localhost:*; "
         f"style-src 'self' 'unsafe-inline' {_CDN_STYLE_HOSTS}; "
         "img-src 'self' data: blob:; "
         f"font-src 'self' {_CDN_FONT_HOSTS}; "
@@ -118,7 +119,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         h.setdefault("Cross-Origin-Opener-Policy", "same-origin")
 
         # COEP: 'unsafe-none' because we load CDN scripts that don't set CORP.
-        # When all CDN resources are brought in-house, switch to 'require-corp'.
+        # When all CDN resources are brought in-house, switch to
+        # 'require-corp'.
         h.setdefault("Cross-Origin-Embedder-Policy", "unsafe-none")
 
         return response

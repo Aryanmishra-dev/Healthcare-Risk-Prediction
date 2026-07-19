@@ -76,8 +76,13 @@ def upgrade() -> None:
     default_tenant_id = uuid.uuid4()
     now = datetime.now(timezone.utc)
     op.execute(
-        f"INSERT INTO tenants (id, name, slug, is_active, created_at, updated_at) "
-        f"VALUES ('{default_tenant_id}', 'Default Organization', 'default-org', true, '{now}', '{now}')"
+        f"INSERT INTO tenants (id, name, slug, is_active, "
+        f"created_at, updated_at) "
+        f"VALUES ("
+        f"'{default_tenant_id}', "
+        f"'Default Organization', 'default-org', true, "
+        f"'{now}', '{now}'"
+        f")"
     )
 
     # 3. Add nullable=True tenant_id to existing tables
@@ -103,11 +108,15 @@ def upgrade() -> None:
 
     # 4. Create Memberships for existing users
     op.execute(
-        f"INSERT INTO memberships (id, tenant_id, user_id, org_role, created_at, updated_at) "
-        f"SELECT gen_random_uuid(), '{default_tenant_id}', id, 'MEMBER', '{now}', '{now}' FROM users"
+        f"INSERT INTO memberships (id, tenant_id, user_id, "
+        f"org_role, created_at, updated_at) "
+        f"SELECT gen_random_uuid(), "
+        f"'{default_tenant_id}', id, 'MEMBER', "
+        f"'{now}', '{now}' FROM users"
     )
 
-    # 5. Alter columns to nullable=False (except audit_logs, security_events, admin_actions where some can be null)
+    # 5. Alter columns to nullable=False (except audit_logs,
+    # security_events, admin_actions where some can be null)
     non_null_tables = [
         "prediction_audit_logs",
         "user_reports",

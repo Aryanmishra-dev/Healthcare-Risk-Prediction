@@ -1,8 +1,8 @@
 import hashlib
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 
-from sqlalchemy import desc, func, select, update
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.models.base import utc_now
@@ -55,7 +55,10 @@ class ExportService:
                 category="System",
                 priority="LOW",
                 title="Data Export Requested",
-                message="Your data export has been requested and is currently being processed.",
+                message=(
+                    "Your data export has been requested and "
+                    "is currently being processed."
+                ),
             )
         )
 
@@ -121,7 +124,10 @@ class ExportService:
                     category="System",
                     priority="HIGH",
                     title="Data Export Ready",
-                    message="Your data export has been generated and is ready for download.",
+                    message=(
+                        "Your data export has been generated and "
+                        "is ready for download."
+                    ),
                 )
             )
 
@@ -138,7 +144,10 @@ class ExportService:
                     category="System",
                     priority="HIGH",
                     title="Data Export Failed",
-                    message="An error occurred while generating your data export.",
+                    message=(
+                        "An error occurred while generating "
+                        "your data export."
+                    ),
                 )
             )
             raise e
@@ -171,7 +180,7 @@ class ExportService:
         pages = math.ceil(total / params.size) if total > 0 else 0
 
         return PaginatedExportResponse(
-            items=items,
+            items=items,  # type: ignore[arg-type]
             total=total,
             page=params.page,
             size=params.size,

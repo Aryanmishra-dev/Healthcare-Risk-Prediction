@@ -31,9 +31,11 @@ class ApiKeyResponse(ApiKeyBase):
 class ApiKeyCreateResponse(ApiKeyResponse):
     raw_key: str = Field(
         ...,
-        description="The plaintext API key. Store this securely, it will never be shown again.",
+        description="The plaintext API key. Store this securely, "
+        "it will never be shown again.",
     )
 
 
 class ApiKeyRotateRequest(BaseModel):
-    """Request body for rotating an API key (currently empty, reserved for future options)."""
+    """Request body for rotating an API key (currently empty, reserved for
+    future options)."""

@@ -36,13 +36,14 @@ async def get_profile(
     profile = await user_dashboard_service.get_or_create_profile(
         db, current_user.id
     )
-    # The response schema expects some fields from the User object and some from UserProfile
-    profile.full_name = current_user.full_name
+    # The response schema expects some fields from the User object and some
+    # from UserProfile
+    profile.full_name = current_user.full_name  # type: ignore[attr-defined]
     # Since language is conceptually in settings, we fetch it too
     settings = await user_dashboard_service.get_or_create_settings(
         db, current_user.id
     )
-    profile.language = settings.language
+    profile.language = settings.language  # type: ignore[attr-defined]
     return profile
 
 

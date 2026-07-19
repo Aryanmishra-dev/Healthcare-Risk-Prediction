@@ -1,5 +1,6 @@
 """
-SHAP explainability module — provides feature-importance explanations for all models.
+SHAP explainability module — provides feature-importance explanations for all
+models.
 
 Generates per-prediction SHAP values so users can understand *why* a model
 produced a specific risk score.
@@ -9,10 +10,10 @@ import logging
 import os
 from pathlib import Path
 
-import joblib
+import joblib  # type: ignore[import-untyped]
 import numpy as np
-import pandas as pd
-import shap
+import pandas as pd  # type: ignore[import-untyped]
+import shap  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 

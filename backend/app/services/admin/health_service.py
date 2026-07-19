@@ -1,9 +1,8 @@
-import os
 import time
 from typing import Any, Dict
 
 import mlflow
-import psutil
+import psutil  # type: ignore[import-untyped]
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,9 +14,10 @@ class AdminHealthService:
     @staticmethod
     @cached(expire=30)
     async def get_system_health(db: AsyncSession) -> Dict[str, Any]:
-        """Get comprehensive system health including DB, Redis, MLflow, and System Resources."""
+        """Get comprehensive system health including DB, Redis, MLflow, and
+        System Resources."""
 
-        health_status = {
+        health_status: Dict[str, Any] = {
             "status": "ok",
             "timestamp": time.time(),
             "services": {

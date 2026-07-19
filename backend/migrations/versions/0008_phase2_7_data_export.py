@@ -18,7 +18,8 @@ depends_on = None
 
 def upgrade() -> None:
     # We rename file_path to storage_path and add the new columns.
-    # Note: SQLite alter table support in Alembic is limited, but we are designing for Postgres.
+    # Note: SQLite alter table support in Alembic is limited,
+    # but we are designing for Postgres.
     op.alter_column(
         "data_exports",
         "file_path",

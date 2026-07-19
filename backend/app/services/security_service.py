@@ -1,7 +1,6 @@
 import asyncio
 import math
 import uuid
-from typing import Optional
 
 from fastapi import HTTPException
 from sqlalchemy import desc, func, or_, select, update
@@ -31,14 +30,14 @@ async def get_active_sessions(
 
     if params.status == "active":
         query = query.where(
-            UserSession.is_revoked == False,
+            UserSession.is_revoked.is_(False),
             UserSession.revoked_at.is_(None),
             UserSession.expires_at > utc_now(),
         )
     elif params.status == "revoked":
         query = query.where(
             or_(
-                UserSession.is_revoked == True,
+                UserSession.is_revoked.is_(True),
                 UserSession.revoked_at.is_not(None),
             )
         )
@@ -59,7 +58,7 @@ async def get_active_sessions(
     pages = math.ceil(total / params.size) if total > 0 else 0
 
     return PaginatedSessionResponse(
-        items=items,
+        items=items,  # type: ignore[arg-type]
         total=total,
         page=params.page,
         size=params.size,
@@ -85,7 +84,10 @@ async def revoke_session(
             category="Security",
             priority="LOW",
             title="Session Revoked",
-            message=f"A session from {session.device_name or 'Unknown'} has been revoked.",
+            message=(
+                f"A session from {session.device_name or 'Unknown'} "
+                "has been revoked."
+            ),
         )
     )
 
@@ -98,7 +100,7 @@ async def revoke_all_other_sessions(
         .where(
             UserSession.user_id == user_id,
             UserSession.id != current_session_id,
-            UserSession.is_revoked == False,
+            UserSession.is_revoked.is_(False),
         )
         .values(is_revoked=True, revoked_at=utc_now())
     )
@@ -140,7 +142,7 @@ async def get_login_history(
     pages = math.ceil(total / params.size) if total > 0 else 0
 
     return PaginatedLoginHistoryResponse(
-        items=items,
+        items=items,  # type: ignore[arg-type]
         total=total,
         page=params.page,
         size=params.size,
@@ -172,7 +174,7 @@ async def get_security_events(
     pages = math.ceil(total / params.size) if total > 0 else 0
 
     return PaginatedSecurityEventResponse(
-        items=items,
+        items=items,  # type: ignore[arg-type]
         total=total,
         page=params.page,
         size=params.size,

@@ -86,7 +86,10 @@ async def download_export(
     if export_record.status != "completed":
         raise HTTPException(
             status_code=400,
-            detail=f"Export is not ready for download. Status: {export_record.status}",
+            detail=(
+                "Export is not ready for download. "
+                f"Status: {export_record.status}"
+            ),
         )
 
     if not export_record.storage_path:
@@ -109,7 +112,9 @@ async def download_export(
         stream,
         media_type=content_type,
         headers={
-            "Content-Disposition": f"attachment; filename={export_record.file_name}",
+            "Content-Disposition": (
+                f"attachment; filename={export_record.file_name}"
+            ),
             "X-Checksum-Sha256": export_record.checksum or "",
         },
     )

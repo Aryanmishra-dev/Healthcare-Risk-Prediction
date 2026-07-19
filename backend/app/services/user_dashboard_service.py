@@ -68,17 +68,20 @@ async def update_user_profile(
         profile.timezone = data.timezone
 
     if data.language is not None:
-        # Also update in settings for consistency if needed, but keeping it simple based on spec.
+        # Also update in settings for consistency if needed,
+        # but keeping it simple based on spec.
         settings = await get_or_create_settings(db, user.id)
         settings.language = data.language
 
     await db.commit()
     await db.refresh(profile)
-    # Re-attach language since it's mapped to settings according to our schema structure
-    # Wait, the Profile schema expects language. Let's just set it from settings.
+    # Re-attach language since it's mapped to settings according
+    # to our schema structure
+    # Wait, the Profile schema expects language.
+    # Let's just set it from settings.
     settings = await get_or_create_settings(db, user.id)
-    profile.language = settings.language
-    profile.full_name = user.full_name
+    profile.language = settings.language  # type: ignore[attr-defined]
+    profile.full_name = user.full_name  # type: ignore[attr-defined]
     return profile
 
 
@@ -200,7 +203,7 @@ async def get_dashboard_data(
         ],
         recent_reports=[
             RecentReport(
-                id=r.id, file_name=r.file_name, created_at=r.created_at
+                id=r.id, file_name=r.filename, created_at=r.created_at
             )
             for r in recent_reports
         ],

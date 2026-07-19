@@ -13,16 +13,15 @@ from backend.app.models.user import (
     LoginHistory,
     SecurityEvent,
     User,
-    UserProfile,
     UserSession,
-    UserSettings,
 )
 
 
 async def generate_user_data_json(
     db: AsyncSession, user_id: uuid.UUID
 ) -> bytes:
-    """Extracts all user data from the database and returns a JSON byte string."""
+    """Extracts all user data from the database and returns a JSON
+    byte string."""
 
     # User Profile & Settings
     result = await db.execute(
@@ -77,13 +76,13 @@ async def generate_user_data_json(
         export_data["predictions"].append(
             {
                 "id": str(p.id),
-                "disease_type": p.disease_type,
-                "prediction_label": p.prediction_label,
-                "probability": p.probability,
+                "disease_type": p.disease_model,
+                "prediction_label": p.risk_level,
+                "probability": p.risk_percentage,
                 "confidence_score": p.confidence_score,
                 "model_version": p.model_version,
                 "shap_values": p.shap_values,
-                "input_payload": p.input_payload,
+                "input_payload": p.input_json,
                 "processing_time_ms": p.processing_time_ms,
                 "prediction_status": p.prediction_status,
                 "created_at": (
@@ -103,11 +102,11 @@ async def generate_user_data_json(
             {
                 "id": str(r.id),
                 "filename": r.filename,
-                "status": r.status,
-                "content_type": r.content_type,
+                "status": r.upload_status,
+                "content_type": r.mime_type,
                 "file_size": r.file_size,
-                "parsed_text": r.parsed_text,
-                "structured_data": r.structured_data,
+                "parsed_text": r.extracted_entities,
+                "structured_data": r.extracted_entities,
                 "created_at": (
                     r.created_at.isoformat() if r.created_at else None
                 ),

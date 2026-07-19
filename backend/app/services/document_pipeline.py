@@ -42,7 +42,10 @@ async def process_report_pipeline(report_id: UUID, user_id: UUID):
                     category="Report",
                     priority="LOW",
                     title="Report Processing Started",
-                    message=f"Your report {report.original_filename} is being processed.",
+                    message=(
+                        f"Your report {report.original_filename} "
+                        "is being processed."
+                    ),
                 )
             )
 
@@ -68,11 +71,14 @@ async def process_report_pipeline(report_id: UUID, user_id: UUID):
                             category="Report",
                             priority="HIGH",
                             title="Report Processing Failed",
-                            message=f"We could not extract text from {report.original_filename}.",
+                            message=(
+                                f"We could not extract text from "
+                                f"{report.original_filename}."
+                            ),
                         )
                     )
                     return
-            except Exception as e:
+            except Exception:
                 logger.exception(f"OCR failed for report {report_id}")
                 report.processing_status = "failed"
                 await db.commit()
@@ -83,7 +89,10 @@ async def process_report_pipeline(report_id: UUID, user_id: UUID):
                         category="Report",
                         priority="HIGH",
                         title="Report Processing Failed",
-                        message=f"We encountered an error processing {report.original_filename}.",
+                        message=(
+                            f"We encountered an error processing "
+                            f"{report.original_filename}."
+                        ),
                     )
                 )
                 return
@@ -98,7 +107,7 @@ async def process_report_pipeline(report_id: UUID, user_id: UUID):
                     extract_clinical_entities, raw_text
                 )
                 report.extracted_entities = entities
-            except Exception as e:
+            except Exception:
                 logger.exception(f"NLP failed for report {report_id}")
                 report.processing_status = "failed"
                 await db.commit()
@@ -109,12 +118,16 @@ async def process_report_pipeline(report_id: UUID, user_id: UUID):
                         category="Report",
                         priority="HIGH",
                         title="Report Processing Failed",
-                        message=f"We encountered an error extracting data from {report.original_filename}.",
+                        message=(
+                            f"We encountered an error extracting data "
+                            f"from {report.original_filename}."
+                        ),
                     )
                 )
                 return
 
-            # Stage: Feature Extraction -> Not strictly stored on report, usually mapped at prediction time
+            # Stage: Feature Extraction -> Not stored on report,
+            # usually mapped at prediction time
             # Stage: Completed
             report.processing_status = "completed"
             report.processed_at = utc_now()
@@ -127,12 +140,15 @@ async def process_report_pipeline(report_id: UUID, user_id: UUID):
                     category="Report",
                     priority="NORMAL",
                     title="Report Processing Completed",
-                    message=f"Your report {report.original_filename} has been successfully processed.",
+                    message=(
+                        f"Your report {report.original_filename} "
+                        "has been successfully processed."
+                    ),
                 )
             )
 
             logger.info(f"Report {report_id} processed successfully.")
 
-        except Exception as e:
+        except Exception:
             logger.exception(f"Pipeline failed for report {report_id}")
             await db.rollback()

@@ -1,5 +1,5 @@
-from celery import Celery
-from kombu import Queue
+from celery import Celery  # type: ignore[import-untyped]
+from kombu import Queue  # type: ignore[import-untyped]
 
 from config.settings import settings
 

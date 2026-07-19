@@ -23,7 +23,7 @@ class NotificationDispatcher:
         priority: str,
         title: str,
         message: str,
-        metadata_payload: Dict[str, Any] = None,
+        metadata_payload: Dict[str, Any] | None = None,
         force_email: bool = False,
     ):
         """
@@ -35,11 +35,13 @@ class NotificationDispatcher:
                 settings = await db.get(UserSettings, user_id)
                 if not settings:
                     logger.warning(
-                        f"No settings found for user {user_id}. Using defaults."
+                        f"No settings found for user {user_id}. "
+                        "Using defaults."
                     )
                     settings = UserSettings(user_id=user_id)  # Using defaults
 
-            # 1. Determine which channels to use based on preferences and category
+            # 1. Determine which channels to use based on preferences
+            # and category
             send_in_app = settings.in_app_notifications
             send_email = settings.email_notifications or force_email
 

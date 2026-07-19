@@ -19,8 +19,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # We are dropping file_name, file_path, extracted_metadata and replacing with the new schema fields.
-    # Note: SQLite compatibility might throw issues with dropping columns, but the user said PostgreSQL ONLY.
+    # We are dropping file_name, file_path, extracted_metadata
+    # and replacing with the new schema fields.
+    # Note: SQLite compatibility might throw issues with dropping
+    # columns, but the user said PostgreSQL ONLY.
 
     op.drop_column("user_reports", "file_name")
     op.drop_column("user_reports", "file_path")

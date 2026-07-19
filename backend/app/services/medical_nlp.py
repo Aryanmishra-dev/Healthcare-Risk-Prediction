@@ -23,37 +23,46 @@ _BP_VALUE_PATTERN = re.compile(
     re.IGNORECASE,
 )
 _BP_KEYWORD_HIGH = re.compile(
-    r"\b(?:high\s*blood\s*pressure|hypertension|(?:blood\s*pressure|BP)\s*[:=]?\s*(?:elevated|high))",
+    r"\b(?:high\s*blood\s*pressure|hypertension|"
+    r"(?:blood\s*pressure|BP)\s*[:=]?\s*(?:elevated|high))",
     re.IGNORECASE,
 )
 _BP_KEYWORD_NORMAL = re.compile(
-    r"\b(?:normal\s*blood\s*pressure|normotensive|(?:blood\s*pressure|BP)\s*[:=]?\s*normal)",
+    r"\b(?:normal\s*blood\s*pressure|normotensive|"
+    r"(?:blood\s*pressure|BP)\s*[:=]?\s*normal)",
     re.IGNORECASE,
 )
 _CHOL_VALUE_PATTERN = re.compile(
     r"\b(?:cholesterol|total\s*cholesterol)\s*[:=]?\s*(\d{2,3})", re.IGNORECASE
 )
 _CHOL_KEYWORD_HIGH = re.compile(
-    r"\b(?:high\s*cholesterol|hypercholesterol|elevated\s*cholesterol|cholesterol\s*[:=]?\s*(?:elevated|high))",
+    r"\b(?:high\s*cholesterol|hypercholesterol|"
+    r"elevated\s*cholesterol|cholesterol\s*[:=]?\s*(?:elevated|high))",
     re.IGNORECASE,
 )
 _CHOL_KEYWORD_NORMAL = re.compile(
     r"\b(?:normal\s*cholesterol|cholesterol\s*[:=]?\s*normal)", re.IGNORECASE
 )
 _SMOKER_YES = re.compile(
-    r"\b(?:(?:current\s+)?smoker|smoking\s*[:=]?\s*(?:yes|positive|active)|tobacco\s+use|smokes)",
+    r"\b(?:(?:current\s+)?smoker|"
+    r"smoking\s*[:=]?\s*(?:yes|positive|active)|tobacco\s+use|smokes)",
     re.IGNORECASE,
 )
 _SMOKER_NO = re.compile(
-    r"\b(?:non[\-\s]?smoker|no\s+smoking|smoking\s*[:=]?\s*(?:no|negative|none|never|denied)|never\s+smoked|does\s+not\s+smoke)",
+    r"\b(?:non[\-\s]?smoker|no\s+smoking|"
+    r"smoking\s*[:=]?\s*(?:no|negative|none|never|denied)|"
+    r"never\s+smoked|does\s+not\s+smoke)",
     re.IGNORECASE,
 )
 _ACTIVE_YES = re.compile(
-    r"\b(?:physically\s+active|active\s+lifestyle|regular\s+exercise|exercises?\s+regularly|physical\s*activity\s*[:=]?\s*(?:yes|active|regular))",
+    r"\b(?:physically\s+active|active\s+lifestyle|"
+    r"regular\s+exercise|exercises?\s+regularly|"
+    r"physical\s*activity\s*[:=]?\s*(?:yes|active|regular))",
     re.IGNORECASE,
 )
 _ACTIVE_NO = re.compile(
-    r"\b(?:sedentary|physically\s+inactive|no\s+exercise|physical\s*activity\s*[:=]?\s*(?:no|inactive|none|minimal))",
+    r"\b(?:sedentary|physically\s+inactive|no\s+exercise|"
+    r"physical\s*activity\s*[:=]?\s*(?:no|inactive|none|minimal))",
     re.IGNORECASE,
 )
 _HEALTH_KEYWORD = {
@@ -64,7 +73,8 @@ _HEALTH_KEYWORD = {
     "poor": 5,
 }
 _GENERAL_HEALTH_PATTERN = re.compile(
-    r"\b(?:general\s*health|overall\s*health|health\s*status)\s*[:=]?\s*(excellent|very\s*good|good|fair|poor|\d)",
+    r"\b(?:general\s*health|overall\s*health|health\s*status)\s*[:=]?\s*"
+    r"(excellent|very\s*good|good|fair|poor|\d)",
     re.IGNORECASE,
 )
 _MENTAL_HEALTH_PATTERN = re.compile(
@@ -85,15 +95,18 @@ _AGE_PATTERNS = [
     re.compile(r"\bpatient.*?(\d{2,3})\s*(?:years?|y/?o)", re.IGNORECASE),
 ]
 _GENDER_MALE = re.compile(
-    r"\b(?:(?:sex|gender)\s*[:=]?\s*(?:male|m\b)|(?:^|\s)male\b(?:\s+patient)?|,\s*Male\b)",
+    r"\b(?:(?:sex|gender)\s*[:=]?\s*(?:male|m\b)|"
+    r"(?:^|\s)male\b(?:\s+patient)?|,\s*Male\b)",
     re.IGNORECASE,
 )
 _GENDER_FEMALE = re.compile(
-    r"\b(?:(?:sex|gender)\s*[:=]?\s*(?:female|f\b)|(?:^|\s)female\b(?:\s+patient)?|,\s*Female\b)",
+    r"\b(?:(?:sex|gender)\s*[:=]?\s*(?:female|f\b)|"
+    r"(?:^|\s)female\b(?:\s+patient)?|,\s*Female\b)",
     re.IGNORECASE,
 )
 _BLOOD_GROUP_PATTERN = re.compile(
-    r"\b(?:blood\s*group|blood\s*type|type)\s*[:=]?\s*(A|B|AB|O)\s*([\+\-]|pos(?:itive)?|neg(?:ative)?)",
+    r"\b(?:blood\s*group|blood\s*type|type)\s*[:=]?\s*"
+    r"(A|B|AB|O)\s*([\+\-]|pos(?:itive)?|neg(?:ative)?)",
     re.IGNORECASE,
 )
 _SECTION_LOOKAHEAD = r"(?=\n\s*[A-Z][A-Za-z\s]+:|\n\s*\n|\Z)"
@@ -305,7 +318,7 @@ def _extract_regex(pattern, text, conf=0.8, bool_flag=False, val_type=str):
             return _make_res("yes", conf, m.group(0))
         try:
             return _make_res(val_type(m.group(1)), conf, m.group(0))
-        except:
+        except Exception:
             return None
     if bool_flag:
         return _make_res("no", 0.5, "not found")  # Low confidence negative

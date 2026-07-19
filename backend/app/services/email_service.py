@@ -22,40 +22,47 @@ from abc import ABC, abstractmethod
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Any
-from uuid import UUID
 
 logger = logging.getLogger(__name__)
 
 
-# ── HTML email templates ──────────────────────────────────────────────────────
+# ── HTML email templates ──────────────────────────────────────────────────
 
 
 def _base_html(title: str, body_html: str) -> str:
     """Wrap body content in a consistent, minimal HTML email shell."""
+
     return textwrap.dedent(f"""
         <!DOCTYPE html>
         <html lang="en">
         <head>
           <meta charset="UTF-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+          <meta name="viewport" content=
+               "width=device-width, initial-scale=1.0"/>
           <title>{title}</title>
-          <style>
-            body {{font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-                   background:#f4f7fa; margin:0; padding:0;}}
-            .wrapper {{max-width:600px; margin:40px auto; background:#fff;
-                       border-radius:8px; overflow:hidden;
-                       box-shadow:0 2px 8px rgba(0,0,0,.08);}}
+           <style>
+             body {{font-family:-apple-system, BlinkMacSystemFont,
+                    'Segoe UI', sans-serif; background:#f4f7fa;
+                    margin:0; padding:0;}}
+            .wrapper {{max-width:600px; margin:40px auto;
+                       background:#fff; border-radius:8px;
+                       overflow:hidden; box-shadow:0 2px 8px
+                       rgba(0,0,0,.08);}}
             .header {{background:#1a6b8a; color:#fff; padding:28px 36px;}}
             .header h1 {{margin:0; font-size:22px; font-weight:600;}}
             .content {{padding:32px 36px; color:#334155; line-height:1.6;}}
-            .btn {{display:inline-block; margin:20px 0; padding:12px 28px;
-                   background:#1a6b8a; color:#fff; text-decoration:none;
-                   border-radius:6px; font-weight:600; font-size:15px;}}
-            .footer {{padding:20px 36px; background:#f8fafc; color:#94a3b8;
-                      font-size:12px; border-top:1px solid #e2e8f0;}}
-            .divider {{border:none; border-top:1px solid #e2e8f0; margin:20px 0;}}
-            code {{background:#f1f5f9; padding:2px 6px; border-radius:4px;
-                   font-family:monospace; font-size:13px;}}
+            .btn {{display:inline-block; margin:20px 0;
+                   padding:12px 28px; background:#1a6b8a; color:#fff;
+                   text-decoration:none; border-radius:6px;
+                   font-weight:600; font-size:15px;}}
+            .footer {{padding:20px 36px; background:#f8fafc;
+                      color:#94a3b8; font-size:12px;
+                      border-top:1px solid #e2e8f0;}}
+            .divider {{border:none; border-top:1px solid #e2e8f0;
+                       margin:20px 0;}}
+            code {{background:#f1f5f9; padding:2px 6px;
+                   border-radius:4px; font-family:monospace;
+                   font-size:13px;}}
           </style>
         </head>
         <body>
@@ -67,8 +74,9 @@ def _base_html(title: str, body_html: str) -> str:
               {body_html}
             </div>
             <div class="footer">
-              This email was sent by HealthPredict AI. Do not reply to this message.
-              If you did not request this action, please ignore this email or
+              This email was sent by HealthPredict AI. Do not reply to this
+              message. If you did not request this action, please ignore this
+              email or
               <a href="#" style="color:#64748b;">contact support</a>.
             </div>
           </div>
@@ -84,8 +92,8 @@ def render_welcome(full_name: str | None, base_url: str) -> tuple[str, str]:
     body = f"""
         <h2 style="margin-top:0">Welcome, {name}! 👋</h2>
         <p>Your HealthPredict AI account has been successfully created.</p>
-        <p>You can now access your personalised risk predictions for Diabetes,
-        Heart Disease, and Lung Cancer — all in one place.</p>
+        <p>You can now access your personalised risk predictions for
+        Diabetes, Heart Disease, and Lung Cancer — all in one place.</p>
         <a href="{base_url}/dashboard" class="btn">Go to Dashboard</a>
         <hr class="divider"/>
         <p style="font-size:13px; color:#64748b;">
@@ -96,18 +104,21 @@ def render_welcome(full_name: str | None, base_url: str) -> tuple[str, str]:
     return subject, _base_html(subject, body)
 
 
-def render_password_reset(reset_url: str) -> tuple[str, str]:
+def render_password_reset(
+    reset_url: str,
+) -> tuple[str, str]:
     """(subject, html) for the password-reset email."""
     subject = "Reset your HealthPredict AI password"
     body = f"""
         <h2 style="margin-top:0">Password Reset Requested</h2>
         <p>We received a request to reset the password for your account.</p>
-        <p>Click the button below to choose a new password.
-        This link is valid for <strong>30 minutes</strong>.</p>
+        <p>Click the button below to choose a new password. This link is
+        valid for <strong>30 minutes</strong>.</p>
         <a href="{reset_url}" class="btn">Reset Password</a>
         <hr class="divider"/>
         <p style="font-size:13px; color:#64748b;">
-          If you didn't request a password reset, you can safely ignore this email.
+          If you didn't request a password reset, you can safely
+          ignore this email.
           Your password will remain unchanged.
         </p>
         <p style="font-size:13px; color:#64748b;">
@@ -145,7 +156,8 @@ def render_new_login(
         <p>A new login was detected on your HealthPredict AI account.</p>
         <table style="width:100%; border-collapse:collapse; font-size:14px;">
           <tr>
-            <td style="padding:8px; color:#64748b; width:130px;">IP Address</td>
+            <td style="padding:8px; color:#64748b;
+                width:130px;">IP Address</td>
             <td style="padding:8px; font-weight:600;">{ip_address}</td>
           </tr>
           <tr style="background:#f8fafc;">
@@ -157,7 +169,8 @@ def render_new_login(
         <p>If you don't recognise this login, please secure your account
         immediately:</p>
         <a href="{base_url}/auth/password-reset-request" class="btn"
-           style="background:#dc2626;">Secure My Account</a>
+           style="background:#dc2626;">
+           Secure My Account</a>
     """
     return subject, _base_html(subject, body)
 
@@ -166,12 +179,14 @@ def render_security_alert(
     title: str, message: str, base_url: str
 ) -> tuple[str, str]:
     """(subject, html) for a generic security alert."""
+
     subject = f"Security Alert: {title} — HealthPredict AI"
     body = f"""
         <h2 style="margin-top:0">&#x1F6A8; Security Alert</h2>
         <h3 style="color:#dc2626; margin-top:0">{title}</h3>
         <p>{message}</p>
-        <a href="{base_url}/security" class="btn" style="background:#dc2626;">
+        <a href="{base_url}/security" class="btn"
+           style="background:#dc2626;">
           Review Security Settings
         </a>
     """
@@ -188,7 +203,7 @@ def render_generic(title: str, message: str) -> tuple[str, str]:
     return subject, _base_html(subject, body)
 
 
-# ── Notification-type → template router ──────────────────────────────────────
+# ── Notification-type → template router ──────────────────────────────────
 
 _SECURITY_TYPES = {
     "new_login",
@@ -210,6 +225,7 @@ def build_email(
     Route a notification type to the appropriate HTML template.
 
     Returns ``(subject, html_body)``.
+
     """
     meta = metadata or {}
 
@@ -244,7 +260,7 @@ def build_email(
     return render_generic(title, message)
 
 
-# ── Abstract base ─────────────────────────────────────────────────────────────
+# ── Abstract base ─────────────────────────────────────────────────────────
 
 
 class EmailBackend(ABC):
@@ -259,10 +275,11 @@ class EmailBackend(ABC):
         text_body: str | None = None,
     ) -> bool:
         """Deliver a single email. Returns ``True`` on success."""
+
         ...
 
 
-# ── Development backend ───────────────────────────────────────────────────────
+# ── Development backend ───────────────────────────────────────────────────
 
 
 class DevelopmentEmailBackend(EmailBackend):
@@ -284,7 +301,7 @@ class DevelopmentEmailBackend(EmailBackend):
         return True
 
 
-# ── SMTP backend ──────────────────────────────────────────────────────────────
+# ── SMTP backend ──────────────────────────────────────────────────────────
 
 
 class SMTPEmailBackend(EmailBackend):
@@ -356,7 +373,7 @@ class SMTPEmailBackend(EmailBackend):
             return False
 
 
-# ── Factory ───────────────────────────────────────────────────────────────────
+# ── Factory ───────────────────────────────────────────────────────────────
 
 
 def create_email_backend() -> EmailBackend:
@@ -367,7 +384,7 @@ def create_email_backend() -> EmailBackend:
       ``development``  → ``DevelopmentEmailBackend`` (default)
       ``smtp``         → ``SMTPEmailBackend``
     """
-    from backend.app.core.config import (  # local import avoids circular
+    from backend.app.core.config import (
         settings,
     )
 
@@ -386,7 +403,8 @@ def create_email_backend() -> EmailBackend:
         ]
         if missing:
             logger.error(
-                "smtp_backend_misconfigured | missing fields: %s | falling back to development",
+                "smtp_backend_misconfigured | missing fields: %s | "
+                "falling back to development",
                 missing,
             )
             return DevelopmentEmailBackend()
@@ -409,6 +427,6 @@ def create_email_backend() -> EmailBackend:
     return DevelopmentEmailBackend()
 
 
-# ── Module-level singleton ────────────────────────────────────────────────────
+# ── Module-level singleton ────────────────────────────────────────────────
 
 email_backend: EmailBackend = create_email_backend()

@@ -49,7 +49,8 @@ class EmailProvider(NotificationProvider):
             user = await db.get(User, user_id)
             if not user or not user.email:
                 logger.warning(
-                    "email_provider_skip | user_id=%s | reason=no_email_address",
+                    "email_provider_skip | user_id=%s | "
+                    "reason=no_email_address",
                     user_id,
                 )
                 return False

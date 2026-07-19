@@ -1,6 +1,6 @@
 import asyncio
 import math
-from typing import Any, Optional
+from typing import Optional
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -67,7 +67,10 @@ async def save_prediction(
                     category="Prediction",
                     priority="NORMAL",
                     title=f"Prediction {prediction_status.capitalize()}",
-                    message=f"Your {disease_model} prediction has {status_text} completed.",
+                    message=(
+                        f"Your {disease_model} prediction has "
+                        f"{status_text} completed."
+                    ),
                 )
             )
 
@@ -112,7 +115,7 @@ async def get_history(
 
     # Do not show archived unless specifically requested (or never)
     # We will exclude archived by default for history
-    query = query.where(PredictionAuditLog.archived == False)
+    query = query.where(PredictionAuditLog.archived.is_(False))
 
     # Count total
     count_query = select(func.count()).select_from(query.subquery())
@@ -132,7 +135,7 @@ async def get_history(
     pages = math.ceil(total / params.size) if total > 0 else 0
 
     return PredictionHistoryPaginated(
-        items=items,
+        items=items,  # type: ignore[arg-type]
         total=total,
         page=params.page,
         size=params.size,

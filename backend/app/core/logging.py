@@ -8,7 +8,8 @@ import sys
 
 
 def setup_logging() -> None:
-    """Configure standard logging with JSON formatting (prod) or console (dev)."""
+    """Configure standard logging with JSON formatting (prod) or console
+    (dev)."""
     env = os.environ.get("APP_ENV", "development")
     log_level = os.environ.get("LOG_LEVEL", "INFO").upper()
 
@@ -40,10 +41,11 @@ def setup_logging() -> None:
                         )
                     return json.dumps(log_record)
 
-            formatter = JsonFormatter()
+            formatter: logging.Formatter = JsonFormatter()
         except ImportError:
             formatter = logging.Formatter(
-                '{"time": "%(asctime)s", "level": "%(levelname)s", "name": "%(name)s", "message": "%(message)s"}'
+                '{"time": "%(asctime)s", "level": "%(levelname)s", '
+                '"name": "%(name)s", "message": "%(message)s"}'
             )
     else:
         formatter = logging.Formatter(

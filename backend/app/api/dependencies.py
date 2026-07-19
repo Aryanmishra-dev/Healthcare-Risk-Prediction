@@ -25,7 +25,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.core.database import get_db
 from backend.app.core.enums import UserRole
-from backend.app.models.admin_action import AdminAction
 from backend.app.models.tenant import Membership
 from backend.app.services.authorization_service import AuthorizationService
 
@@ -155,7 +154,8 @@ class HardenedRateLimiter:
                 await self._get_redis_limiter()(request, response)
                 return
         except HTTPException:
-            # Re-raise 429 responses from the Redis limiter — do not swallow them
+            # Re-raise 429 responses from the Redis limiter — do not
+            # swallow them
             raise
         except Exception:
             # Redis call failed mid-flight — fall through to in-memory backup
@@ -170,7 +170,7 @@ OptionalRateLimiter = HardenedRateLimiter
 
 RATE_LIMIT = int(os.environ.get("RATE_LIMIT_PER_MINUTE", "60"))
 
-# ── RBAC Authorization ────────────────────────────────────────────────────────
+# ── RBAC Authorization ────────────────────────────────────────────────────
 
 
 class RequireRole:
@@ -255,7 +255,7 @@ async def audit_admin_action(
     """
     if request.method in ("POST", "PUT", "DELETE", "PATCH"):
         user = getattr(request.state, "user", None)
-        admin_id = str(user.id) if user else None
+        admin_id = str(user.id) if user else ""
         action_type = f"{request.method} {request.url.path}"
         metadata = {
             "method": request.method,
@@ -273,7 +273,7 @@ async def audit_admin_action(
         )
 
 
-# ── API Key ───────────────────────────────────────────────────────────────────
+# ── API Key ───────────────────────────────────────────────────────────────
 
 API_KEY_NAME = "X-API-Key"
 _api_key_warning_logged = False
@@ -309,12 +309,12 @@ def _resolve_api_key() -> str:
         return dev_key
 
     # No key configured at all — raise immediately so the problem is visible
-    app_env = os.environ.get("APP_ENV", "development")
     raise HTTPException(
         status_code=503,
         detail=(
             "Service misconfigured: API_KEY is not set. "
-            "Set API_KEY (production) or DEV_API_KEY (development) in environment."
+            "Set API_KEY (production) or "
+            "DEV_API_KEY (development) in environment."
         ),
     )
 
@@ -369,7 +369,7 @@ async def get_current_tenant(
     return row
 
 
-# ── Startup validation ────────────────────────────────────────────────────────
+# ── Startup validation ────────────────────────────────────────────────────
 
 
 def validate_startup_config() -> None:
@@ -407,14 +407,16 @@ def validate_startup_config() -> None:
         if not db_url or "sqlite" in db_url:
             errors.append(
                 "DATABASE_URL must be set to a Postgres connection string in "
-                "production. The SQLite fallback is for local development only."
+                "production. The SQLite fallback is for local "
+                "development only."
             )
 
         email_backend = os.environ.get("EMAIL_BACKEND", "development")
         if email_backend != "smtp":
             warnings.append(
                 "EMAIL_BACKEND is not 'smtp'. "
-                "Email delivery (password reset, verification) will be disabled."
+                "Email delivery (password reset, verification) "
+                "will be disabled."
             )
 
     else:
@@ -431,8 +433,8 @@ def validate_startup_config() -> None:
         for error in errors:
             logger.critical("startup_config_error | %s", error)
         raise RuntimeError(
-            f"Application startup aborted due to {len(errors)} configuration error(s). "
-            f"See logs for details."
+            f"Application startup aborted due to {len(errors)} "
+            "configuration error(s). See logs for details."
         )
 
     logger.info(

@@ -1,10 +1,10 @@
-from typing import Any, Dict, List
+from typing import List
 
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.models.admin_action import AdminAction
-from backend.app.models.user import AuditLog, LoginHistory, SecurityEvent
+from backend.app.models.user import LoginHistory, SecurityEvent
 
 
 class AdminAuditRepository:

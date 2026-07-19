@@ -1,11 +1,10 @@
 import uuid
-from typing import Any, Dict
+from typing import Dict
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.api.dependencies import RequireRole
-from backend.app.auth.router import get_current_user
 from backend.app.core.database import get_db
 from backend.app.core.enums import UserRole
 from backend.app.models.user import User
@@ -41,7 +40,8 @@ async def update_user(
     ),
 ):
     """Update a user's role or status."""
-    # Ensure SUPER_ADMIN if trying to make someone SUPER_ADMIN or change another SUPER_ADMIN
+    # Ensure SUPER_ADMIN if trying to make someone SUPER_ADMIN or change
+    # another SUPER_ADMIN
     if (
         update_data.role == UserRole.SUPER_ADMIN.value
         and current_admin.role != UserRole.SUPER_ADMIN.value

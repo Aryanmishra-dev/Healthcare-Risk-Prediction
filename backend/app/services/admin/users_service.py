@@ -1,6 +1,5 @@
 import math
 import uuid
-from typing import Optional
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,6 +10,7 @@ from backend.app.repositories.admin_users_repo import AdminUsersRepository
 from backend.app.schemas.admin_user import (
     AdminUserUpdate,
     PaginatedUserResponse,
+    UserResponse,
 )
 
 
@@ -29,7 +29,11 @@ class AdminUsersService:
         pages = math.ceil(total / size) if size > 0 else 0
 
         return PaginatedUserResponse(
-            items=users, total=total, page=page, size=size, pages=pages
+            items=[UserResponse.model_validate(u) for u in users],
+            total=total,
+            page=page,
+            size=size,
+            pages=pages,
         )
 
     @staticmethod

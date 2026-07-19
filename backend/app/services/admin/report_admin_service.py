@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.models.report import UserReport
 from backend.app.repositories.admin_reports_repo import AdminReportsRepository
-from backend.app.schemas.report import ReportResponse
 
 
 class AdminReportsService:

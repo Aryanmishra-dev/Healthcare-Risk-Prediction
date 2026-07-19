@@ -9,7 +9,9 @@ Usage:
     from backend.app.services.ab_testing import ab_router
 
     # Register a challenger for the diabetes model:
-    ab_router.register("diabetes", challenger_fn=my_new_predict, traffic_pct=10)
+    ab_router.register(
+        "diabetes", challenger_fn=my_new_predict, traffic_pct=10
+    )
 
     # Route prediction through A/B splitter:
     result, variant = ab_router.route("diabetes", **kwargs)

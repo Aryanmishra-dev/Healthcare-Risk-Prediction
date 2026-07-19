@@ -1,7 +1,7 @@
 import uuid
 from typing import Any, Dict, List, Optional
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,7 +9,6 @@ from backend.app.models.base import utc_now
 from backend.app.models.model_version import ModelVersion
 from backend.app.schemas.model_version import (
     ModelVersionCreate,
-    ModelVersionUpdate,
 )
 
 
@@ -87,7 +86,8 @@ class ModelRegistryService:
     async def rollback_model(
         self, db: AsyncSession, model_id: uuid.UUID
     ) -> ModelVersion:
-        """Rollback to a previous model (promotes the old model, deprecates current)."""
+        """Rollback to a previous model (promotes the old model,
+        deprecates current)."""
         target_model = await db.get(ModelVersion, model_id)
         if not target_model:
             raise HTTPException(
@@ -120,7 +120,8 @@ class ModelRegistryService:
         if target_model.status == "Production":
             raise HTTPException(
                 status_code=400,
-                detail="Cannot archive active Production model. Promote another first.",
+                detail="Cannot archive active Production model. "
+                "Promote another first.",
             )
 
         target_model.status = "Archived"
@@ -131,7 +132,7 @@ class ModelRegistryService:
         return target_model
 
     async def list_models(
-        self, db: AsyncSession, disease_type: str = None
+        self, db: AsyncSession, disease_type: str | None = None
     ) -> List[ModelVersion]:
         """List all model versions, optionally filtered by disease."""
         query = select(ModelVersion).order_by(desc(ModelVersion.created_at))
@@ -155,7 +156,7 @@ class ModelRegistryService:
         m1_metrics = m1.metrics or {}
         m2_metrics = m2.metrics or {}
 
-        diff = {}
+        diff: Dict[str, Any] = {}
         all_keys = set(m1_metrics.keys()).union(set(m2_metrics.keys()))
         for k in all_keys:
             val1 = m1_metrics.get(k, 0)

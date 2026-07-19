@@ -17,10 +17,10 @@ class AdminAnalyticsRepository:
         """Get aggregate counts for the dashboard overview."""
         total_users = await db.scalar(select(func.count(User.id)))
         verified_users = await db.scalar(
-            select(func.count(User.id)).where(User.is_verified == True)
+            select(func.count(User.id)).where(User.is_verified.is_(True))
         )
         active_users = await db.scalar(
-            select(func.count(User.id)).where(User.is_active == True)
+            select(func.count(User.id)).where(User.is_active.is_(True))
         )
 
         # Predictions
@@ -34,7 +34,8 @@ class AdminAnalyticsRepository:
         # Exports
         total_exports = await db.scalar(select(func.count(DataExport.id)))
 
-        # Latency avg (assuming latency_ms exists, else we can mock or use a similar field)
+        # Latency avg (assuming latency_ms exists, else we can mock or use a
+        # similar field)
         # Assuming PredictionAuditLog has execution_time_ms based on Phase 3
         # Let's check if it has execution_time_ms.
         # Note: If column is missing, this will fail. We'll use 0.0 if None.
@@ -69,7 +70,8 @@ class AdminAnalyticsRepository:
     ) -> List[Dict[str, Any]]:
         """Get daily prediction counts for the last X days."""
         # SQLite compatible date truncation
-        # For cross-compatibility in tests (SQLite) and Prod (Postgres), we cast to Date
+        # For cross-compatibility in tests (SQLite) and Prod (Postgres), we
+        # cast to Date
         cutoff = datetime.utcnow() - timedelta(days=days)
 
         stmt = (

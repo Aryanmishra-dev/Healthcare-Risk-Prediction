@@ -85,7 +85,8 @@ async def upload_document(
 
 
 async def process_uploaded_document(file: UploadFile):
-    """Run validation, text extraction, NLP, and feature mapping for an upload."""
+    """Run validation, text extraction, NLP, and feature mapping for
+    an upload."""
     file_bytes, mime_type = await validate_upload(file)
     logger.info(
         "document_upload_received",
@@ -99,7 +100,10 @@ async def process_uploaded_document(file: UploadFile):
         logger.exception("document_parse_failed")
         raise HTTPException(
             status_code=422,
-            detail="Failed to extract text from document. The file may be corrupt or unreadable.",
+            detail=(
+                "Failed to extract text from document. "
+                "The file may be corrupt or unreadable."
+            ),
         ) from e
 
     if not raw_text:
@@ -107,7 +111,10 @@ async def process_uploaded_document(file: UploadFile):
             "raw_text": "",
             "entities": {},
             "mapped_features": {},
-            "warning": "No text could be extracted from the document. Try a clearer image or a text-based PDF.",
+            "warning": (
+                "No text could be extracted from the document. "
+                "Try a clearer image or a text-based PDF."
+            ),
         }
 
     # 3. Extract clinical entities

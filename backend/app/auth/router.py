@@ -8,10 +8,10 @@ from fastapi import (
     Depends,
     HTTPException,
     Request,
-    Response,
 )
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import BaseModel
 from sqlalchemy import func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -42,7 +42,7 @@ from backend.app.models.user import (
     UserSession,
 )
 from backend.app.schemas.auth import SessionResponse
-from backend.app.schemas.user import UserCreate, UserResponse, UserUpdate
+from backend.app.schemas.user import UserCreate, UserResponse
 from backend.app.services.auth_service import (
     create_session,
     create_user,
@@ -60,7 +60,7 @@ bearer = HTTPBearer(auto_error=False)
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
-    request: Request = None,
+    request: Request | None = None,
     db: AsyncSession = Depends(get_db),
 ) -> User:
     token = None
@@ -108,7 +108,7 @@ async def get_current_user(
 
 async def get_current_session_id(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
-    request: Request = None,
+    request: Request | None = None,
 ) -> uuid.UUID:
     token = None
     if credentials is not None:
@@ -156,7 +156,8 @@ async def register(
             ),
         )
 
-        # Create a default organization (tenant) and membership for the new user
+        # Create a default organization (tenant) and membership for the new
+        # user
         tenant = Tenant(
             name=f"{payload.full_name or payload.email}'s Organization",
             slug=f"org-{uuid.uuid4().hex[:12]}",
@@ -265,7 +266,7 @@ async def login(
 @router.post("/refresh")
 async def refresh(
     request: Request,
-    refresh_token: str = None,
+    refresh_token: str | None = None,
     db: AsyncSession = Depends(get_db),
 ):
     if refresh_token is None:
@@ -413,7 +414,8 @@ async def history(
     ]
 
 
-# The legacy code had an empty delete history and stats logic that depended on raw DB, adding placeholders/refactors here
+# The legacy code had an empty delete history and stats logic that depended
+# on raw DB, adding placeholders/refactors here
 @router.delete("/history/{history_id}")
 async def delete_history(
     history_id: int,
@@ -482,9 +484,6 @@ async def upload_detail(
     raise HTTPException(status_code=404, detail="Upload not found")
 
 
-from pydantic import BaseModel
-
-
 class PasswordResetRequest(BaseModel):
     email: str
 
@@ -550,7 +549,7 @@ async def password_reset_confirm(
     result = await db.execute(
         select(PasswordResetToken).where(
             PasswordResetToken.token_hash == token_hash,
-            PasswordResetToken.is_used == False,
+            PasswordResetToken.is_used.is_(False),
         )
     )
     reset = result.scalars().first()
@@ -596,7 +595,7 @@ async def verify_email(
     result = await db.execute(
         select(EmailVerificationToken).where(
             EmailVerificationToken.token_hash == token_hash,
-            EmailVerificationToken.is_used == False,
+            EmailVerificationToken.is_used.is_(False),
         )
     )
     verification = result.scalars().first()

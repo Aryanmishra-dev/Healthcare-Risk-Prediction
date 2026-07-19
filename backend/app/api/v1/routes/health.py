@@ -3,7 +3,6 @@ Health check endpoints for the API, models, and database.
 """
 
 import sqlite3
-import time
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
@@ -22,7 +21,8 @@ def health_root():
 
 @router.get("/models")
 def health_models():
-    """Model health endpoint returning inference readiness, latency, and versions."""
+    """Model health endpoint returning inference readiness, latency, and
+    versions."""
     status_data = model_manager.get_health_status()
     # Determine overall status: ready if at least one model is ready
     models_ready = any(

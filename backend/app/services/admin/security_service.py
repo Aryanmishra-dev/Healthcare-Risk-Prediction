@@ -8,7 +8,6 @@ from backend.app.schemas.security import (
     LoginHistoryResponse,
     SecurityEventResponse,
 )
-from backend.app.services.cache_service import cached
 
 
 class AdminSecurityService:
@@ -21,7 +20,7 @@ class AdminSecurityService:
         actions = await AdminAuditRepository.get_recent_admin_actions(
             db, limit
         )
-        return actions
+        return [AdminActionResponse.model_validate(a) for a in actions]
 
     @staticmethod
     async def get_recent_security_events(
@@ -31,7 +30,7 @@ class AdminSecurityService:
         events = await AdminAuditRepository.get_recent_security_events(
             db, limit
         )
-        return events
+        return [SecurityEventResponse.model_validate(e) for e in events]
 
     @staticmethod
     async def get_recent_failed_logins(
@@ -39,4 +38,4 @@ class AdminSecurityService:
     ) -> List[LoginHistoryResponse]:
         """Get recent failed login attempts."""
         logins = await AdminAuditRepository.get_recent_failed_logins(db, limit)
-        return logins
+        return [LoginHistoryResponse.model_validate(ev) for ev in logins]

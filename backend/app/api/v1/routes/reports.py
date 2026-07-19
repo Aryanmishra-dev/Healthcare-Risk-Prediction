@@ -12,7 +12,7 @@ from fastapi import (
     status,
 )
 from fastapi.responses import Response
-from sqlalchemy import desc, func, or_, select
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.auth.router import get_current_user
@@ -142,7 +142,7 @@ async def get_reports(
     pages = math.ceil(total / params.size) if total > 0 else 0
 
     return ReportPaginated(
-        items=items,
+        items=items,  # type: ignore[arg-type]
         total=total,
         page=params.page,
         size=params.size,
@@ -188,6 +188,8 @@ async def download_report(
         content=content,
         media_type=report.mime_type,
         headers={
-            "Content-Disposition": f'attachment; filename="{report.original_filename}"'
+            "Content-Disposition": (
+                f'attachment; filename="{report.original_filename}"'
+            ),
         },
     )

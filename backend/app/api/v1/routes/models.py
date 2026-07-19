@@ -1,7 +1,8 @@
 """
 Phase 3 — Model Registry & MLOps API Routes.
 
-Provides endpoints for managing model versions, monitoring, drift detection, and health checks.
+Provides endpoints for managing model versions, monitoring, drift detection,
+and health checks.
 Admin-only routes are protected by RBAC.
 """
 
@@ -17,7 +18,6 @@ from backend.app.core.database import get_db
 from backend.app.models.model_version import ModelVersion
 from backend.app.models.user import User
 from backend.app.schemas.model_version import (
-    ModelComparisonResponse,
     ModelVersionCreate,
     ModelVersionResponse,
 )
@@ -119,7 +119,8 @@ async def get_model_health(
 async def get_model_metrics(
     admin: User = Depends(require_admin),
 ):
-    """Admin only: Return per-model inference metrics (count, latency, error rate)."""
+    """Admin only: Return per-model inference metrics
+    (count, latency, error rate)."""
     return model_monitoring_service.get_metrics()
 
 
@@ -171,7 +172,8 @@ async def promote_model(
     admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """Admin only: Promote a model version to Production, archiving the previous one."""
+    """Admin only: Promote a model version to Production,
+    archiving the previous one."""
     return await model_registry_service.promote_model(db, model_id)
 
 
@@ -181,7 +183,8 @@ async def rollback_model(
     admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """Admin only: Rollback to a specific model version (promotes it, deprecates current)."""
+    """Admin only: Rollback to a specific model version
+    (promotes it, deprecates current)."""
     return await model_registry_service.rollback_model(db, model_id)
 
 

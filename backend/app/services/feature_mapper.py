@@ -125,7 +125,8 @@ def map_to_heart_features(entities: dict[str, Any]) -> dict[str, Any]:
     res["hd_gen_health"] = _map_field(entities, "general_health", int)
     res["hd_ment_health"] = _map_field(entities, "mental_health", int)
 
-    # Additional mappings based on family history or diabetes history could be added here
+    # Additional mappings based on family history or diabetes history could
+    # be added here
     res["hd_diabetes"] = _map_field(
         entities,
         "diagnosis",

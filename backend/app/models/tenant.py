@@ -50,7 +50,8 @@ class Team(Base, UUIDMixin, TimestampMixin):
 
     tenant = relationship("Tenant", back_populates="teams")
     # A team can have many members via a secondary or a team_memberships table.
-    # For now, we will add a simple team_members table if needed, or rely on Membership.
+    # For now, we will add a simple team_members table if needed, or rely on
+    # Membership.
 
 
 class Membership(Base, UUIDMixin, TimestampMixin):

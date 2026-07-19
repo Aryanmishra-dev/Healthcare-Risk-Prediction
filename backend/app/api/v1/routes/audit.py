@@ -71,7 +71,11 @@ async def list_audit_events(
     )
     pages = math.ceil(total / size) if total > 0 else 0
     return AuditEventPaginated(
-        items=items, total=total, page=page, size=size, pages=pages
+        items=items,  # type: ignore[arg-type]
+        total=total,
+        page=page,
+        size=size,
+        pages=pages,
     )
 
 

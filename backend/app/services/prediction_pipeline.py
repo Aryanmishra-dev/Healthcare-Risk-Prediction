@@ -1,13 +1,10 @@
 import logging
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from fastapi import Request
 
-from backend.app.models.base import utc_now
-from backend.app.models.prediction import PredictionAuditLog
 from backend.app.services.model_manager import model_manager
-from backend.app.services.model_registry_service import model_registry_service
 from backend.app.services.shap_explainer import (
     explain_diabetes,
     explain_heart,
@@ -34,22 +31,25 @@ class PredictionPipeline:
             disease: "diabetes", "heart_disease", or "lung_cancer".
             input_data: The raw validated input dictionary.
             predict_func: The actual async function to run the prediction.
-            build_features_func: Optional function to build a DataFrame for SHAP explanation.
+            build_features_func: Optional function to build a DataFrame for
+                SHAP explanation.
         """
         start_time = time.time()
 
         # 1. Validation & Input is handled by the caller Pydantic schema
 
         # 2. Model Selection (find active model version)
-        # Note: We aren't passing the DB session here because this pipeline runs per-request
-        # For full implementation, we'd inject DB session. For now we use the version from memory.
+        # Note: We aren't passing the DB session here because this pipeline
+        # runs per-request. For full implementation, we'd inject DB session.
+        # For now we use the version from memory.
         model_status = model_manager.get_health_status()["models"].get(
             disease, {}
         )
         model_version = model_status.get("version", "local")
 
         # 3. Feature Engineering & Prediction & Calibration
-        # The underlying `predict_func` handles this internally via the model_loader logic
+        # The underlying `predict_func` handles this internally via the
+        # model_loader logic
         try:
             result = await predict_func(request, **input_data)
         except Exception as e:
@@ -71,8 +71,9 @@ class PredictionPipeline:
                 logger.warning(f"SHAP explanation failed for {disease}: {e}")
 
         # 5. Persistence & Audit Logging
-        # Note: Actual DB persistence relies on log_prediction_to_db called in main.py,
-        # but we can augment the payload here so main.py logs everything properly.
+        # Note: Actual DB persistence relies on log_prediction_to_db called in
+        # main.py, but we can augment the payload here so main.py logs
+        # everything properly.
         processing_time_ms = int((time.time() - start_time) * 1000)
 
         response = {
@@ -82,8 +83,8 @@ class PredictionPipeline:
             "shap_values": shap_values,
         }
 
-        # 6. Notification (Skipped for individual predictions per typical setup,
-        # but could be added if risk > threshold)
+        # 6. Notification (Skipped for individual predictions per typical
+        # setup, but could be added if risk > threshold)
 
         # 7. Response (Returns back to main.py orchestrator)
         return response

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 from uuid import UUID
 
 from sqlalchemy import desc, func, select
@@ -50,7 +50,8 @@ class AdminUsersRepository:
         stmt = (
             select(UserSession)
             .where(
-                UserSession.user_id == user_id, UserSession.is_revoked == False
+                UserSession.user_id == user_id,
+                UserSession.is_revoked.is_(False),
             )
             .order_by(desc(UserSession.last_activity))
         )

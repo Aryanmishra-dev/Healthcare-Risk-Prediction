@@ -35,9 +35,6 @@ from fastapi.routing import APIRouter
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi_cache import FastAPICache
-from fastapi_cache.decorator import cache
-from fastapi_limiter import FastAPILimiter
-from fastapi_limiter.depends import RateLimiter
 from prometheus_client import (
     CONTENT_TYPE_LATEST,
     Counter,
@@ -140,7 +137,8 @@ def _csv_env(name: str, default: str) -> list[str]:
 
 
 def _cors_origins(default: str) -> list[str]:
-    """Prefer ALLOWED_ORIGINS while keeping CORS_ORIGINS backward compatible."""
+    """Prefer ALLOWED_ORIGINS while keeping CORS_ORIGINS backward
+    compatible."""
     raw_origins = (
         os.environ.get("ALLOWED_ORIGINS")
         or os.environ.get("CORS_ORIGINS")
@@ -220,7 +218,9 @@ if _IS_PROD:
     )
 else:
     ALLOWED_ORIGINS = _cors_origins(
-        "http://localhost:3000,http://localhost:8000,http://127.0.0.1:8000,https://healthcare-risk-prediction.onrender.com",
+        "http://localhost:3000,http://localhost:8000,"
+        "http://127.0.0.1:8000,"
+        "https://healthcare-risk-prediction.onrender.com",
     )
 
 app.add_middleware(
@@ -326,7 +326,8 @@ async def validation_exception_handler(
             "partials/error.html",
             {
                 "request": request,
-                "error": "Invalid input provided. Please check the form fields and try again.",
+                "error": "Invalid input provided. "
+                "Please check the form fields and try again.",
             },
             status_code=200,
         )
@@ -1149,7 +1150,7 @@ async def v1_predict_heart(
     import time as _time
 
     import numpy as np
-    import pandas as pd
+    import pandas as pd  # type: ignore[import-untyped]
 
     _start = _time.time()
     success = True

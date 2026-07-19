@@ -2,7 +2,6 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
-from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -11,7 +10,6 @@ from backend.app.auth.utils import (
     create_refresh_token,
     hash_password,
     parse_user_agent,
-    verify_password,
 )
 from backend.app.core.config import settings
 from backend.app.models.user import (

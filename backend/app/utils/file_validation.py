@@ -24,7 +24,8 @@ ALLOWED_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png"}
 
 
 def sanitize_filename(filename: str) -> str:
-    """Sanitize a filename by removing path separators and special characters."""
+    """Sanitize a filename by removing path separators and special
+    characters."""
     # Strip directory components
     filename = os.path.basename(filename)
     # Remove anything that isn't alphanumeric, dash, underscore, or dot
@@ -87,7 +88,10 @@ async def validate_upload(file: UploadFile) -> tuple[bytes, str]:
         size_mb = round(len(file_bytes) / (1024 * 1024), 2)
         raise HTTPException(
             status_code=400,
-            detail=f"File too large ({size_mb} MB). Maximum allowed size is 5 MB.",
+            detail=(
+                f"File too large ({size_mb} MB). "
+                "Maximum allowed size is 5 MB."
+            ),
         )
 
     if len(file_bytes) == 0:

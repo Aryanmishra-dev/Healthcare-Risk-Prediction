@@ -22,8 +22,8 @@ def parse_pdf(file_bytes: bytes) -> str:
     """
     import io
 
-    import fitz  # PyMuPDF
-    import pytesseract
+    import fitz  # type: ignore[import-untyped]  # PyMuPDF
+    import pytesseract  # type: ignore[import-untyped]
     from PIL import Image
 
     text_parts: list[str] = []
@@ -68,7 +68,7 @@ def parse_image(file_bytes: bytes) -> str:
 
     # Convert to RGB if necessary (e.g. RGBA PNGs)
     if image.mode not in ("L", "RGB"):
-        image = image.convert("RGB")
+        image = image.convert("RGB")  # type: ignore[assignment]
 
     raw_text = pytesseract.image_to_string(image).strip()
     if not raw_text:

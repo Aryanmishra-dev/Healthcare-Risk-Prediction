@@ -109,14 +109,17 @@ class AuthorizationService:
         if user.role == UserRole.SUPER_ADMIN:
             return True
 
-        # Admin can do anything except billing/tenant management (unless they are owner of the tenant)
-        # Wait, UserRole.ADMIN is a platform admin. We'll grant them all permissions too for now.
+        # Admin can do anything except billing/tenant management (unless
+        # they are owner of the tenant)
+        # Wait, UserRole.ADMIN is a platform admin. We'll grant them all
+        # permissions too for now.
         if user.role == UserRole.ADMIN:
             return True
 
         if tenant_id:
             # Check tenant-specific roles through Memberships
-            # Note: This assumes user.memberships is eagerly loaded, or we pass the specific role
+            # Note: This assumes user.memberships is eagerly loaded, or we
+            # pass the specific role
             # Let's see if we can find the membership for this tenant
             membership = next(
                 (

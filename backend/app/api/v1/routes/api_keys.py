@@ -32,7 +32,8 @@ async def create_api_key(
     _=Depends(RequirePermission(Permission.MANAGE_API_KEYS)),
 ):
     """
-    Create a new API key. The plaintext key is only returned once in the response.
+    Create a new API key. The plaintext key is only returned once in the
+    response.
     """
     api_key, raw_key = await ApiKeyService.create_api_key(
         db=db,
@@ -92,7 +93,8 @@ async def rotate_api_key(
     _=Depends(RequirePermission(Permission.MANAGE_API_KEYS)),
 ):
     """
-    Rotate an API key: revoke the existing key and create a new one with identical metadata.
+    Rotate an API key: revoke the existing key and create a new one with
+    identical metadata.
     """
     try:
         new_key, raw_key = await ApiKeyService.rotate_api_key(

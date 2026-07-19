@@ -1,5 +1,6 @@
 """
-ModelManager for handling MLflow-based model loading, caching, and health reporting.
+ModelManager for handling MLflow-based model loading, caching, and health
+reporting.
 Implements the Singleton pattern and ensures robust lazy-loading with retries.
 """
 
@@ -10,7 +11,7 @@ import resource
 import time
 from pathlib import Path
 
-import joblib
+import joblib  # type: ignore[import-untyped]
 import mlflow
 
 # Standard Python logging
@@ -108,16 +109,19 @@ class ModelManager:
                 return await asyncio.to_thread(load_func)
             except Exception as e:
                 logger.error(
-                    f"Failed to load {model_name} (Attempt {attempt}/{max_retries}): {e}"
+                    f"Failed to load {model_name} "
+                    f"(Attempt {attempt}/{max_retries}): {e}"
                 )
                 if attempt == max_retries:
                     if _IS_PRODUCTION:
                         raise RuntimeError(
-                            f"Failed to load {model_name} in production after {max_retries} attempts."
+                            f"Failed to load {model_name} in production "
+                            f"after {max_retries} attempts."
                         ) from e
                     else:
                         logger.warning(
-                            f"Could not load {model_name}. Proceeding in degraded mode."
+                            f"Could not load {model_name}. "
+                            "Proceeding in degraded mode."
                         )
                         return None
                 await asyncio.sleep(2**attempt)
@@ -374,7 +378,8 @@ class ModelManager:
         }
 
     def export_app_state(self):
-        """Return the legacy app.state model mapping used by older tests/routes."""
+        """Return the legacy app.state model mapping used by older
+        tests/routes."""
         state = {}
         if self.models["diabetes"]["status"] == "ready":
             d = self.models["diabetes"]["deps"]

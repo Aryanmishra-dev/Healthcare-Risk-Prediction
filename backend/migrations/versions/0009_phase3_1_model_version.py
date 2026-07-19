@@ -8,7 +8,6 @@ Create Date: 2026-07-11 12:35:00.000000
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "0009"
@@ -76,7 +75,8 @@ def upgrade() -> None:
         unique=False,
     )
 
-    # 2. Add fields to prediction_audit_logs for AB testing, drift, and calibration
+    # 2. Add fields to prediction_audit_logs for AB testing,
+    # drift, and calibration
     op.add_column(
         "prediction_audit_logs",
         sa.Column("model_version_id", sa.Uuid(), nullable=True),

@@ -2,6 +2,10 @@
 Pydantic schemas for the healthcare risk prediction API.
 """
 
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+from uuid import UUID
+
 from pydantic import BaseModel, Field
 
 MEDICAL_DISCLAIMER = (
@@ -267,10 +271,6 @@ class LegacyLungCancerAuditRequest(BaseModel):
 
 
 # ── Phase 2.3: Prediction History ──────────────────────────────────────────
-
-from datetime import datetime
-from typing import Any, Dict, List, Optional
-from uuid import UUID
 
 
 class PredictionHistoryResponse(BaseModel):
