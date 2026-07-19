@@ -74,7 +74,7 @@ async def create_webhook(
     body: WebhookCreate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    request: Request | None = None,
+    request: Request = None,  # type: ignore[assignment]
 ):
     tenant_id = await _get_tenant_id(current_user, db)
     webhook = await webhook_service.create_webhook(
@@ -127,7 +127,7 @@ async def update_webhook(
     body: WebhookUpdate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    request: Request | None = None,
+    request: Request = None,  # type: ignore[assignment]
 ):
     tenant_id = await _get_tenant_id(current_user, db)
     before = await webhook_service.get_webhook(db, webhook_id, tenant_id)
@@ -170,7 +170,7 @@ async def delete_webhook(
     webhook_id: UUID,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    request: Request | None = None,
+    request: Request = None,  # type: ignore[assignment]
 ):
     tenant_id = await _get_tenant_id(current_user, db)
     before = await webhook_service.get_webhook(db, webhook_id, tenant_id)
@@ -202,7 +202,7 @@ async def rotate_webhook_secret(
     webhook_id: UUID,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    request: Request | None = None,
+    request: Request = None,  # type: ignore[assignment]
 ):
     tenant_id = await _get_tenant_id(current_user, db)
     new_secret = await webhook_security_service.rotate_secret(
@@ -253,7 +253,7 @@ async def replay_webhook_event(
     event_id: UUID,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    request: Request | None = None,
+    request: Request = None,  # type: ignore[assignment]
 ):
     tenant_id = await _get_tenant_id(current_user, db)
     new_event = await webhook_delivery_service.replay_webhook_event(

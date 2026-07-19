@@ -60,7 +60,7 @@ bearer = HTTPBearer(auto_error=False)
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
-    request: Request | None = None,
+    request: Request = None,  # type: ignore[assignment]
     db: AsyncSession = Depends(get_db),
 ) -> User:
     token = None
@@ -108,7 +108,7 @@ async def get_current_user(
 
 async def get_current_session_id(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
-    request: Request | None = None,
+    request: Request = None,  # type: ignore[assignment]
 ) -> uuid.UUID:
     token = None
     if credentials is not None:
