@@ -8,9 +8,12 @@ from backend.app.auth.router import get_current_user
 from backend.app.core.database import get_db
 from backend.app.models.base import utc_now
 from backend.app.models.user import User
-from backend.app.schemas.export import (ExportQueryParams, ExportRequest,
-                                        ExportResponse,
-                                        PaginatedExportResponse)
+from backend.app.schemas.export import (
+    ExportQueryParams,
+    ExportRequest,
+    ExportResponse,
+    PaginatedExportResponse,
+)
 from backend.app.services.exports import export_provider
 from backend.app.services.exports.export_service import ExportService
 
@@ -21,7 +24,9 @@ def get_export_service() -> ExportService:
     return ExportService(export_provider)
 
 
-@router.post("", response_model=ExportResponse, status_code=status.HTTP_202_ACCEPTED)
+@router.post(
+    "", response_model=ExportResponse, status_code=status.HTTP_202_ACCEPTED
+)
 async def request_export(
     payload: ExportRequest,
     background_tasks: BackgroundTasks,
@@ -72,7 +77,9 @@ async def download_export(
     export_service: ExportService = Depends(get_export_service),
 ):
     try:
-        export_record = await export_service.get_export(db, current_user.id, export_id)
+        export_record = await export_service.get_export(
+            db, current_user.id, export_id
+        )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -89,9 +96,13 @@ async def download_export(
     export_record.downloaded_at = utc_now()
     await db.commit()
 
-    stream = await export_provider.get_export_stream(export_record.storage_path)
+    stream = await export_provider.get_export_stream(
+        export_record.storage_path
+    )
     content_type = (
-        "application/json" if export_record.export_format == "json" else "text/csv"
+        "application/json"
+        if export_record.export_format == "json"
+        else "text/csv"
     )
 
     return StreamingResponse(

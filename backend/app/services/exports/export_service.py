@@ -7,12 +7,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.models.base import utc_now
 from backend.app.models.export import DataExport
-from backend.app.schemas.export import (ExportQueryParams,
-                                        PaginatedExportResponse)
+from backend.app.schemas.export import (
+    ExportQueryParams,
+    PaginatedExportResponse,
+)
 from backend.app.services.exports.generators import generate_user_data_json
 from backend.app.services.exports.providers import ExportProvider
-from backend.app.services.notifications.notification_service import \
-    notification_dispatcher
+from backend.app.services.notifications.notification_service import (
+    notification_dispatcher,
+)
 
 
 class ExportService:
@@ -58,7 +61,9 @@ class ExportService:
 
         return export_record
 
-    async def process_export_task(self, db: AsyncSession, export_id: uuid.UUID) -> None:
+    async def process_export_task(
+        self, db: AsyncSession, export_id: uuid.UUID
+    ) -> None:
         """Background task to generate and store the export."""
         export_record = await db.get(DataExport, export_id)
         if not export_record:
@@ -73,8 +78,12 @@ class ExportService:
         try:
             # 1. Generate content
             if export_record.export_format == "json":
-                content = await generate_user_data_json(db, export_record.user_id)
-                filename = f"export_{export_record.user_id}_{export_record.id}.json"
+                content = await generate_user_data_json(
+                    db, export_record.user_id
+                )
+                filename = (
+                    f"export_{export_record.user_id}_{export_record.id}.json"
+                )
             else:
                 raise NotImplementedError("Format not supported yet")
 
@@ -162,7 +171,11 @@ class ExportService:
         pages = math.ceil(total / params.size) if total > 0 else 0
 
         return PaginatedExportResponse(
-            items=items, total=total, page=params.page, size=params.size, pages=pages
+            items=items,
+            total=total,
+            page=params.page,
+            size=params.size,
+            pages=pages,
         )
 
     async def get_export(

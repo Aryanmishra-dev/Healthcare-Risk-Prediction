@@ -1,9 +1,19 @@
 from fastapi import APIRouter, Depends
 
-from backend.app.api.dependencies import (RATE_LIMIT, OptionalRateLimiter,
-                                          audit_admin_action)
-from backend.app.api.v1.routes.admin import (analytics, dashboard, health,
-                                             models, reports, security, users)
+from backend.app.api.dependencies import (
+    RATE_LIMIT,
+    OptionalRateLimiter,
+    audit_admin_action,
+)
+from backend.app.api.v1.routes.admin import (
+    analytics,
+    dashboard,
+    health,
+    models,
+    reports,
+    security,
+    users,
+)
 
 admin_router = APIRouter(
     prefix="/admin",

@@ -7,9 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.app.auth.router import get_current_user
 from backend.app.core.database import get_db
 from backend.app.models.user import User
-from backend.app.schemas.prediction import (PredictionHistoryPaginated,
-                                            PredictionHistoryParams,
-                                            PredictionHistoryResponse)
+from backend.app.schemas.prediction import (
+    PredictionHistoryPaginated,
+    PredictionHistoryParams,
+    PredictionHistoryResponse,
+)
 from backend.app.services import prediction_history_service
 
 router = APIRouter(prefix="/predictions", tags=["Prediction History"])
@@ -22,7 +24,9 @@ async def get_history(
     db: AsyncSession = Depends(get_db),
 ):
     """Get paginated prediction history with filters."""
-    return await prediction_history_service.get_history(db, current_user.id, params)
+    return await prediction_history_service.get_history(
+        db, current_user.id, params
+    )
 
 
 @router.get("/{prediction_id}", response_model=PredictionHistoryResponse)
@@ -50,7 +54,9 @@ async def delete_prediction(
     return None
 
 
-@router.post("/{prediction_id}/favorite", response_model=PredictionHistoryResponse)
+@router.post(
+    "/{prediction_id}/favorite", response_model=PredictionHistoryResponse
+)
 async def favorite_prediction(
     prediction_id: int,
     current_user: User = Depends(get_current_user),
@@ -62,7 +68,9 @@ async def favorite_prediction(
     )
 
 
-@router.delete("/{prediction_id}/favorite", response_model=PredictionHistoryResponse)
+@router.delete(
+    "/{prediction_id}/favorite", response_model=PredictionHistoryResponse
+)
 async def unfavorite_prediction(
     prediction_id: int,
     current_user: User = Depends(get_current_user),

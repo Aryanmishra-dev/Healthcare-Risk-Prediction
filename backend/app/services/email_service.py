@@ -162,7 +162,9 @@ def render_new_login(
     return subject, _base_html(subject, body)
 
 
-def render_security_alert(title: str, message: str, base_url: str) -> tuple[str, str]:
+def render_security_alert(
+    title: str, message: str, base_url: str
+) -> tuple[str, str]:
     """(subject, html) for a generic security alert."""
     subject = f"Security Alert: {title} — HealthPredict AI"
     body = f"""
@@ -221,7 +223,9 @@ def build_email(
 
     if notification_type == "email_verification":
         token = meta.get("verify_token", "")
-        verify_url = meta.get("verify_url") or f"{base_url}/auth/verify-email/{token}"
+        verify_url = (
+            meta.get("verify_url") or f"{base_url}/auth/verify-email/{token}"
+        )
         return render_email_verification(verify_url)
 
     if notification_type == "user_registration":
@@ -337,7 +341,9 @@ class SMTPEmailBackend(EmailBackend):
                 use_tls=self._use_tls,
                 start_tls=not self._use_tls,
             )
-            logger.info("smtp_email_sent | to=%s | subject=%s", to_address, subject)
+            logger.info(
+                "smtp_email_sent | to=%s | subject=%s", to_address, subject
+            )
             return True
 
         except Exception as exc:
@@ -361,8 +367,9 @@ def create_email_backend() -> EmailBackend:
       ``development``  → ``DevelopmentEmailBackend`` (default)
       ``smtp``         → ``SMTPEmailBackend``
     """
-    from backend.app.core.config import \
-        settings  # local import avoids circular
+    from backend.app.core.config import (  # local import avoids circular
+        settings,
+    )
 
     backend_name = getattr(settings, "email_backend", "development").lower()
 
@@ -396,7 +403,8 @@ def create_email_backend() -> EmailBackend:
 
     if backend_name != "development":
         logger.warning(
-            "unknown_email_backend=%s | defaulting to development", backend_name
+            "unknown_email_backend=%s | defaulting to development",
+            backend_name,
         )
     return DevelopmentEmailBackend()
 

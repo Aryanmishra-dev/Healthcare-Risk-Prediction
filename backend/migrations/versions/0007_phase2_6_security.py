@@ -20,20 +20,24 @@ depends_on = None
 def upgrade() -> None:
     # 1. Update user_sessions table
     op.add_column(
-        "user_sessions", sa.Column("device_name", sa.String(length=100), nullable=True)
+        "user_sessions",
+        sa.Column("device_name", sa.String(length=100), nullable=True),
     )
     op.add_column(
-        "user_sessions", sa.Column("browser", sa.String(length=100), nullable=True)
+        "user_sessions",
+        sa.Column("browser", sa.String(length=100), nullable=True),
     )
     op.add_column(
         "user_sessions",
         sa.Column("operating_system", sa.String(length=100), nullable=True),
     )
     op.add_column(
-        "user_sessions", sa.Column("country", sa.String(length=100), nullable=True)
+        "user_sessions",
+        sa.Column("country", sa.String(length=100), nullable=True),
     )
     op.add_column(
-        "user_sessions", sa.Column("city", sa.String(length=100), nullable=True)
+        "user_sessions",
+        sa.Column("city", sa.String(length=100), nullable=True),
     )
     op.add_column(
         "user_sessions",

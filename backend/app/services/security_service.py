@@ -7,14 +7,21 @@ from fastapi import HTTPException
 from sqlalchemy import desc, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.models.user import (LoginHistory, SecurityEvent, UserSession,
-                                     utc_now)
-from backend.app.schemas.security import (PaginatedLoginHistoryResponse,
-                                          PaginatedSecurityEventResponse,
-                                          PaginatedSessionResponse,
-                                          SecurityQueryParams)
-from backend.app.services.notifications.notification_service import \
-    notification_dispatcher
+from backend.app.models.user import (
+    LoginHistory,
+    SecurityEvent,
+    UserSession,
+    utc_now,
+)
+from backend.app.schemas.security import (
+    PaginatedLoginHistoryResponse,
+    PaginatedSecurityEventResponse,
+    PaginatedSessionResponse,
+    SecurityQueryParams,
+)
+from backend.app.services.notifications.notification_service import (
+    notification_dispatcher,
+)
 
 
 async def get_active_sessions(
@@ -30,7 +37,10 @@ async def get_active_sessions(
         )
     elif params.status == "revoked":
         query = query.where(
-            or_(UserSession.is_revoked == True, UserSession.revoked_at.is_not(None))
+            or_(
+                UserSession.is_revoked == True,
+                UserSession.revoked_at.is_not(None),
+            )
         )
 
     count_query = select(func.count()).select_from(query.subquery())
@@ -49,7 +59,11 @@ async def get_active_sessions(
     pages = math.ceil(total / params.size) if total > 0 else 0
 
     return PaginatedSessionResponse(
-        items=items, total=total, page=params.page, size=params.size, pages=pages
+        items=items,
+        total=total,
+        page=params.page,
+        size=params.size,
+        pages=pages,
     )
 
 
@@ -115,7 +129,9 @@ async def get_login_history(
 
     offset = (params.page - 1) * params.size
     query = (
-        query.order_by(desc(LoginHistory.login_time)).offset(offset).limit(params.size)
+        query.order_by(desc(LoginHistory.login_time))
+        .offset(offset)
+        .limit(params.size)
     )
 
     result = await db.execute(query)
@@ -124,7 +140,11 @@ async def get_login_history(
     pages = math.ceil(total / params.size) if total > 0 else 0
 
     return PaginatedLoginHistoryResponse(
-        items=items, total=total, page=params.page, size=params.size, pages=pages
+        items=items,
+        total=total,
+        page=params.page,
+        size=params.size,
+        pages=pages,
     )
 
 
@@ -141,7 +161,9 @@ async def get_security_events(
 
     offset = (params.page - 1) * params.size
     query = (
-        query.order_by(desc(SecurityEvent.created_at)).offset(offset).limit(params.size)
+        query.order_by(desc(SecurityEvent.created_at))
+        .offset(offset)
+        .limit(params.size)
     )
 
     result = await db.execute(query)
@@ -150,5 +172,9 @@ async def get_security_events(
     pages = math.ceil(total / params.size) if total > 0 else 0
 
     return PaginatedSecurityEventResponse(
-        items=items, total=total, page=params.page, size=params.size, pages=pages
+        items=items,
+        total=total,
+        page=params.page,
+        size=params.size,
+        pages=pages,
     )

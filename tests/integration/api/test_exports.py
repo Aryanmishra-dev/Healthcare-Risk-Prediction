@@ -1,9 +1,12 @@
-import pytest
-import pytest_asyncio
 import uuid
 from unittest.mock import patch
-from httpx import AsyncClient, ASGITransport
+
+import pytest
+import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
+
 from backend.app.main import app
+
 
 @pytest_asyncio.fixture(scope="module")
 async def client():
@@ -14,6 +17,7 @@ async def client():
     ) as ac:
         yield ac
 
+
 @pytest.mark.asyncio
 class TestDataExports:
     async def get_token(self, client: AsyncClient) -> str:
@@ -23,15 +27,12 @@ class TestDataExports:
             json={
                 "email": unique_email,
                 "password": "Password123!",
-                "full_name": "Export Test User"
-            }
+                "full_name": "Export Test User",
+            },
         )
         login_response = await client.post(
             "/auth/login",
-            json={
-                "email": unique_email,
-                "password": "Password123!"
-            }
+            json={"email": unique_email, "password": "Password123!"},
         )
         data = login_response.json()
         if "access_token" not in data:
@@ -40,39 +41,60 @@ class TestDataExports:
 
     async def test_request_export(self, client: AsyncClient):
         token = await self.get_token(client)
-        headers = {"Authorization": f"Bearer {token}", "X-API-Key": "test-dev-api-key"}
-        
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "X-API-Key": "test-dev-api-key",
+        }
+
         response = await client.post(
             "/api/v1/exports",
             json={"export_format": "json"},
             headers=headers,
         )
         if response.status_code != 202:
-            print("Export request failed. Status:", response.status_code, "Body:", response.json())
+            print(
+                "Export request failed. Status:",
+                response.status_code,
+                "Body:",
+                response.json(),
+            )
         assert response.status_code == 202
         data = response.json()
         assert data["export_format"] == "json"
+
     async def test_request_export_duplicate(self, client: AsyncClient):
         token = await self.get_token(client)
-        headers = {"Authorization": f"Bearer {token}", "X-API-Key": "test-dev-api-key"}
-        
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "X-API-Key": "test-dev-api-key",
+        }
+
         with patch("fastapi.BackgroundTasks.add_task"):
-            await client.post("/api/v1/exports", json={"export_format": "json"}, headers=headers)
-            
+            await client.post(
+                "/api/v1/exports",
+                json={"export_format": "json"},
+                headers=headers,
+            )
+
             response = await client.post(
                 "/api/v1/exports",
                 json={"export_format": "json"},
                 headers=headers,
             )
         assert response.status_code == 409
-        
+
     async def test_list_exports(self, client: AsyncClient):
         token = await self.get_token(client)
-        headers = {"Authorization": f"Bearer {token}", "X-API-Key": "test-dev-api-key"}
-        
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "X-API-Key": "test-dev-api-key",
+        }
+
         # Create one export
-        await client.post("/api/v1/exports", json={"export_format": "json"}, headers=headers)
-        
+        await client.post(
+            "/api/v1/exports", json={"export_format": "json"}, headers=headers
+        )
+
         response = await client.get("/api/v1/exports", headers=headers)
         assert response.status_code == 200
         data = response.json()

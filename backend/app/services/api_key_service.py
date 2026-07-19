@@ -68,7 +68,9 @@ class ApiKeyService:
         return api_key, raw_key
 
     @staticmethod
-    async def validate_api_key(db: AsyncSession, raw_key: str) -> Optional[ApiKey]:
+    async def validate_api_key(
+        db: AsyncSession, raw_key: str
+    ) -> Optional[ApiKey]:
         """Validate an API key and update its last_used_at timestamp.
         Returns the ApiKey object if valid, else None."""
         prefix = ApiKeyService.get_prefix(raw_key)
@@ -104,7 +106,9 @@ class ApiKeyService:
         db: AsyncSession, tenant_id: uuid.UUID, key_id: uuid.UUID
     ) -> bool:
         """Revoke an API key by setting is_active to False."""
-        stmt = select(ApiKey).where(ApiKey.id == key_id, ApiKey.tenant_id == tenant_id)
+        stmt = select(ApiKey).where(
+            ApiKey.id == key_id, ApiKey.tenant_id == tenant_id
+        )
         result = await db.execute(stmt)
         api_key = result.scalar_one_or_none()
 

@@ -87,7 +87,9 @@ def cached(expire: int = 30):
             result = await func(*args, **kwargs)
 
             try:
-                await cache_service.set(cache_key, json.dumps(result), expire=expire)
+                await cache_service.set(
+                    cache_key, json.dumps(result), expire=expire
+                )
             except Exception:
                 pass
 

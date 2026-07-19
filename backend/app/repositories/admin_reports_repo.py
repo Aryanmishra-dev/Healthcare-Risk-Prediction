@@ -12,7 +12,8 @@ class AdminReportsRepository:
     async def get_report_stats(db: AsyncSession) -> Dict[str, Any]:
         """Aggregate report statuses and processing errors."""
         stmt = select(
-            UserReport.processing_status, func.count(UserReport.id).label("count")
+            UserReport.processing_status,
+            func.count(UserReport.id).label("count"),
         ).group_by(UserReport.processing_status)
 
         result = await db.execute(stmt)
@@ -26,8 +27,14 @@ class AdminReportsRepository:
         return {"statuses": stats, "total_reports": sum(stats.values())}
 
     @staticmethod
-    async def get_recent_reports(db: AsyncSession, limit: int = 50) -> List[UserReport]:
+    async def get_recent_reports(
+        db: AsyncSession, limit: int = 50
+    ) -> List[UserReport]:
         """Get recently uploaded reports."""
-        stmt = select(UserReport).order_by(desc(UserReport.created_at)).limit(limit)
+        stmt = (
+            select(UserReport)
+            .order_by(desc(UserReport.created_at))
+            .limit(limit)
+        )
         result = await db.execute(stmt)
         return list(result.scalars().all())

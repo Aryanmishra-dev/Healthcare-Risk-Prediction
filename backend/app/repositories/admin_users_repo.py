@@ -37,15 +37,21 @@ class AdminUsersRepository:
         return await db.scalar(stmt) or 0
 
     @staticmethod
-    async def get_user_by_id(db: AsyncSession, user_id: UUID) -> Optional[User]:
+    async def get_user_by_id(
+        db: AsyncSession, user_id: UUID
+    ) -> Optional[User]:
         return await db.get(User, user_id)
 
     @staticmethod
-    async def get_active_sessions(db: AsyncSession, user_id: UUID) -> List[UserSession]:
+    async def get_active_sessions(
+        db: AsyncSession, user_id: UUID
+    ) -> List[UserSession]:
         """Get all unrevoked active sessions for a user."""
         stmt = (
             select(UserSession)
-            .where(UserSession.user_id == user_id, UserSession.is_revoked == False)
+            .where(
+                UserSession.user_id == user_id, UserSession.is_revoked == False
+            )
             .order_by(desc(UserSession.last_activity))
         )
         result = await db.execute(stmt)

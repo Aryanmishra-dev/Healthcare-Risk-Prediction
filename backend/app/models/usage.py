@@ -1,8 +1,14 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import (BigInteger, Column, DateTime, ForeignKey, Integer,
-                        String)
+from sqlalchemy import (
+    BigInteger,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+)
 from sqlalchemy.dialects.postgresql import UUID
 
 from backend.app.models.base import Base, utc_now
@@ -53,5 +59,8 @@ class TenantQuota(Base):
         DateTime(timezone=True), default=utc_now, nullable=False
     )
     updated_at: datetime = Column(
-        DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+        nullable=False,
     )

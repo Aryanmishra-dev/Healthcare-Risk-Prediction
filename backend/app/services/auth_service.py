@@ -6,12 +6,20 @@ from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from backend.app.auth.utils import (create_access_token, create_refresh_token,
-                                    hash_password, parse_user_agent,
-                                    verify_password)
+from backend.app.auth.utils import (
+    create_access_token,
+    create_refresh_token,
+    hash_password,
+    parse_user_agent,
+    verify_password,
+)
 from backend.app.core.config import settings
-from backend.app.models.user import (LoginHistory, SecurityEvent, User,
-                                     UserSession)
+from backend.app.models.user import (
+    LoginHistory,
+    SecurityEvent,
+    User,
+    UserSession,
+)
 from backend.app.schemas.user import UserCreate
 
 
@@ -28,7 +36,9 @@ async def get_user_by_id(db: AsyncSession, user_id: uuid.UUID) -> User | None:
 async def create_user(db: AsyncSession, user_in: UserCreate) -> User:
     existing_user = await get_user_by_email(db, user_in.email)
     if existing_user:
-        raise HTTPException(status_code=409, detail="Email is already registered")
+        raise HTTPException(
+            status_code=409, detail="Email is already registered"
+        )
 
     user = User(
         email=user_in.email,
@@ -76,7 +86,9 @@ async def create_session(
 
     await db.flush()
 
-    access_token = create_access_token({"sub": str(user_id), "sid": str(session.id)})
+    access_token = create_access_token(
+        {"sub": str(user_id), "sid": str(session.id)}
+    )
     return access_token, refresh_token
 
 

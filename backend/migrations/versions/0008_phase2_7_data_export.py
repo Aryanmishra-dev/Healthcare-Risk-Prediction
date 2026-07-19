@@ -30,21 +30,31 @@ def upgrade() -> None:
     op.add_column(
         "data_exports",
         sa.Column(
-            "export_type", sa.String(length=100), server_default="full", nullable=False
+            "export_type",
+            sa.String(length=100),
+            server_default="full",
+            nullable=False,
         ),
     )
     op.add_column(
         "data_exports",
         sa.Column(
-            "export_format", sa.String(length=50), server_default="json", nullable=False
+            "export_format",
+            sa.String(length=50),
+            server_default="json",
+            nullable=False,
         ),
     )
     op.add_column(
-        "data_exports", sa.Column("file_name", sa.String(length=255), nullable=True)
+        "data_exports",
+        sa.Column("file_name", sa.String(length=255), nullable=True),
     )
-    op.add_column("data_exports", sa.Column("file_size", sa.Integer(), nullable=True))
     op.add_column(
-        "data_exports", sa.Column("checksum", sa.String(length=255), nullable=True)
+        "data_exports", sa.Column("file_size", sa.Integer(), nullable=True)
+    )
+    op.add_column(
+        "data_exports",
+        sa.Column("checksum", sa.String(length=255), nullable=True),
     )
     op.add_column(
         "data_exports",

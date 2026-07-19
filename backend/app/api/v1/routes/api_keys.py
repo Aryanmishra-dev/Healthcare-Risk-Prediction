@@ -8,8 +8,11 @@ from backend.app.api.dependencies import RequirePermission, get_current_tenant
 from backend.app.auth.router import get_current_user
 from backend.app.core.database import get_db
 from backend.app.models.user import User
-from backend.app.schemas.api_key import (ApiKeyCreate, ApiKeyCreateResponse,
-                                         ApiKeyResponse)
+from backend.app.schemas.api_key import (
+    ApiKeyCreate,
+    ApiKeyCreateResponse,
+    ApiKeyResponse,
+)
 from backend.app.services.api_key_service import ApiKeyService
 from backend.app.services.authorization_service import Permission
 
@@ -17,12 +20,14 @@ router = APIRouter(prefix="/api-keys", tags=["API Keys"])
 
 
 @router.post(
-    "", response_model=ApiKeyCreateResponse, status_code=status.HTTP_201_CREATED
+    "",
+    response_model=ApiKeyCreateResponse,
+    status_code=status.HTTP_201_CREATED,
 )
 async def create_api_key(
     schema: ApiKeyCreate,
-    tenant_id: uuid.UUID = Depends(get_current_tenant),
     current_user: User = Depends(get_current_user),
+    tenant_id: uuid.UUID = Depends(get_current_tenant),
     db: AsyncSession = Depends(get_db),
     _=Depends(RequirePermission(Permission.MANAGE_API_KEYS)),
 ):
@@ -46,6 +51,7 @@ async def create_api_key(
 
 @router.get("", response_model=List[ApiKeyResponse])
 async def list_api_keys(
+    current_user: User = Depends(get_current_user),
     tenant_id: uuid.UUID = Depends(get_current_tenant),
     db: AsyncSession = Depends(get_db),
     _=Depends(RequirePermission(Permission.MANAGE_API_KEYS)),
@@ -59,6 +65,7 @@ async def list_api_keys(
 @router.get("/{key_id}", response_model=ApiKeyResponse)
 async def get_api_key(
     key_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
     tenant_id: uuid.UUID = Depends(get_current_tenant),
     db: AsyncSession = Depends(get_db),
     _=Depends(RequirePermission(Permission.MANAGE_API_KEYS)),
@@ -79,8 +86,8 @@ async def get_api_key(
 )
 async def rotate_api_key(
     key_id: uuid.UUID,
-    tenant_id: uuid.UUID = Depends(get_current_tenant),
     current_user: User = Depends(get_current_user),
+    tenant_id: uuid.UUID = Depends(get_current_tenant),
     db: AsyncSession = Depends(get_db),
     _=Depends(RequirePermission(Permission.MANAGE_API_KEYS)),
 ):
@@ -105,6 +112,7 @@ async def rotate_api_key(
 @router.delete("/{key_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def revoke_api_key(
     key_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
     tenant_id: uuid.UUID = Depends(get_current_tenant),
     db: AsyncSession = Depends(get_db),
     _=Depends(RequirePermission(Permission.MANAGE_API_KEYS)),

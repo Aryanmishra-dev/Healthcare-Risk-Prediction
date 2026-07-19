@@ -2,8 +2,9 @@ from typing import Any, Dict
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.repositories.admin_analytics_repo import \
-    AdminAnalyticsRepository
+from backend.app.repositories.admin_analytics_repo import (
+    AdminAnalyticsRepository,
+)
 from backend.app.services.cache_service import cached
 
 
@@ -26,10 +27,14 @@ class AdminDashboardService:
         """
         Get charting data (predictions over time, disease distribution, etc.).
         """
-        predictions_trend = await AdminAnalyticsRepository.get_predictions_over_time(
-            db, days=30
+        predictions_trend = (
+            await AdminAnalyticsRepository.get_predictions_over_time(
+                db, days=30
+            )
         )
-        disease_dist = await AdminAnalyticsRepository.get_disease_distribution(db)
+        disease_dist = await AdminAnalyticsRepository.get_disease_distribution(
+            db
+        )
 
         return {
             "predictions_trend": predictions_trend,

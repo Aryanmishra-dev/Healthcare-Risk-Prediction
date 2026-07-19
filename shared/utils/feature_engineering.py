@@ -6,8 +6,8 @@ creation so the same transformations can be applied in both the training
 notebook and the production inference path.
 """
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 # ── Raw BRFSS columns we use ───────────────────────────────────────────────
 BRFSS_COLUMNS = [
@@ -35,9 +35,19 @@ RENAME_MAP = {
 }
 
 FEATURE_COLS = [
-    "bmi", "age_group", "high_bp", "smoker", "high_cholesterol",
-    "physical_activity", "general_health", "mental_health",
-    "bmi_age", "bmi_bp", "age_bp", "chol_bmi", "health_bmi",
+    "bmi",
+    "age_group",
+    "high_bp",
+    "smoker",
+    "high_cholesterol",
+    "physical_activity",
+    "general_health",
+    "mental_health",
+    "bmi_age",
+    "bmi_bp",
+    "age_bp",
+    "chol_bmi",
+    "health_bmi",
 ]
 
 
@@ -95,10 +105,10 @@ def clean(df: pd.DataFrame) -> pd.DataFrame:
 def add_interaction_features(df: pd.DataFrame) -> pd.DataFrame:
     """Create the five interaction terms used by the model."""
     df = df.copy()
-    df["bmi_age"]    = df["bmi"] * df["age_group"]
-    df["bmi_bp"]     = df["bmi"] * df["high_bp"]
-    df["age_bp"]     = df["age_group"] * df["high_bp"]
-    df["chol_bmi"]   = df["high_cholesterol"] * df["bmi"]
+    df["bmi_age"] = df["bmi"] * df["age_group"]
+    df["bmi_bp"] = df["bmi"] * df["high_bp"]
+    df["age_bp"] = df["age_group"] * df["high_bp"]
+    df["chol_bmi"] = df["high_cholesterol"] * df["bmi"]
     df["health_bmi"] = df["general_health"] * df["bmi"]
     return df
 
@@ -128,18 +138,18 @@ def build_feature_vector(
         mental_health:     0-30 (days of poor mental health; 0=none)
     """
     features = {
-        "bmi":               bmi,
-        "age_group":         age_group,
-        "high_bp":           high_bp,
-        "smoker":            smoker,
-        "high_cholesterol":  high_cholesterol,
+        "bmi": bmi,
+        "age_group": age_group,
+        "high_bp": high_bp,
+        "smoker": smoker,
+        "high_cholesterol": high_cholesterol,
         "physical_activity": physical_activity,
-        "general_health":    general_health,
-        "mental_health":     mental_health,
-        "bmi_age":           bmi * age_group,
-        "bmi_bp":            bmi * high_bp,
-        "age_bp":            age_group * high_bp,
-        "chol_bmi":          high_cholesterol * bmi,
-        "health_bmi":        general_health * bmi,
+        "general_health": general_health,
+        "mental_health": mental_health,
+        "bmi_age": bmi * age_group,
+        "bmi_bp": bmi * high_bp,
+        "age_bp": age_group * high_bp,
+        "chol_bmi": high_cholesterol * bmi,
+        "health_bmi": general_health * bmi,
     }
     return pd.DataFrame([features]).astype(np.float64)

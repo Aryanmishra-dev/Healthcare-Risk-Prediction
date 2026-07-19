@@ -6,9 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.app.api.dependencies import RequireRole
 from backend.app.core.database import get_db
 from backend.app.core.enums import UserRole
-from backend.app.schemas.security import (AdminActionResponse,
-                                          LoginHistoryResponse,
-                                          SecurityEventResponse)
+from backend.app.schemas.security import (
+    AdminActionResponse,
+    LoginHistoryResponse,
+    SecurityEventResponse,
+)
 from backend.app.services.admin.security_service import AdminSecurityService
 
 router = APIRouter(prefix="/security", tags=["Admin Security"])

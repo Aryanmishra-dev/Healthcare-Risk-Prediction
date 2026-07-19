@@ -20,12 +20,16 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     op.add_column(
-        "user_profiles", sa.Column("avatar_url", sa.String(length=500), nullable=True)
+        "user_profiles",
+        sa.Column("avatar_url", sa.String(length=500), nullable=True),
     )
     op.add_column(
         "user_profiles",
         sa.Column(
-            "timezone", sa.String(length=50), server_default="UTC", nullable=True
+            "timezone",
+            sa.String(length=50),
+            server_default="UTC",
+            nullable=True,
         ),
     )
 

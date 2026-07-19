@@ -14,7 +14,11 @@ class AdminAuditRepository:
         db: AsyncSession, limit: int = 50
     ) -> List[AdminAction]:
         """Get recent actions performed by admins."""
-        stmt = select(AdminAction).order_by(desc(AdminAction.created_at)).limit(limit)
+        stmt = (
+            select(AdminAction)
+            .order_by(desc(AdminAction.created_at))
+            .limit(limit)
+        )
         result = await db.execute(stmt)
         return list(result.scalars().all())
 
@@ -24,7 +28,9 @@ class AdminAuditRepository:
     ) -> List[SecurityEvent]:
         """Get recent high-severity security events."""
         stmt = (
-            select(SecurityEvent).order_by(desc(SecurityEvent.created_at)).limit(limit)
+            select(SecurityEvent)
+            .order_by(desc(SecurityEvent.created_at))
+            .limit(limit)
         )
         result = await db.execute(stmt)
         return list(result.scalars().all())

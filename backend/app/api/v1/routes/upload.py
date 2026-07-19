@@ -42,7 +42,9 @@ async def extract_from_text(payload: TextExtractionRequest):
     logger.info(
         "text_pipeline_complete",
         extra={
-            "entities_found": sum(1 for v in entities.values() if v is not None),
+            "entities_found": sum(
+                1 for v in entities.values() if v is not None
+            ),
         },
     )
 
@@ -117,7 +119,9 @@ async def process_uploaded_document(file: UploadFile):
     logger.info(
         "document_pipeline_complete",
         extra={
-            "entities_found": sum(1 for v in entities.values() if v is not None),
+            "entities_found": sum(
+                1 for v in entities.values() if v is not None
+            ),
         },
     )
 

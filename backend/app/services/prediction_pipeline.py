@@ -8,8 +8,11 @@ from backend.app.models.base import utc_now
 from backend.app.models.prediction import PredictionAuditLog
 from backend.app.services.model_manager import model_manager
 from backend.app.services.model_registry_service import model_registry_service
-from backend.app.services.shap_explainer import (explain_diabetes,
-                                                 explain_heart, explain_lung)
+from backend.app.services.shap_explainer import (
+    explain_diabetes,
+    explain_heart,
+    explain_lung,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +43,9 @@ class PredictionPipeline:
         # 2. Model Selection (find active model version)
         # Note: We aren't passing the DB session here because this pipeline runs per-request
         # For full implementation, we'd inject DB session. For now we use the version from memory.
-        model_status = model_manager.get_health_status()["models"].get(disease, {})
+        model_status = model_manager.get_health_status()["models"].get(
+            disease, {}
+        )
         model_version = model_status.get("version", "local")
 
         # 3. Feature Engineering & Prediction & Calibration

@@ -4,13 +4,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.app.auth.router import get_current_user
 from backend.app.core.database import get_db
 from backend.app.models.user import User
-from backend.app.schemas.user_dashboard import (AccountResponse,
-                                                DashboardResponse,
-                                                UserProfileResponse,
-                                                UserProfileUpdate,
-                                                UserSettingsResponse,
-                                                UserSettingsUpdate,
-                                                UserStatisticsResponse)
+from backend.app.schemas.user_dashboard import (
+    AccountResponse,
+    DashboardResponse,
+    UserProfileResponse,
+    UserProfileUpdate,
+    UserSettingsResponse,
+    UserSettingsUpdate,
+    UserStatisticsResponse,
+)
 from backend.app.services import user_dashboard_service
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -31,11 +33,15 @@ async def get_profile(
     db: AsyncSession = Depends(get_db),
 ):
     """Get the user's profile."""
-    profile = await user_dashboard_service.get_or_create_profile(db, current_user.id)
+    profile = await user_dashboard_service.get_or_create_profile(
+        db, current_user.id
+    )
     # The response schema expects some fields from the User object and some from UserProfile
     profile.full_name = current_user.full_name
     # Since language is conceptually in settings, we fetch it too
-    settings = await user_dashboard_service.get_or_create_settings(db, current_user.id)
+    settings = await user_dashboard_service.get_or_create_settings(
+        db, current_user.id
+    )
     profile.language = settings.language
     return profile
 
@@ -47,7 +53,9 @@ async def update_profile(
     db: AsyncSession = Depends(get_db),
 ):
     """Update the user's profile."""
-    return await user_dashboard_service.update_user_profile(db, current_user, data)
+    return await user_dashboard_service.update_user_profile(
+        db, current_user, data
+    )
 
 
 @router.get("/settings", response_model=UserSettingsResponse)
@@ -56,7 +64,9 @@ async def get_settings(
     db: AsyncSession = Depends(get_db),
 ):
     """Get the user's settings."""
-    return await user_dashboard_service.get_or_create_settings(db, current_user.id)
+    return await user_dashboard_service.get_or_create_settings(
+        db, current_user.id
+    )
 
 
 @router.patch("/settings", response_model=UserSettingsResponse)
@@ -66,7 +76,9 @@ async def update_settings(
     db: AsyncSession = Depends(get_db),
 ):
     """Update the user's settings."""
-    return await user_dashboard_service.update_user_settings(db, current_user.id, data)
+    return await user_dashboard_service.update_user_settings(
+        db, current_user.id, data
+    )
 
 
 @router.get("/account", response_model=AccountResponse)
@@ -84,4 +96,6 @@ async def get_statistics(
     db: AsyncSession = Depends(get_db),
 ):
     """Get the user's statistics."""
-    return await user_dashboard_service.get_user_statistics(db, current_user.id)
+    return await user_dashboard_service.get_user_statistics(
+        db, current_user.id
+    )

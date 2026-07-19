@@ -9,16 +9,17 @@ Run: python -m ml.models.generate_stubs
 """
 
 import os
+
 import joblib
 
 from ml.models.stubs import (
+    HEART_FEATURES,
+    LUNG_FEATURES,
+    StubCalibrator,
     StubDiabetesClassifier,
     StubHeartClassifier,
     StubLungClassifier,
-    StubCalibrator,
     StubScaler,
-    HEART_FEATURES,
-    LUNG_FEATURES,
 )
 
 MODEL_DIR = os.path.dirname(os.path.abspath(__file__))

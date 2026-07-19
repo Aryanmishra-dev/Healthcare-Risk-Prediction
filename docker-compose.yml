@@ -1,0 +1,15 @@
+# Convenience alias — starts dev services (PostgreSQL + Redis).
+# Full stack: docker compose -f deployment/docker/docker-compose.yml up
+services:
+  db:
+    extends:
+      file: deployment/docker/docker-compose.dev.yml
+      service: db
+
+  redis:
+    extends:
+      file: deployment/docker/docker-compose.dev.yml
+      service: redis
+
+volumes:
+  postgres_data:

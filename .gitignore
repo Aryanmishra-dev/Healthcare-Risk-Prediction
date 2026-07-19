@@ -159,13 +159,34 @@ healthcare.db
 !backend/migrations/versions/*.py
 
 # Runtime data directories (user-uploaded content, exports — PII risk)
-exports_data/
-uploads/
-backend/exports_data/
-backend/uploads/
+exports_data/*
+!exports_data/.gitkeep
+uploads/*
+!uploads/.gitkeep
+backend/exports_data/*
+!backend/exports_data/.gitkeep
+backend/uploads/*
+!backend/uploads/.gitkeep
 
 # Runtime logs
 test_output.log
 
 # Cookie / token dumps
 scripts/cookies.txt
+
+# Local AI IDE Tooling
+.agents/
+
+# Runtime generated config
+ml/registry/model_registry.json
+mlruns.db
+
+# Phase / workspace output from GSD
+.planning/
+*.phase/
+
+# Editor temporary files
+*.swp
+*.swo
+*~
+

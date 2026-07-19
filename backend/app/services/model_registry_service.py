@@ -7,8 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.models.base import utc_now
 from backend.app.models.model_version import ModelVersion
-from backend.app.schemas.model_version import (ModelVersionCreate,
-                                               ModelVersionUpdate)
+from backend.app.schemas.model_version import (
+    ModelVersionCreate,
+    ModelVersionUpdate,
+)
 
 
 class ModelRegistryService:
@@ -60,7 +62,9 @@ class ModelRegistryService:
         """Promote a model to Production, archiving the previous active one."""
         target_model = await db.get(ModelVersion, model_id)
         if not target_model:
-            raise HTTPException(status_code=404, detail="Model version not found")
+            raise HTTPException(
+                status_code=404, detail="Model version not found"
+            )
 
         if target_model.status == "Production":
             raise HTTPException(
@@ -86,7 +90,9 @@ class ModelRegistryService:
         """Rollback to a previous model (promotes the old model, deprecates current)."""
         target_model = await db.get(ModelVersion, model_id)
         if not target_model:
-            raise HTTPException(status_code=404, detail="Model version not found")
+            raise HTTPException(
+                status_code=404, detail="Model version not found"
+            )
 
         active_model = await self.get_active_model(db, target_model.disease)
         if active_model and active_model.id != target_model.id:
@@ -107,7 +113,9 @@ class ModelRegistryService:
         """Archive a model (e.g. if it's no longer useful)."""
         target_model = await db.get(ModelVersion, model_id)
         if not target_model:
-            raise HTTPException(status_code=404, detail="Model version not found")
+            raise HTTPException(
+                status_code=404, detail="Model version not found"
+            )
 
         if target_model.status == "Production":
             raise HTTPException(
@@ -122,6 +130,16 @@ class ModelRegistryService:
         await db.refresh(target_model)
         return target_model
 
+    async def list_models(
+        self, db: AsyncSession, disease_type: str = None
+    ) -> List[ModelVersion]:
+        """List all model versions, optionally filtered by disease."""
+        query = select(ModelVersion).order_by(desc(ModelVersion.created_at))
+        if disease_type:
+            query = query.where(ModelVersion.disease == disease_type)
+        result = await db.execute(query)
+        return list(result.scalars().all())
+
     async def compare_models(
         self, db: AsyncSession, model_id_1: uuid.UUID, model_id_2: uuid.UUID
     ) -> Dict[str, Any]:
@@ -130,7 +148,9 @@ class ModelRegistryService:
         m2 = await db.get(ModelVersion, model_id_2)
 
         if not m1 or not m2:
-            raise HTTPException(status_code=404, detail="One or both models not found")
+            raise HTTPException(
+                status_code=404, detail="One or both models not found"
+            )
 
         m1_metrics = m1.metrics or {}
         m2_metrics = m2.metrics or {}
@@ -140,12 +160,18 @@ class ModelRegistryService:
         for k in all_keys:
             val1 = m1_metrics.get(k, 0)
             val2 = m2_metrics.get(k, 0)
-            if isinstance(val1, (int, float)) and isinstance(val2, (int, float)):
+            if isinstance(val1, (int, float)) and isinstance(
+                val2, (int, float)
+            ):
                 diff[k] = val1 - val2
             else:
                 diff[k] = f"{val1} -> {val2}"
 
-        return {"model_name": m1.model_name, "versions": [m1, m2], "metrics_diff": diff}
+        return {
+            "model_name": m1.model_name,
+            "versions": [m1, m2],
+            "metrics_diff": diff,
+        }
 
 
 model_registry_service = ModelRegistryService()

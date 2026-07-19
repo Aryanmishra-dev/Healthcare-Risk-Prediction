@@ -12,7 +12,9 @@ class RegisterRequest(BaseModel):
     @classmethod
     def password_strength(cls, value: str) -> str:
         if not any(ch.isupper() for ch in value):
-            raise ValueError("Password must include at least one uppercase letter.")
+            raise ValueError(
+                "Password must include at least one uppercase letter."
+            )
         if not any(ch.isdigit() for ch in value):
             raise ValueError("Password must include at least one number.")
         return value

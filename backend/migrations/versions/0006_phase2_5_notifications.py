@@ -33,32 +33,46 @@ def upgrade() -> None:
     op.add_column(
         "notifications",
         sa.Column(
-            "category", sa.String(length=50), server_default="General", nullable=False
+            "category",
+            sa.String(length=50),
+            server_default="General",
+            nullable=False,
         ),
     )
     op.add_column(
         "notifications",
         sa.Column(
-            "priority", sa.String(length=20), server_default="NORMAL", nullable=False
+            "priority",
+            sa.String(length=20),
+            server_default="NORMAL",
+            nullable=False,
         ),
     )
     op.add_column(
         "notifications",
         sa.Column(
-            "status", sa.String(length=20), server_default="pending", nullable=False
+            "status",
+            sa.String(length=20),
+            server_default="pending",
+            nullable=False,
         ),
     )
     op.add_column(
         "notifications",
         sa.Column(
-            "channel", sa.String(length=20), server_default="in_app", nullable=False
+            "channel",
+            sa.String(length=20),
+            server_default="in_app",
+            nullable=False,
         ),
     )
     op.add_column(
-        "notifications", sa.Column("read_at", sa.DateTime(timezone=True), nullable=True)
+        "notifications",
+        sa.Column("read_at", sa.DateTime(timezone=True), nullable=True),
     )
     op.add_column(
-        "notifications", sa.Column("metadata_payload", sa.JSON(), nullable=True)
+        "notifications",
+        sa.Column("metadata_payload", sa.JSON(), nullable=True),
     )
     op.add_column(
         "notifications",

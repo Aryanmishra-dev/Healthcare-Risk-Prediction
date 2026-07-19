@@ -10,18 +10,23 @@ Covers:
 
 import io
 import os
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 
-from backend.app.services.medical_nlp import extract_clinical_entities
 from backend.app.services.feature_mapper import (
+    map_to_all_models,
     map_to_diabetes_features,
     map_to_heart_features,
     map_to_lung_features,
-    map_to_all_models,
 )
-from backend.app.utils.file_validation import validate_mime_type, sanitize_filename, MAX_FILE_SIZE_BYTES
+from backend.app.services.medical_nlp import extract_clinical_entities
+from backend.app.utils.file_validation import (
+    MAX_FILE_SIZE_BYTES,
+    sanitize_filename,
+    validate_mime_type,
+)
 
 VALID_API_KEY = os.environ.get("DEV_API_KEY", "test-dev-api-key")
 
@@ -30,10 +35,14 @@ VALID_API_KEY = os.environ.get("DEV_API_KEY", "test-dev-api-key")
 #  File Validation Tests
 # ══════════════════════════════════════════════════════════════════════════
 
+
 class TestFileValidation:
 
     def test_valid_pdf_mime(self):
-        assert validate_mime_type("application/pdf", "report.pdf") == "application/pdf"
+        assert (
+            validate_mime_type("application/pdf", "report.pdf")
+            == "application/pdf"
+        )
 
     def test_valid_jpeg_mime(self):
         assert validate_mime_type("image/jpeg", "scan.jpg") == "image/jpeg"
@@ -43,6 +52,7 @@ class TestFileValidation:
 
     def test_invalid_mime_raises(self):
         from fastapi import HTTPException
+
         with pytest.raises(HTTPException) as exc_info:
             validate_mime_type("text/plain", "notes.txt")
         assert exc_info.value.status_code == 400
@@ -72,6 +82,7 @@ class TestFileValidation:
 # ══════════════════════════════════════════════════════════════════════════
 #  Medical NLP Tests
 # ══════════════════════════════════════════════════════════════════════════
+
 
 class TestMedicalNLP:
 
@@ -184,7 +195,7 @@ class TestMedicalNLP:
         text = "Blood group: O+"
         entities = extract_clinical_entities(text)
         assert entities["blood_group"]["value"] == "O+"
-        
+
     def test_extract_blood_group_negative(self):
         text = "Type: AB negative"
         entities = extract_clinical_entities(text)
@@ -193,7 +204,10 @@ class TestMedicalNLP:
     def test_extract_medical_history(self):
         text = "Medical history: Patient has a history of asthma.\nDiagnosis:"
         entities = extract_clinical_entities(text)
-        assert entities["medical_history"]["value"] == "Patient has a history of asthma."
+        assert (
+            entities["medical_history"]["value"]
+            == "Patient has a history of asthma."
+        )
 
     def test_extract_diagnosis(self):
         text = "Diagnosis: Type 2 Diabetes Mellitus\nMedications:"
@@ -245,7 +259,10 @@ class TestMedicalNLP:
         assert entities["physical_activity"]["value"] == "inactive"
         assert entities["general_health"]["value"] == 4
         assert entities["mental_health"]["value"] == 8
-        assert entities["medical_history"]["value"] == "Hypertension, hyperlipidemia."
+        assert (
+            entities["medical_history"]["value"]
+            == "Hypertension, hyperlipidemia."
+        )
         assert entities["diagnosis"]["value"] == "Coronary artery disease."
         assert entities["medications"]["value"] == "Lisinopril, Atorvastatin."
 
@@ -253,6 +270,7 @@ class TestMedicalNLP:
 # ══════════════════════════════════════════════════════════════════════════
 #  Feature Mapper Tests
 # ══════════════════════════════════════════════════════════════════════════
+
 
 class TestFeatureMapper:
 
@@ -273,18 +291,18 @@ class TestFeatureMapper:
     def test_diabetes_mapping(self, sample_entities):
         result = map_to_diabetes_features(sample_entities)
         assert result["bmi"]["value"] == 27.4
-        assert result["bp"]["value"] == 1.0      # "high" → 1
+        assert result["bp"]["value"] == 1.0  # "high" → 1
         assert result["cholesterol"]["value"] == 0.0  # "normal" → 0
-        assert result["smoker"]["value"] == 0.0   # "no" → 0
-        assert result["activity"]["value"] == 1.0 # "active" → 1
+        assert result["smoker"]["value"] == 0.0  # "no" → 0
+        assert result["activity"]["value"] == 1.0  # "active" → 1
         assert result["health"]["value"] == 3.0
         assert result["mental"]["value"] == 5.0
-        assert result["age"]["value"] == 7.0      # 52 → group 7 (50-54)
+        assert result["age"]["value"] == 7.0  # 52 → group 7 (50-54)
 
     def test_heart_mapping(self, sample_entities):
         result = map_to_heart_features(sample_entities)
         assert result["hd_bmi"]["value"] == 27.4
-        assert result["hd_sex"]["value"] == 1     # "male" → 1
+        assert result["hd_sex"]["value"] == 1  # "male" → 1
         assert result["hd_high_bp"]["value"] == 1
         assert result["hd_high_chol"]["value"] == 0
         assert result["hd_smoker"]["value"] == 0
@@ -303,18 +321,31 @@ class TestFeatureMapper:
 
     def test_empty_entities_returns_empty(self):
         """All None entities should produce NO mapped features so UI isn't overwritten."""
-        entities = {k: None for k in [
-            "bmi", "blood_pressure", "cholesterol", "smoking",
-            "physical_activity", "general_health", "mental_health",
-            "age", "gender", "blood_group", "medical_history",
-            "diagnosis", "medications"
-        ]}
+        entities = {
+            k: None
+            for k in [
+                "bmi",
+                "blood_pressure",
+                "cholesterol",
+                "smoking",
+                "physical_activity",
+                "general_health",
+                "mental_health",
+                "age",
+                "gender",
+                "blood_group",
+                "medical_history",
+                "diagnosis",
+                "medications",
+            ]
+        }
         d = map_to_diabetes_features(entities)
         assert d == {}
 
     def test_age_group_mapping(self):
         """Test age-to-group conversion for various ages."""
         from backend.app.services.feature_mapper import _age_to_group
+
         assert _age_to_group(20) == 1.0
         assert _age_to_group(30) == 3.0
         assert _age_to_group(55) == 8.0
@@ -327,6 +358,7 @@ class TestFeatureMapper:
 # ══════════════════════════════════════════════════════════════════════════
 
 from backend.app.main import app, verify_csrf_token
+
 
 class TestUploadEndpoint:
     @pytest.fixture(autouse=True)
@@ -389,3 +421,55 @@ class TestUploadEndpoint:
         assert data["entities"]["blood_pressure"]["value"] == "high"
         assert data["entities"]["smoking"]["value"] == "no"
         assert data["mapped_features"]["diabetes"]["bmi"]["value"] == 28.5
+
+    @patch("backend.app.api.v1.routes.upload.parse_document")
+    def test_upload_parse_failure_returns_422(self, mock_parse, client):
+        """When parse_document raises, endpoint returns 422."""
+        mock_parse.side_effect = Exception("Corrupt file")
+        fake_file = io.BytesIO(b"some bytes")
+        resp = client.post(
+            "/api/v1/document/upload",
+            files={"file": ("bad.pdf", fake_file, "application/pdf")},
+            headers={"X-API-Key": VALID_API_KEY},
+        )
+        assert resp.status_code == 422
+        assert "Failed to extract text" in resp.json()["detail"]
+
+    @patch("backend.app.api.v1.routes.upload.parse_document")
+    def test_upload_no_text_returns_warning(self, mock_parse, client):
+        """When parse_document returns empty string, endpoint returns warning."""
+        mock_parse.return_value = ""
+        fake_file = io.BytesIO(b"pdf content")
+        resp = client.post(
+            "/api/v1/document/upload",
+            files={"file": ("blank.pdf", fake_file, "application/pdf")},
+            headers={"X-API-Key": VALID_API_KEY},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "warning" in data
+        assert "No text could be extracted" in data["warning"]
+
+    def test_text_extraction_endpoint_valid(self, client):
+        """POST /api/v1/document/text with valid input returns entities."""
+        resp = client.post(
+            "/api/v1/document/text",
+            json={"text": "Patient age 45, BMI 28.5, non-smoker."},
+            headers={"X-API-Key": VALID_API_KEY},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "entities" in data
+        assert "mapped_features" in data
+        assert "raw_text" in data
+
+    def test_text_extraction_endpoint_empty(self, client):
+        """POST /api/v1/document/text with empty text returns 422 or error."""
+        resp = client.post(
+            "/api/v1/document/text",
+            json={"text": ""},
+            headers={"X-API-Key": VALID_API_KEY},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "error" in data

@@ -45,22 +45,30 @@ def upgrade() -> None:
         ),
     )
     op.add_column(
-        "user_reports", sa.Column("extension", sa.String(length=20), nullable=True)
+        "user_reports",
+        sa.Column("extension", sa.String(length=20), nullable=True),
     )
     op.add_column(
         "user_reports",
-        sa.Column("file_size", sa.Integer(), nullable=False, server_default="0"),
+        sa.Column(
+            "file_size", sa.Integer(), nullable=False, server_default="0"
+        ),
     )
 
     op.add_column(
         "user_reports",
         sa.Column(
-            "storage_path", sa.String(length=500), nullable=False, server_default=""
+            "storage_path",
+            sa.String(length=500),
+            nullable=False,
+            server_default="",
         ),
     )
     op.add_column(
         "user_reports",
-        sa.Column("checksum", sa.String(length=64), nullable=False, server_default=""),
+        sa.Column(
+            "checksum", sa.String(length=64), nullable=False, server_default=""
+        ),
     )
 
     op.add_column(
@@ -84,16 +92,25 @@ def upgrade() -> None:
     op.add_column(
         "user_reports",
         sa.Column(
-            "parser_version", sa.String(length=50), nullable=False, server_default="1.0"
+            "parser_version",
+            sa.String(length=50),
+            nullable=False,
+            server_default="1.0",
         ),
     )
 
     op.add_column(
-        "user_reports", sa.Column("extracted_entities", sa.JSON(), nullable=True)
+        "user_reports",
+        sa.Column("extracted_entities", sa.JSON(), nullable=True),
     )
     op.add_column(
         "user_reports",
-        sa.Column("prediction_count", sa.Integer(), nullable=False, server_default="0"),
+        sa.Column(
+            "prediction_count",
+            sa.Integer(),
+            nullable=False,
+            server_default="0",
+        ),
     )
 
     op.add_column(
@@ -115,7 +132,10 @@ def upgrade() -> None:
     )
 
     op.create_index(
-        op.f("ix_user_reports_checksum"), "user_reports", ["checksum"], unique=False
+        op.f("ix_user_reports_checksum"),
+        "user_reports",
+        ["checksum"],
+        unique=False,
     )
 
 
@@ -142,17 +162,24 @@ def downgrade() -> None:
     op.drop_column("user_reports", "filename")
 
     op.add_column(
-        "user_reports", sa.Column("extracted_metadata", sa.JSON(), nullable=True)
+        "user_reports",
+        sa.Column("extracted_metadata", sa.JSON(), nullable=True),
     )
     op.add_column(
         "user_reports",
         sa.Column(
-            "file_path", sa.String(length=500), nullable=False, server_default=""
+            "file_path",
+            sa.String(length=500),
+            nullable=False,
+            server_default="",
         ),
     )
     op.add_column(
         "user_reports",
         sa.Column(
-            "file_name", sa.String(length=255), nullable=False, server_default=""
+            "file_name",
+            sa.String(length=255),
+            nullable=False,
+            server_default="",
         ),
     )

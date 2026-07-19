@@ -7,8 +7,9 @@ from backend.app.models.base import utc_now
 from backend.app.models.report import UserReport
 from backend.app.services.document_parser import parse_document
 from backend.app.services.medical_nlp import extract_clinical_entities
-from backend.app.services.notifications.notification_service import \
-    notification_dispatcher
+from backend.app.services.notifications.notification_service import (
+    notification_dispatcher,
+)
 from backend.app.services.storage import storage_provider
 
 logger = logging.getLogger(__name__)
@@ -50,7 +51,9 @@ async def process_report_pipeline(report_id: UUID, user_id: UUID):
             await db.commit()
 
             try:
-                file_bytes = await storage_provider.get_file(report.storage_path)
+                file_bytes = await storage_provider.get_file(
+                    report.storage_path
+                )
                 # B5: CPU-bound PDF/image parsing — offload to thread pool
                 raw_text = await asyncio.to_thread(
                     parse_document, file_bytes, report.mime_type
@@ -91,7 +94,9 @@ async def process_report_pipeline(report_id: UUID, user_id: UUID):
 
             try:
                 # B5: CPU-bound NLP — offload to thread pool
-                entities = await asyncio.to_thread(extract_clinical_entities, raw_text)
+                entities = await asyncio.to_thread(
+                    extract_clinical_entities, raw_text
+                )
                 report.extracted_entities = entities
             except Exception as e:
                 logger.exception(f"NLP failed for report {report_id}")

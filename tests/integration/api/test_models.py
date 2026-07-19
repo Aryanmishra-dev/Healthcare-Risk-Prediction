@@ -5,10 +5,12 @@ Tests model registration, promotion, archival, SHAP explanation endpoint,
 and drift/monitoring service APIs.
 """
 
-import pytest
 import uuid
 from unittest.mock import patch
-from httpx import AsyncClient, ASGITransport
+
+import pytest
+from httpx import ASGITransport, AsyncClient
+
 from backend.app.main import app
 
 API_KEY = "test-dev-api-key"
@@ -29,15 +31,22 @@ async def client():
         yield c
 
 
-async def register_user_and_get_token(client: AsyncClient, role: str = "user") -> str:
+async def register_user_and_get_token(
+    client: AsyncClient, role: str = "user"
+) -> str:
     import random
+
     suffix = random.randint(10000, 99999)
     email = f"phase3_{role}_{suffix}@test.com"
     pw = "Test1234!@"
 
     reg_resp = await client.post(
         "/auth/register",
-        json={"email": email, "password": pw, "full_name": f"Phase3 {role.title()}"},
+        json={
+            "email": email,
+            "password": pw,
+            "full_name": f"Phase3 {role.title()}",
+        },
         headers={"X-API-Key": API_KEY},
     )
     assert reg_resp.status_code in (201, 200, 400), reg_resp.text
@@ -106,7 +115,9 @@ class TestModelRegistryAPI:
         assert isinstance(response.json(), list)
 
     @pytest.mark.anyio
-    async def test_model_history_requires_model_name(self, client: AsyncClient):
+    async def test_model_history_requires_model_name(
+        self, client: AsyncClient
+    ):
         token = await register_user_and_get_token(client)
         response = await client.get(
             "/api/v1/models/history",
@@ -155,7 +166,10 @@ class TestModelRegistryAPI:
 
 class TestModelMonitoringService:
     def test_record_and_get_metrics(self):
-        from backend.app.services.model_monitoring_service import ModelMonitoringService
+        from backend.app.services.model_monitoring_service import (
+            ModelMonitoringService,
+        )
+
         svc = ModelMonitoringService()
         svc.record_prediction("diabetes", 120, True)
         svc.record_prediction("diabetes", 80, True)
@@ -171,8 +185,14 @@ class TestModelMonitoringService:
 class TestModelDriftService:
     def test_record_drift(self):
         from backend.app.services.model_drift_service import ModelDriftService
+
         svc = ModelDriftService()
-        svc.record_drift("diabetes", feature_drift=True, prediction_drift=False, data_drift=False)
+        svc.record_drift(
+            "diabetes",
+            feature_drift=True,
+            prediction_drift=False,
+            data_drift=False,
+        )
         records = svc.get_recent_drift()
         assert len(records) == 1
         assert records[0]["disease"] == "diabetes"
@@ -180,8 +200,14 @@ class TestModelDriftService:
 
     def test_no_drift(self):
         from backend.app.services.model_drift_service import ModelDriftService
+
         svc = ModelDriftService()
-        svc.record_drift("heart_disease", feature_drift=False, prediction_drift=False, data_drift=False)
+        svc.record_drift(
+            "heart_disease",
+            feature_drift=False,
+            prediction_drift=False,
+            data_drift=False,
+        )
         records = svc.get_recent_drift()
         assert records[0]["disease"] == "heart_disease"
 
@@ -191,16 +217,23 @@ class TestModelRegistryService:
     async def test_register_and_get_model(self):
         from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
         from sqlalchemy.orm import sessionmaker
+
         from backend.app.models.base import Base
         from backend.app.models.model_version import ModelVersion
-        from backend.app.services.model_registry_service import ModelRegistryService
         from backend.app.schemas.model_version import ModelVersionCreate
+        from backend.app.services.model_registry_service import (
+            ModelRegistryService,
+        )
 
-        engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
+        engine = create_async_engine(
+            "sqlite+aiosqlite:///:memory:", echo=False
+        )
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
-        async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+        async_session = sessionmaker(
+            engine, class_=AsyncSession, expire_on_commit=False
+        )
 
         async with async_session() as session:
             svc = ModelRegistryService()
@@ -222,15 +255,22 @@ class TestModelRegistryService:
     async def test_promote_model(self):
         from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
         from sqlalchemy.orm import sessionmaker
-        from backend.app.models.base import Base
-        from backend.app.services.model_registry_service import ModelRegistryService
-        from backend.app.schemas.model_version import ModelVersionCreate
 
-        engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
+        from backend.app.models.base import Base
+        from backend.app.schemas.model_version import ModelVersionCreate
+        from backend.app.services.model_registry_service import (
+            ModelRegistryService,
+        )
+
+        engine = create_async_engine(
+            "sqlite+aiosqlite:///:memory:", echo=False
+        )
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
-        async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+        async_session = sessionmaker(
+            engine, class_=AsyncSession, expire_on_commit=False
+        )
         async with async_session() as session:
             svc = ModelRegistryService()
             schema = ModelVersionCreate(
@@ -263,12 +303,14 @@ class TestSHAPExplanationEndpoint:
 class TestABTestingService:
     def test_default_group(self):
         from backend.app.services.ab_testing_service import ABTestingService
+
         svc = ABTestingService()
         group = svc.assign_group("diabetes")
         assert group == "Production"
 
     def test_configured_split(self):
         from backend.app.services.ab_testing_service import ABTestingService
+
         svc = ABTestingService()
         svc.set_config("diabetes", {"Production": 90, "Staging": 10})
         results = [svc.assign_group("diabetes") for _ in range(100)]
@@ -279,6 +321,9 @@ class TestABTestingService:
 
     def test_invalid_config_raises(self):
         from backend.app.services.ab_testing_service import ABTestingService
+
         svc = ABTestingService()
         with pytest.raises(ValueError):
-            svc.set_config("diabetes", {"Production": 80, "Staging": 5})  # sums to 85, not 100
+            svc.set_config(
+                "diabetes", {"Production": 80, "Staging": 5}
+            )  # sums to 85, not 100

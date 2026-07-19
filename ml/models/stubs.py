@@ -123,12 +123,29 @@ class StubScaler:
 
 # Feature name lists matching what the real trained .pkl files contain
 HEART_FEATURES = [
-    "_AGEG5YR", "SEX", "_BMI5", "_RFHYPE5", "_RFCHOL",
-    "SMOKE100", "_TOTINDA", "_FRTLT1", "_VEGLT1",
-    "_RFDRHV5", "GENHLTH", "MENTHLTH", "PHYSHLTH", "DIABETE3",
+    "_AGEG5YR",
+    "SEX",
+    "_BMI5",
+    "_RFHYPE5",
+    "_RFCHOL",
+    "SMOKE100",
+    "_TOTINDA",
+    "_FRTLT1",
+    "_VEGLT1",
+    "_RFDRHV5",
+    "GENHLTH",
+    "MENTHLTH",
+    "PHYSHLTH",
+    "DIABETE3",
 ]
 
 LUNG_FEATURES = [
-    "Age", "Gender", "Smoking", "Yellow Fingers",
-    "Chronic Disease", "Fatigue", "Wheezing", "Shortness of Breath",
+    "Age",
+    "Gender",
+    "Smoking",
+    "Yellow Fingers",
+    "Chronic Disease",
+    "Fatigue",
+    "Wheezing",
+    "Shortness of Breath",
 ]

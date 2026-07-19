@@ -24,7 +24,9 @@ class AdminAnalyticsRepository:
         )
 
         # Predictions
-        total_predictions = await db.scalar(select(func.count(PredictionAuditLog.id)))
+        total_predictions = await db.scalar(
+            select(func.count(PredictionAuditLog.id))
+        )
 
         # Reports
         total_reports = await db.scalar(select(func.count(UserReport.id)))
@@ -37,12 +39,16 @@ class AdminAnalyticsRepository:
         # Let's check if it has execution_time_ms.
         # Note: If column is missing, this will fail. We'll use 0.0 if None.
         avg_latency = (
-            await db.scalar(select(func.avg(PredictionAuditLog.processing_time_ms)))
+            await db.scalar(
+                select(func.avg(PredictionAuditLog.processing_time_ms))
+            )
             or 0.0
         )
 
         avg_confidence = (
-            await db.scalar(select(func.avg(PredictionAuditLog.confidence_score)))
+            await db.scalar(
+                select(func.avg(PredictionAuditLog.confidence_score))
+            )
             or 0.0
         )
 
@@ -77,10 +83,14 @@ class AdminAnalyticsRepository:
         )
 
         result = await db.execute(stmt)
-        return [{"date": str(row.day), "count": row.count} for row in result.all()]
+        return [
+            {"date": str(row.day), "count": row.count} for row in result.all()
+        ]
 
     @staticmethod
-    async def get_disease_distribution(db: AsyncSession) -> List[Dict[str, Any]]:
+    async def get_disease_distribution(
+        db: AsyncSession,
+    ) -> List[Dict[str, Any]]:
         """Get count of predictions by disease model."""
         stmt = (
             select(
@@ -93,5 +103,6 @@ class AdminAnalyticsRepository:
 
         result = await db.execute(stmt)
         return [
-            {"disease": row.disease_model, "count": row.count} for row in result.all()
+            {"disease": row.disease_model, "count": row.count}
+            for row in result.all()
         ]

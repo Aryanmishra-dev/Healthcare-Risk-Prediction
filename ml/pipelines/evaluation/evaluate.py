@@ -99,7 +99,9 @@ def load_artifact(path: Optional[str]) -> Any:
         return None
 
 
-def find_existing_path(primary_path: Optional[str], candidates: Iterable[str]) -> Optional[str]:
+def find_existing_path(
+    primary_path: Optional[str], candidates: Iterable[str]
+) -> Optional[str]:
     if primary_path and os.path.exists(primary_path):
         return primary_path
     for candidate in candidates:
@@ -108,7 +110,9 @@ def find_existing_path(primary_path: Optional[str], candidates: Iterable[str]) -
     return None
 
 
-def resolve_label_column(df: pd.DataFrame, configured_label: str, aliases: Iterable[str]) -> Optional[str]:
+def resolve_label_column(
+    df: pd.DataFrame, configured_label: str, aliases: Iterable[str]
+) -> Optional[str]:
     if configured_label in df.columns:
         return configured_label
     for col in aliases:
@@ -146,7 +150,9 @@ def to_binary_series(series: pd.Series) -> pd.Series:
     if unique_vals.issubset({1, 2}):
         return normalized.map({1: 1, 2: 0}).astype(int)
 
-    raise ValueError(f"Expected binary target but found values: {sorted(unique_vals)}")
+    raise ValueError(
+        f"Expected binary target but found values: {sorted(unique_vals)}"
+    )
 
 
 def get_probabilities(model: Any, x_test: pd.DataFrame) -> np.ndarray:
@@ -176,7 +182,9 @@ def apply_calibration(calibrator: Any, y_prob: np.ndarray) -> np.ndarray:
     return np.clip(cal_prob, 0.0, 1.0)
 
 
-def safe_target_names(target_names: Iterable[str], y_true: pd.Series) -> Optional[Iterable[str]]:
+def safe_target_names(
+    target_names: Iterable[str], y_true: pd.Series
+) -> Optional[Iterable[str]]:
     classes = sorted(pd.Series(y_true).astype(int).unique().tolist())
     if classes == [0, 1]:
         return target_names
@@ -191,16 +199,22 @@ def evaluate(disease: str, cfg: Dict[str, Any]) -> Optional[Dict[str, float]]:
     out_dir = os.path.join(RESULTS_DIR, disease)
     os.makedirs(out_dir, exist_ok=True)
 
-    csv_path = find_existing_path(cfg.get("test_csv"), cfg.get("test_csv_candidates", []))
+    csv_path = find_existing_path(
+        cfg.get("test_csv"), cfg.get("test_csv_candidates", [])
+    )
     if not csv_path:
         print(f"  [SKIP] Test CSV not found for {disease}.")
-        print(f"         Checked: {cfg.get('test_csv_candidates', [cfg.get('test_csv')])}")
+        print(
+            f"         Checked: {cfg.get('test_csv_candidates', [cfg.get('test_csv')])}"
+        )
         return None
 
     print(f"  Using test data: {csv_path}")
     df = pd.read_csv(csv_path)
 
-    label_col = resolve_label_column(df, cfg.get("label_col", ""), cfg.get("label_aliases", []))
+    label_col = resolve_label_column(
+        df, cfg.get("label_col", ""), cfg.get("label_aliases", [])
+    )
     if not label_col:
         print(f"  [ERROR] Could not resolve label column for {disease}.")
         print(f"          Available columns: {list(df.columns)}")
@@ -217,9 +231,13 @@ def evaluate(disease: str, cfg: Dict[str, Any]) -> Optional[Dict[str, float]]:
 
     feature_list = load_artifact(cfg.get("features"))
     if feature_list is not None:
-        missing_features = [col for col in feature_list if col not in df.columns]
+        missing_features = [
+            col for col in feature_list if col not in df.columns
+        ]
         if missing_features:
-            print(f"  [ERROR] Missing expected features ({len(missing_features)}): {missing_features}")
+            print(
+                f"  [ERROR] Missing expected features ({len(missing_features)}): {missing_features}"
+            )
             return None
         x_test = df[feature_list].copy()
     else:
@@ -228,7 +246,9 @@ def evaluate(disease: str, cfg: Dict[str, Any]) -> Optional[Dict[str, float]]:
     scaler = load_artifact(cfg.get("scaler"))
     if scaler is not None:
         # Some models (e.g., lung cancer) fit scaler only on Age; handle both 1-col and full-matrix scalers.
-        expected_scaler_features = int(getattr(scaler, "n_features_in_", x_test.shape[1]))
+        expected_scaler_features = int(
+            getattr(scaler, "n_features_in_", x_test.shape[1])
+        )
         if expected_scaler_features == x_test.shape[1]:
             x_test = pd.DataFrame(
                 scaler.transform(x_test),
@@ -266,8 +286,12 @@ def evaluate(disease: str, cfg: Dict[str, Any]) -> Optional[Dict[str, float]]:
 
     metrics = {
         "Accuracy": round(float(accuracy_score(y_test, y_pred)), 4),
-        "Precision": round(float(precision_score(y_test, y_pred, zero_division=0)), 4),
-        "Recall": round(float(recall_score(y_test, y_pred, zero_division=0)), 4),
+        "Precision": round(
+            float(precision_score(y_test, y_pred, zero_division=0)), 4
+        ),
+        "Recall": round(
+            float(recall_score(y_test, y_pred, zero_division=0)), 4
+        ),
         "F1-Score": round(float(f1_score(y_test, y_pred, zero_division=0)), 4),
         "AUC-ROC": round(float(roc_auc_score(y_test, y_prob)), 4),
     }
@@ -277,7 +301,9 @@ def evaluate(disease: str, cfg: Dict[str, Any]) -> Optional[Dict[str, float]]:
     for key, value in metrics.items():
         print(f"  {key:<12} {value:>8}")
 
-    report_target_names = safe_target_names(cfg.get("target_names", ["No", "Yes"]), y_test)
+    report_target_names = safe_target_names(
+        cfg.get("target_names", ["No", "Yes"]), y_test
+    )
     print("\n  Classification Report:")
     print(
         classification_report(
@@ -288,11 +314,15 @@ def evaluate(disease: str, cfg: Dict[str, Any]) -> Optional[Dict[str, float]]:
         )
     )
 
-    with open(os.path.join(out_dir, "metrics.json"), "w", encoding="utf-8") as f:
+    with open(
+        os.path.join(out_dir, "metrics.json"), "w", encoding="utf-8"
+    ) as f:
         json.dump(metrics, f, indent=2)
 
     cm = confusion_matrix(y_test, y_pred)
-    disp = ConfusionMatrixDisplay(cm, display_labels=cfg.get("target_names", ["0", "1"]))
+    disp = ConfusionMatrixDisplay(
+        cm, display_labels=cfg.get("target_names", ["0", "1"])
+    )
     _, ax = plt.subplots(figsize=(5, 4))
     disp.plot(ax=ax, colorbar=False, cmap="Blues")
     ax.set_title(f"Confusion Matrix - {disease.replace('_', ' ').title()}")
@@ -304,7 +334,11 @@ def evaluate(disease: str, cfg: Dict[str, Any]) -> Optional[Dict[str, float]]:
 
     try:
         shap_sample_size = min(len(x_test), 1000)
-        x_shap = x_test.sample(n=shap_sample_size, random_state=42) if len(x_test) > shap_sample_size else x_test
+        x_shap = (
+            x_test.sample(n=shap_sample_size, random_state=42)
+            if len(x_test) > shap_sample_size
+            else x_test
+        )
 
         explainer = shap.Explainer(model, x_shap)
         shap_values = explainer(x_shap)
@@ -334,7 +368,9 @@ def main() -> None:
         print(f"\n{'=' * 60}")
         print("  COMBINED RESULTS SUMMARY")
         print(f"{'=' * 60}")
-        print(f"  {'Disease':<18} {'Acc':>6} {'Prec':>6} {'Rec':>6} {'F1':>6} {'AUC':>6}")
+        print(
+            f"  {'Disease':<18} {'Acc':>6} {'Prec':>6} {'Rec':>6} {'F1':>6} {'AUC':>6}"
+        )
         print(f"  {'-' * 54}")
         for disease, metric_dict in all_metrics.items():
             print(
@@ -351,7 +387,9 @@ def main() -> None:
         df_summary.to_csv(csv_path)
         print(f"\n  Summary saved to: {csv_path}")
     else:
-        print("\nNo evaluations were completed. Check dataset paths in DATA_CONFIG.")
+        print(
+            "\nNo evaluations were completed. Check dataset paths in DATA_CONFIG."
+        )
 
     print(f"\nDone. Results directory: ./{RESULTS_DIR}/")
 

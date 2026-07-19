@@ -17,7 +17,9 @@ class ExportProvider(ABC):
         pass
 
     @abstractmethod
-    async def get_export_stream(self, storage_path: str) -> AsyncGenerator[bytes, None]:
+    async def get_export_stream(
+        self, storage_path: str
+    ) -> AsyncGenerator[bytes, None]:
         """Returns an async generator to stream the export data."""
         pass
 
@@ -52,7 +54,9 @@ class LocalExportProvider(ExportProvider):
 
         return str(file_path.absolute())
 
-    async def get_export_stream(self, storage_path: str) -> AsyncGenerator[bytes, None]:
+    async def get_export_stream(
+        self, storage_path: str
+    ) -> AsyncGenerator[bytes, None]:
         path = Path(storage_path)
         # Security: verify it's within our base_dir
         try:

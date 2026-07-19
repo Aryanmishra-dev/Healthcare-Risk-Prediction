@@ -14,14 +14,21 @@ MEDICAL_DISCLAIMER = (
 
 
 class DiabetesPredictionRequest(BaseModel):
-    age: float = Field(..., ge=1, le=13, description="Age group (1=18-24 … 13=80+)")
+    age: float = Field(
+        ..., ge=1, le=13, description="Age group (1=18-24 … 13=80+)"
+    )
     bmi: float = Field(..., gt=0, le=100, description="Body Mass Index")
-    bp: float = Field(..., ge=0, le=1, description="High blood pressure (1=Yes, 0=No)")
+    bp: float = Field(
+        ..., ge=0, le=1, description="High blood pressure (1=Yes, 0=No)"
+    )
     cholesterol: float = Field(
         ..., ge=0, le=1, description="High cholesterol (1=Yes, 0=No)"
     )
     smoker: float = Field(
-        ..., ge=0, le=1, description="Smoker - 100+ cigarettes ever (1=Yes, 0=No)"
+        ...,
+        ge=0,
+        le=1,
+        description="Smoker - 100+ cigarettes ever (1=Yes, 0=No)",
     )
     activity: float = Field(
         ..., ge=0, le=1, description="Physical activity (1=Active, 0=Inactive)"
@@ -30,7 +37,10 @@ class DiabetesPredictionRequest(BaseModel):
         ..., ge=1, le=5, description="General health (1=Excellent … 5=Poor)"
     )
     mental: float = Field(
-        ..., ge=0, le=30, description="Mental health - bad days in past 30 (0-30)"
+        ...,
+        ge=0,
+        le=30,
+        description="Mental health - bad days in past 30 (0-30)",
     )
 
     model_config = {
@@ -59,7 +69,9 @@ PredictionRequest = DiabetesPredictionRequest
 
 
 class HeartDiseasePredictionRequest(BaseModel):
-    age: float = Field(..., ge=1, le=13, description="Age group (1=18-24 … 13=80+)")
+    age: float = Field(
+        ..., ge=1, le=13, description="Age group (1=18-24 … 13=80+)"
+    )
     sex: int = Field(..., ge=0, le=1, description="Sex (1=Male, 0=Female)")
     bmi: float = Field(..., gt=0, le=100, description="Body Mass Index")
     high_bp: int = Field(
@@ -69,16 +81,28 @@ class HeartDiseasePredictionRequest(BaseModel):
         ..., ge=0, le=1, description="High cholesterol (1=Yes, 0=No)"
     )
     smoker: int = Field(
-        ..., ge=0, le=1, description="Smoking history - 100+ cigarettes (1=Yes, 0=No)"
+        ...,
+        ge=0,
+        le=1,
+        description="Smoking history - 100+ cigarettes (1=Yes, 0=No)",
     )
     phys_activity: int = Field(
-        ..., ge=0, le=1, description="Physical activity in past 30 days (1=Yes, 0=No)"
+        ...,
+        ge=0,
+        le=1,
+        description="Physical activity in past 30 days (1=Yes, 0=No)",
     )
     fruits: int = Field(
-        ..., ge=0, le=1, description="Consume fruit 1+ times per day (1=Yes, 0=No)"
+        ...,
+        ge=0,
+        le=1,
+        description="Consume fruit 1+ times per day (1=Yes, 0=No)",
     )
     veggies: int = Field(
-        ..., ge=0, le=1, description="Consume vegetables 1+ times per day (1=Yes, 0=No)"
+        ...,
+        ge=0,
+        le=1,
+        description="Consume vegetables 1+ times per day (1=Yes, 0=No)",
     )
     heavy_drinker: int = Field(
         ..., ge=0, le=1, description="Heavy alcohol consumption (1=Yes, 0=No)"
@@ -87,10 +111,16 @@ class HeartDiseasePredictionRequest(BaseModel):
         ..., ge=1, le=5, description="General health (1=Excellent … 5=Poor)"
     )
     ment_health: int = Field(
-        ..., ge=0, le=30, description="Days of poor mental health in past 30 (0-30)"
+        ...,
+        ge=0,
+        le=30,
+        description="Days of poor mental health in past 30 (0-30)",
     )
     phys_health: int = Field(
-        ..., ge=0, le=30, description="Days of poor physical health in past 30 (0-30)"
+        ...,
+        ge=0,
+        le=30,
+        description="Days of poor physical health in past 30 (0-30)",
     )
     diabetes: int = Field(
         ..., ge=0, le=1, description="Diabetes diagnosis (1=Yes, 0=No)"
@@ -125,7 +155,9 @@ class HeartDiseasePredictionRequest(BaseModel):
 
 class LungCancerPredictionRequest(BaseModel):
     age: int = Field(..., ge=18, le=100, description="Patient age in years")
-    gender: int = Field(..., ge=0, le=1, description="Gender (1=Male, 0=Female)")
+    gender: int = Field(
+        ..., ge=0, le=1, description="Gender (1=Male, 0=Female)"
+    )
     smoking: int = Field(..., ge=0, le=1, description="Smoking (1=Yes, 0=No)")
     yellow_fingers: int = Field(
         ..., ge=0, le=1, description="Yellow fingers (1=Yes, 0=No)"
@@ -134,7 +166,9 @@ class LungCancerPredictionRequest(BaseModel):
         ..., ge=0, le=1, description="Chronic disease (1=Yes, 0=No)"
     )
     fatigue: int = Field(..., ge=0, le=1, description="Fatigue (1=Yes, 0=No)")
-    wheezing: int = Field(..., ge=0, le=1, description="Wheezing (1=Yes, 0=No)")
+    wheezing: int = Field(
+        ..., ge=0, le=1, description="Wheezing (1=Yes, 0=No)"
+    )
     shortness_of_breath: int = Field(
         ..., ge=0, le=1, description="Shortness of breath (1=Yes, 0=No)"
     )
@@ -161,7 +195,9 @@ class LungCancerPredictionRequest(BaseModel):
 
 
 class PredictionResponse(BaseModel):
-    risk_percentage: float = Field(..., description="Risk as percentage (0-100)")
+    risk_percentage: float = Field(
+        ..., description="Risk as percentage (0-100)"
+    )
     risk_level: str = Field(
         ..., description="Risk classification: Low, Moderate, or High"
     )
@@ -174,9 +210,15 @@ class PredictionResponse(BaseModel):
     probability: float = Field(
         0.0, ge=0, le=1, description="Risk probability in the [0, 1] range"
     )
-    model_name: str = Field("unknown", description="Model family used for inference")
-    model_version: str = Field("local", description="Model version or artifact stage")
-    disclaimer: str = Field(MEDICAL_DISCLAIMER, description="Medical safety disclaimer")
+    model_name: str = Field(
+        "unknown", description="Model family used for inference"
+    )
+    model_version: str = Field(
+        "local", description="Model version or artifact stage"
+    )
+    disclaimer: str = Field(
+        MEDICAL_DISCLAIMER, description="Medical safety disclaimer"
+    )
 
 
 class LegacyDiabetesAuditRequest(BaseModel):

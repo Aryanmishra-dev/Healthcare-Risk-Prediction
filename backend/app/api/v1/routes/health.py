@@ -25,7 +25,9 @@ def health_models():
     """Model health endpoint returning inference readiness, latency, and versions."""
     status_data = model_manager.get_health_status()
     # Determine overall status: ready if at least one model is ready
-    models_ready = any(m["status"] == "ready" for m in status_data["models"].values())
+    models_ready = any(
+        m["status"] == "ready" for m in status_data["models"].values()
+    )
 
     response = {
         "status": "ready" if models_ready else "degraded",
@@ -50,4 +52,7 @@ async def health_database():
         return JSONResponse(
             status_code=503, content={"status": "unhealthy", "error": str(e)}
         )
-    return {"status": "unknown", "message": "Database check not fully configured"}
+    return {
+        "status": "unknown",
+        "message": "Database check not fully configured",
+    }

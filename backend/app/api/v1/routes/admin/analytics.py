@@ -13,7 +13,9 @@ router = APIRouter(prefix="/analytics", tags=["Admin Analytics"])
 
 @router.get("/predictions/trends", response_model=List[Dict[str, Any]])
 async def get_prediction_trends(
-    days: int = Query(30, ge=1, le=365, description="Number of days to analyze"),
+    days: int = Query(
+        30, ge=1, le=365, description="Number of days to analyze"
+    ),
     db: AsyncSession = Depends(get_db),
     _=Depends(RequireRole([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
 ):

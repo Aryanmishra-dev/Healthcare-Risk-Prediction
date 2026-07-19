@@ -4,8 +4,9 @@ from uuid import UUID
 from backend.app.core.database import AsyncSessionLocal
 from backend.app.models.base import utc_now
 from backend.app.models.notification import Notification
-from backend.app.services.notifications.providers.base import \
-    NotificationProvider
+from backend.app.services.notifications.providers.base import (
+    NotificationProvider,
+)
 
 
 class InAppProvider(NotificationProvider):

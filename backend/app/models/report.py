@@ -17,7 +17,9 @@ class UserReport(Base, UUIDMixin, TimestampMixin):
     # File Metadata
     filename: Mapped[str] = mapped_column(String(255))
     original_filename: Mapped[str] = mapped_column(String(255))
-    mime_type: Mapped[str] = mapped_column(String(100), default="application/pdf")
+    mime_type: Mapped[str] = mapped_column(
+        String(100), default="application/pdf"
+    )
     extension: Mapped[str] = mapped_column(String(20), nullable=True)
     file_size: Mapped[int] = mapped_column(default=0)
 
@@ -27,11 +29,15 @@ class UserReport(Base, UUIDMixin, TimestampMixin):
 
     # Processing state
     upload_status: Mapped[str] = mapped_column(String(50), default="uploaded")
-    processing_status: Mapped[str] = mapped_column(String(50), default="pending")
+    processing_status: Mapped[str] = mapped_column(
+        String(50), default="pending"
+    )
     parser_version: Mapped[str] = mapped_column(String(50), default="1.0")
 
     # Extracted data
-    extracted_entities: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    extracted_entities: Mapped[dict | None] = mapped_column(
+        JSON, nullable=True
+    )
     prediction_count: Mapped[int] = mapped_column(default=0)
 
     # Timestamps

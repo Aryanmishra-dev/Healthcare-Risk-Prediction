@@ -28,8 +28,12 @@ def upgrade() -> None:
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
-        sa.ForeignKeyConstraint(["admin_id"], ["users.id"], ondelete="SET NULL"),
-        sa.ForeignKeyConstraint(["target_user_id"], ["users.id"], ondelete="SET NULL"),
+        sa.ForeignKeyConstraint(
+            ["admin_id"], ["users.id"], ondelete="SET NULL"
+        ),
+        sa.ForeignKeyConstraint(
+            ["target_user_id"], ["users.id"], ondelete="SET NULL"
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
 

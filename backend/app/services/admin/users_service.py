@@ -8,8 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.app.core.enums import UserRole
 from backend.app.models.user import User
 from backend.app.repositories.admin_users_repo import AdminUsersRepository
-from backend.app.schemas.admin_user import (AdminUserUpdate,
-                                            PaginatedUserResponse)
+from backend.app.schemas.admin_user import (
+    AdminUserUpdate,
+    PaginatedUserResponse,
+)
 
 
 class AdminUsersService:
@@ -51,7 +53,8 @@ class AdminUsersService:
                 user.role = role_enum.value
             except ValueError:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid role"
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid role",
                 )
 
         if update_data.is_active is not None:
@@ -63,8 +66,12 @@ class AdminUsersService:
         return user
 
     @staticmethod
-    async def revoke_user_sessions(db: AsyncSession, target_user_id: uuid.UUID):
-        sessions = await AdminUsersRepository.get_active_sessions(db, target_user_id)
+    async def revoke_user_sessions(
+        db: AsyncSession, target_user_id: uuid.UUID
+    ):
+        sessions = await AdminUsersRepository.get_active_sessions(
+            db, target_user_id
+        )
         for session in sessions:
             session.is_revoked = True
 

@@ -9,11 +9,12 @@ Run:
     python -m ml.pipelines.training.train
 """
 
+import io
 import os
 import sys
-import io
 import zipfile
 from urllib.parse import urlparse
+
 import numpy as np
 import pandas as pd
 import requests
@@ -21,6 +22,7 @@ import requests
 # ── Optional MLflow tracking ──────────────────────────────────────────────
 try:
     from ml.registry.mlflow_config import init_tracking, log_training_run
+
     mlflow = init_tracking()
     _MLFLOW_AVAILABLE = True
     print("MLflow tracking enabled.")
@@ -58,6 +60,7 @@ def _download_file_https(url: str, destination: str) -> None:
                 if chunk:
                     out_file.write(chunk)
 
+
 # ══════════════════════════════════════════════════════════════════════════
 # STEP 1: Download BRFSS 2015 data if not present
 # ══════════════════════════════════════════════════════════════════════════
@@ -90,23 +93,32 @@ print(f"  Raw data shape: {df.shape}")
 
 # Select columns
 columns = [
-    "DIABETE3", "_BMI5", "_AGEG5YR", "BPHIGH4",
-    "SMOKE100", "_RFCHOL", "_TOTINDA", "GENHLTH", "MENTHLTH",
+    "DIABETE3",
+    "_BMI5",
+    "_AGEG5YR",
+    "BPHIGH4",
+    "SMOKE100",
+    "_RFCHOL",
+    "_TOTINDA",
+    "GENHLTH",
+    "MENTHLTH",
 ]
 df = df[columns]
 
 # Rename
-df = df.rename(columns={
-    "DIABETE3": "diabetes",
-    "_BMI5": "bmi",
-    "_AGEG5YR": "age_group",
-    "BPHIGH4": "high_bp",
-    "SMOKE100": "smoker",
-    "_RFCHOL": "high_cholesterol",
-    "_TOTINDA": "physical_activity",
-    "GENHLTH": "general_health",
-    "MENTHLTH": "mental_health",
-})
+df = df.rename(
+    columns={
+        "DIABETE3": "diabetes",
+        "_BMI5": "bmi",
+        "_AGEG5YR": "age_group",
+        "BPHIGH4": "high_bp",
+        "SMOKE100": "smoker",
+        "_RFCHOL": "high_cholesterol",
+        "_TOTINDA": "physical_activity",
+        "GENHLTH": "general_health",
+        "MENTHLTH": "mental_health",
+    }
+)
 
 # ── BMI: raw value is ×100 ────────────────────────────────────────────────
 df["bmi"] = df["bmi"] / 100
@@ -117,7 +129,9 @@ df["bmi"] = df["bmi"] / 100
 df = df[df["diabetes"].isin([1, 3])]
 df["diabetes"] = df["diabetes"].replace({1: 1, 3: 0})
 print(f"  After diabetes filter: {df.shape}")
-print(f"  Diabetes prevalence: {df['diabetes'].mean():.3f} ({df['diabetes'].mean()*100:.1f}%)")
+print(
+    f"  Diabetes prevalence: {df['diabetes'].mean():.3f} ({df['diabetes'].mean()*100:.1f}%)"
+)
 
 # ── Recode BRFSS categoricals to clean binary (0/1) ─────────────────────
 # BPHIGH4: 1=Yes, 2=Yes(preg), 3=No, 4=Borderline → 1=Yes, 0=No
@@ -144,7 +158,9 @@ df["age_group"] = df["age_group"].replace(14, pd.NA)
 # Drop rows with any remaining NA
 df = df.dropna()
 print(f"  After cleaning: {df.shape}")
-print(f"  Final diabetes prevalence: {df['diabetes'].mean():.3f} ({df['diabetes'].mean()*100:.1f}%)")
+print(
+    f"  Final diabetes prevalence: {df['diabetes'].mean():.3f} ({df['diabetes'].mean()*100:.1f}%)"
+)
 print(f"\n  Class distribution:")
 print(f"    {df['diabetes'].value_counts().to_dict()}")
 
@@ -153,17 +169,20 @@ df.to_csv(os.path.join(DATA_PROC, "brfss_diabetes_clean.csv"), index=False)
 print(f"  Saved clean CSV to data/processed/")
 
 import pandera as pa
-diabetes_schema = pa.DataFrameSchema({
-    "diabetes": pa.Column(float, checks=pa.Check.isin([0, 1])),
-    "bmi": pa.Column(float, checks=pa.Check.ge(0)),
-    "age_group": pa.Column(float, checks=pa.Check.in_range(1, 14)),
-    "high_bp": pa.Column(float, checks=pa.Check.isin([0, 1])),
-    "smoker": pa.Column(float, checks=pa.Check.isin([0, 1])),
-    "high_cholesterol": pa.Column(float, checks=pa.Check.isin([0, 1])),
-    "physical_activity": pa.Column(float, checks=pa.Check.isin([0, 1])),
-    "general_health": pa.Column(float, checks=pa.Check.in_range(1, 5)),
-    "mental_health": pa.Column(float, checks=pa.Check.in_range(0, 30))
-})
+
+diabetes_schema = pa.DataFrameSchema(
+    {
+        "diabetes": pa.Column(float, checks=pa.Check.isin([0, 1])),
+        "bmi": pa.Column(float, checks=pa.Check.ge(0)),
+        "age_group": pa.Column(float, checks=pa.Check.in_range(1, 14)),
+        "high_bp": pa.Column(float, checks=pa.Check.isin([0, 1])),
+        "smoker": pa.Column(float, checks=pa.Check.isin([0, 1])),
+        "high_cholesterol": pa.Column(float, checks=pa.Check.isin([0, 1])),
+        "physical_activity": pa.Column(float, checks=pa.Check.isin([0, 1])),
+        "general_health": pa.Column(float, checks=pa.Check.in_range(1, 5)),
+        "mental_health": pa.Column(float, checks=pa.Check.in_range(0, 30)),
+    }
+)
 df = diabetes_schema.validate(df)
 print("  Pandera Schema Validation Passed.")
 
@@ -174,10 +193,10 @@ print("\n" + "=" * 60)
 print("STEP 3: Feature engineering")
 print("=" * 60)
 
-df["bmi_age"]    = df["bmi"] * df["age_group"]
-df["bmi_bp"]     = df["bmi"] * df["high_bp"]
-df["age_bp"]     = df["age_group"] * df["high_bp"]
-df["chol_bmi"]   = df["high_cholesterol"] * df["bmi"]
+df["bmi_age"] = df["bmi"] * df["age_group"]
+df["bmi_bp"] = df["bmi"] * df["high_bp"]
+df["age_bp"] = df["age_group"] * df["high_bp"]
+df["chol_bmi"] = df["high_cholesterol"] * df["bmi"]
 df["health_bmi"] = df["general_health"] * df["bmi"]
 
 X = df.drop("diabetes", axis=1)
@@ -201,9 +220,9 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 # Ensure float64
 X_train = X_train.apply(pd.to_numeric, errors="coerce").astype(np.float64)
-X_test  = X_test.apply(pd.to_numeric, errors="coerce").astype(np.float64)
+X_test = X_test.apply(pd.to_numeric, errors="coerce").astype(np.float64)
 y_train = y_train.astype(np.float64)
-y_test  = y_test.astype(np.float64)
+y_test = y_test.astype(np.float64)
 
 neg = (y_train == 0).sum()
 pos = (y_train == 1).sum()
@@ -237,7 +256,8 @@ xgb = XGBClassifier(
 )
 
 xgb.fit(
-    X_train, y_train,
+    X_train,
+    y_train,
     eval_set=[(X_test, y_test)],
     verbose=50,
 )
@@ -252,7 +272,11 @@ print("\n" + "=" * 60)
 print("STEP 6: Evaluation")
 print("=" * 60)
 
-from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score
+from sklearn.metrics import (
+    classification_report,
+    confusion_matrix,
+    roc_auc_score,
+)
 
 y_pred = xgb.predict(X_test)
 y_prob = xgb.predict_proba(X_test)[:, 1]
@@ -269,14 +293,14 @@ print("\n" + "=" * 60)
 print("STEP 7: Isotonic Calibration")
 print("=" * 60)
 
-from sklearn.isotonic import IsotonicRegression
 from sklearn.calibration import calibration_curve
+from sklearn.isotonic import IsotonicRegression
 from sklearn.metrics import brier_score_loss
 
 # Split test set 50/50 for calibration
 n_cal = len(X_test) // 2
-X_cal,  X_eval  = X_test.iloc[:n_cal],  X_test.iloc[n_cal:]
-y_cal,  y_eval  = y_test.iloc[:n_cal],  y_test.iloc[n_cal:]
+X_cal, X_eval = X_test.iloc[:n_cal], X_test.iloc[n_cal:]
+y_cal, y_eval = y_test.iloc[:n_cal], y_test.iloc[n_cal:]
 
 raw_probs_cal = xgb.predict_proba(X_cal)[:, 1]
 iso_reg = IsotonicRegression(out_of_bounds="clip")
@@ -321,16 +345,19 @@ np.savez(
 
 # SHAP explainer
 import shap
+
 explainer = shap.TreeExplainer(xgb)
 joblib.dump(explainer, os.path.join(MODEL_DIR, "shap_explainer.pkl"))
 
 # ONNX export
 try:
+    # onnxmltools requires booster without named features
+    import tempfile
+
+    import xgboost as xgb_lib
     from onnxmltools import convert_xgboost
     from onnxmltools.convert.common.data_types import FloatTensorType
 
-    # onnxmltools requires booster without named features
-    import tempfile, xgboost as xgb_lib
     booster = xgb.get_booster()
     tmp_path = os.path.join(MODEL_DIR, "_tmp_booster.json")
     booster.save_model(tmp_path)
@@ -340,7 +367,9 @@ try:
     os.remove(tmp_path)
 
     onnx_input = [("features", FloatTensorType([None, 13]))]
-    onnx_model = convert_xgboost(clean_booster, initial_types=onnx_input, target_opset=12)
+    onnx_model = convert_xgboost(
+        clean_booster, initial_types=onnx_input, target_opset=12
+    )
     onnx_path = os.path.join(MODEL_DIR, "diabetes_xgboost.onnx")
     with open(onnx_path, "wb") as f:
         f.write(onnx_model.SerializeToString())
@@ -363,22 +392,40 @@ print("\n" + "=" * 60)
 print("STEP 9: Verification — realistic scenarios")
 print("=" * 60)
 
+
 def build_and_predict(name, ag, bmi, bp, smk, chol, pa, gh, mh):
-    features = np.array([[
-        bmi, ag, bp, smk, chol, pa, gh, mh,
-        bmi*ag, bmi*bp, ag*bp, chol*bmi, gh*bmi,
-    ]], dtype=np.float64)
+    features = np.array(
+        [
+            [
+                bmi,
+                ag,
+                bp,
+                smk,
+                chol,
+                pa,
+                gh,
+                mh,
+                bmi * ag,
+                bmi * bp,
+                ag * bp,
+                chol * bmi,
+                gh * bmi,
+            ]
+        ],
+        dtype=np.float64,
+    )
     df_feat = pd.DataFrame(features, columns=feature_cols)
     raw = xgb.predict_proba(df_feat)[:, 1][0]
     cal = iso_reg.predict([raw])[0]
     return raw, cal
 
+
 scenarios = [
-    ("Healthy 30yo",           3, 22.0, 0, 0, 0, 1, 1,  0),
-    ("Average 40yo",           5, 26.0, 0, 0, 0, 1, 2,  3),
-    ("Moderate 50yo+chol",     7, 28.0, 0, 0, 1, 1, 2,  5),
-    ("Overweight 45yo+BP",     6, 32.0, 1, 0, 0, 0, 3,  5),
-    ("High risk 60yo",         9, 35.0, 1, 1, 1, 0, 5, 15),
+    ("Healthy 30yo", 3, 22.0, 0, 0, 0, 1, 1, 0),
+    ("Average 40yo", 5, 26.0, 0, 0, 0, 1, 2, 3),
+    ("Moderate 50yo+chol", 7, 28.0, 0, 0, 1, 1, 2, 5),
+    ("Overweight 45yo+BP", 6, 32.0, 1, 0, 0, 0, 3, 5),
+    ("High risk 60yo", 9, 35.0, 1, 1, 1, 0, 5, 15),
     ("Obese+hypertension 70", 10, 38.0, 1, 1, 1, 0, 5, 10),
 ]
 

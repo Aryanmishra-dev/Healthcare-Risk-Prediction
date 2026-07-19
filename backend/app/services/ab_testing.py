@@ -127,7 +127,8 @@ class ABRouter:
                 "count": len(records),
                 "avg_latency_ms": round(sum(latencies) / len(latencies), 2),
                 "avg_risk": round(
-                    sum(r["risk_percentage"] for r in records) / len(records), 2
+                    sum(r["risk_percentage"] for r in records) / len(records),
+                    2,
                 ),
             }
 

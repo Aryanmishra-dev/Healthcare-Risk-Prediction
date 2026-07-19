@@ -9,8 +9,10 @@ from backend.app.auth.router import get_current_user
 from backend.app.core.database import get_db
 from backend.app.core.enums import UserRole
 from backend.app.models.user import User
-from backend.app.schemas.admin_user import (AdminUserUpdate,
-                                            PaginatedUserResponse)
+from backend.app.schemas.admin_user import (
+    AdminUserUpdate,
+    PaginatedUserResponse,
+)
 from backend.app.schemas.user import UserResponse
 from backend.app.services.admin.users_service import AdminUsersService
 
@@ -34,7 +36,9 @@ async def update_user(
     user_id: uuid.UUID,
     update_data: AdminUserUpdate,
     db: AsyncSession = Depends(get_db),
-    current_admin: User = Depends(RequireRole([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
+    current_admin: User = Depends(
+        RequireRole([UserRole.ADMIN, UserRole.SUPER_ADMIN])
+    ),
 ):
     """Update a user's role or status."""
     # Ensure SUPER_ADMIN if trying to make someone SUPER_ADMIN or change another SUPER_ADMIN
@@ -58,7 +62,9 @@ async def update_user(
 async def revoke_user_sessions(
     user_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_admin: User = Depends(RequireRole([UserRole.ADMIN, UserRole.SUPER_ADMIN])),
+    current_admin: User = Depends(
+        RequireRole([UserRole.ADMIN, UserRole.SUPER_ADMIN])
+    ),
 ):
     """Revoke all active sessions for a user (force logout)."""
     return await AdminUsersService.revoke_user_sessions(db, user_id)

@@ -35,7 +35,9 @@ def setup_logging() -> None:
                         "message": record.getMessage(),
                     }
                     if record.exc_info:
-                        log_record["exc_info"] = self.formatException(record.exc_info)
+                        log_record["exc_info"] = self.formatException(
+                            record.exc_info
+                        )
                     return json.dumps(log_record)
 
             formatter = JsonFormatter()

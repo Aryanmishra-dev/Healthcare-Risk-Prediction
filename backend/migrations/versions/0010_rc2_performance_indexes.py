@@ -88,10 +88,12 @@ def downgrade() -> None:
     op.drop_index("ix_user_sessions_user_active", table_name="user_sessions")
     op.drop_index("ix_user_sessions_user_id", table_name="user_sessions")
     op.drop_index(
-        "ix_prediction_audit_logs_created_at", table_name="prediction_audit_logs"
+        "ix_prediction_audit_logs_created_at",
+        table_name="prediction_audit_logs",
     )
     op.drop_index(
-        "ix_prediction_audit_logs_disease_model", table_name="prediction_audit_logs"
+        "ix_prediction_audit_logs_disease_model",
+        table_name="prediction_audit_logs",
     )
     op.drop_index(
         "ix_prediction_audit_logs_user_id", table_name="prediction_audit_logs"
