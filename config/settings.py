@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -23,6 +23,18 @@ class Settings(BaseSettings):
     sync_database_url: str = "sqlite:///data/interim/audit_log.db"
     db_pool_size: int = 10
     db_max_overflow: int = 20
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def fix_database_url(cls, v: str) -> str:
+        if isinstance(v, str):
+            if v.startswith("postgres://"):
+                return v.replace("postgres://", "postgresql+asyncpg://", 1)
+            if v.startswith("postgresql://") and not v.startswith("postgresql+asyncpg://"):
+                return v.replace("postgresql://", "postgresql+asyncpg://", 1)
+            if v.startswith("sqlite://") and not v.startswith("sqlite+aiosqlite://"):
+                return v.replace("sqlite://", "sqlite+aiosqlite://", 1)
+        return v
 
     # ── Auth / JWT ───────────────────────────────────────────────────────────
     # WARNING: Must be set via env var SECRET_KEY or JWT_SECRET_KEY in production!
