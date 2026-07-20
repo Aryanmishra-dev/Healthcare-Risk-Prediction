@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     model_dir: str = "ml/models"
 
     # ── Exports ──────────────────────────────────────────────────────────────
-    exports_dir: str = "exports_data"
+    exports_dir: str = "/tmp/exports_data" if "RENDER" in __import__("os").environ else "exports_data"
 
     # ── Database ─────────────────────────────────────────────────────────────
     database_url: str = "sqlite:///data/interim/audit_log.db"
