@@ -10,13 +10,7 @@ from sqlalchemy.ext.asyncio import (
 
 from backend.app.core.config import settings
 
-# Ensure SQLite directory exists before SQLAlchemy attempts to connect
-if settings.database_url.startswith("sqlite"):
-    parsed = urlparse(settings.database_url)
-    db_path = Path(parsed.path.lstrip("/"))
-
-    if db_path.name != ":memory:":
-        db_path.parent.mkdir(parents=True, exist_ok=True)
+# SQLite directory creation is now handled lazily when getting a connection
 
 engine = create_async_engine(
     settings.database_url,
@@ -42,5 +36,12 @@ AsyncSessionLocal = async_sessionmaker(
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    # Ensure SQLite directory exists before SQLAlchemy attempts to connect
+    if settings.database_url.startswith("sqlite"):
+        parsed = urlparse(settings.database_url)
+        db_path = Path(parsed.path.lstrip("/"))
+        if db_path.name != ":memory:":
+            db_path.parent.mkdir(parents=True, exist_ok=True)
+
     async with AsyncSessionLocal() as session:
         yield session

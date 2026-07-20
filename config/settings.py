@@ -18,6 +18,20 @@ class Settings(BaseSettings):
     # ── ML models ────────────────────────────────────────────────────────────
     model_dir: str = "ml/models"
 
+    # ── Storage Directories ──────────────────────────────────────────────────
+    exports_dir: str = Field(
+        default_factory=lambda: __import__("os").getenv(
+            "EXPORT_DIR",
+            str(Path(__import__("tempfile").gettempdir()) / "exports_data")
+        )
+    )
+    uploads_dir: str = Field(
+        default_factory=lambda: __import__("os").getenv(
+            "UPLOAD_DIR",
+            str(Path(__import__("tempfile").gettempdir()) / "uploads")
+        )
+    )
+
     # ── Database ─────────────────────────────────────────────────────────────
     database_url: str = "sqlite:///data/interim/audit_log.db"
     sync_database_url: str = "sqlite:///data/interim/audit_log.db"
