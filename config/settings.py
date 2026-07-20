@@ -1,5 +1,6 @@
 """Central settings loader for local tooling and application modules."""
 
+import os
 from pathlib import Path
 
 from pydantic import AliasChoices, Field, field_validator
@@ -18,8 +19,19 @@ class Settings(BaseSettings):
     # ── ML models ────────────────────────────────────────────────────────────
     model_dir: str = "ml/models"
 
-    # ── Exports ──────────────────────────────────────────────────────────────
-    exports_dir: str = "/tmp/exports_data" if "RENDER" in __import__("os").environ else "exports_data"
+    # ── Storage Directories ──────────────────────────────────────────────────
+    exports_dir: str = Field(
+        default_factory=lambda: os.getenv(
+            "EXPORT_DIR",
+            str(Path(__import__("tempfile").gettempdir()) / "exports_data")
+        )
+    )
+    uploads_dir: str = Field(
+        default_factory=lambda: os.getenv(
+            "UPLOAD_DIR",
+            str(Path(__import__("tempfile").gettempdir()) / "uploads")
+        )
+    )
 
     # ── Database ─────────────────────────────────────────────────────────────
     database_url: str = "sqlite:///data/interim/audit_log.db"

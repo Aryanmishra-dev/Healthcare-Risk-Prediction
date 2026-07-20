@@ -68,6 +68,7 @@ class LocalStorageProvider(StorageProvider):
             return True
         return False
 
+from backend.app.core.config import settings
 
 # Global instance for injection
-storage_provider = LocalStorageProvider()
+storage_provider = LocalStorageProvider(base_dir=settings.uploads_dir)
