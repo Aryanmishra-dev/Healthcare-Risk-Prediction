@@ -1,13 +1,12 @@
 from collections.abc import AsyncGenerator
+from pathlib import Path
+from urllib.parse import urlparse
 
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
-
-from pathlib import Path
-from urllib.parse import urlparse
 
 from backend.app.core.config import settings
 
