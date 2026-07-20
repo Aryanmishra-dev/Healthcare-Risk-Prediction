@@ -33,12 +33,15 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class LocalExportProvider(ExportProvider):
     """Local filesystem implementation of ExportProvider."""
 
     def __init__(self, base_dir: str = "exports_data"):
         self.base_dir = Path(base_dir).resolve()
-        logger.info(f"LocalExportProvider initialized with base_dir: {self.base_dir}")
+        logger.info(
+            f"LocalExportProvider initialized with base_dir: {self.base_dir}"
+        )
         self.base_dir.mkdir(parents=True, exist_ok=True)
 
     async def save_export(
