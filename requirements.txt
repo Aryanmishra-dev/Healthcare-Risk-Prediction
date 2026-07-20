@@ -35,3 +35,4 @@ httpx==0.28.1
 mlflow==3.11.1
 aiosmtplib==5.1.2
 psutil==6.0.0
+aiosqlite>=0.20.0

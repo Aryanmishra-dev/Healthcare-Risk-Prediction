@@ -6,7 +6,18 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from pathlib import Path
+from urllib.parse import urlparse
+
 from backend.app.core.config import settings
+
+# Ensure SQLite directory exists before SQLAlchemy attempts to connect
+if settings.database_url.startswith("sqlite"):
+    parsed = urlparse(settings.database_url)
+    db_path = Path(parsed.path.lstrip("/"))
+
+    if db_path.name != ":memory:":
+        db_path.parent.mkdir(parents=True, exist_ok=True)
 
 engine = create_async_engine(
     settings.database_url,
