@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     # ── ML models ────────────────────────────────────────────────────────────
     model_dir: str = "ml/models"
 
+    # ── Exports ──────────────────────────────────────────────────────────────
+    exports_dir: str = "exports_data"
+
     # ── Database ─────────────────────────────────────────────────────────────
     database_url: str = "sqlite:///data/interim/audit_log.db"
     sync_database_url: str = "sqlite:///data/interim/audit_log.db"

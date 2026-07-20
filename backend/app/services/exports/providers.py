@@ -34,7 +34,6 @@ class LocalExportProvider(ExportProvider):
 
     def __init__(self, base_dir: str = "exports_data"):
         self.base_dir = Path(base_dir).resolve()
-        self.base_dir.mkdir(parents=True, exist_ok=True)
 
     async def save_export(
         self, user_id: str, export_id: str, filename: str, content: bytes
