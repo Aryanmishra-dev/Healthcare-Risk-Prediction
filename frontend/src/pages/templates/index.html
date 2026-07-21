@@ -16,50 +16,50 @@
 
             <!-- Center: Tabs -->
             <div class="flex-1 flex overflow-x-auto hide-scrollbar mask-edges relative">
-                <nav class="flex items-center gap-1 md:gap-2 px-1">
-                                <a id="nav-home" href="/" onclick="switchTab('home');return false"
+                <nav class="flex items-center gap-1 md:gap-2 px-1" id="main-nav">
+                                <a id="nav-home" href="/"
                    class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'home' or not initial_tab %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
                     <span class="material-symbols-outlined text-[20px]">home</span>
                     <span class="text-sm {% if initial_tab == 'home' or not initial_tab %}font-bold{% else %}font-medium{% endif %}">Home</span>
                 </a>
-                <a id="nav-how-it-works" href="/how-it-works" onclick="switchTab('how-it-works');return false"
+                <a id="nav-how-it-works" href="/how-it-works"
                    class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'how-it-works' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
                     <span class="material-symbols-outlined text-[20px]">help</span>
                     <span class="text-sm {% if initial_tab == 'how-it-works' %}font-bold{% else %}font-medium{% endif %}">How It Works</span>
                 </a>
-                <a id="nav-about" href="/about" onclick="switchTab('about');return false"
+                <a id="nav-about" href="/about"
                    class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'about' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
                     <span class="material-symbols-outlined text-[20px]">info</span>
                     <span class="text-sm {% if initial_tab == 'about' %}font-bold{% else %}font-medium{% endif %}">About</span>
                 </a>
-                                <a id="nav-diabetes" href="/diabetes" onclick="switchTab('diabetes');return false"
+                                <a id="nav-diabetes" href="/diabetes"
                    class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'diabetes' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
                     <span class="material-symbols-outlined text-[20px]">water_drop</span>
                     <span class="text-sm {% if initial_tab == 'diabetes' %}font-bold{% else %}font-medium{% endif %}">Diabetes Risk</span>
                 </a>
-                                <a id="nav-heart" href="/heart-disease" onclick="switchTab('heart');return false"
+                                <a id="nav-heart" href="/heart-disease"
                    class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'heart' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
                     <span class="material-symbols-outlined text-[20px]">favorite</span>
                     <span class="text-sm {% if initial_tab == 'heart' %}font-bold{% else %}font-medium{% endif %}">Heart Disease Risk</span>
                 </a>
-                                <a id="nav-lung" href="/lung-cancer" onclick="switchTab('lung');return false"
+                                <a id="nav-lung" href="/lung-cancer"
                    class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'lung' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
                     <span class="material-symbols-outlined text-[20px]">pulmonology</span>
                     <span class="text-sm {% if initial_tab == 'lung' %}font-bold{% else %}font-medium{% endif %}">Lung Cancer Risk</span>
                 </a>
-                <a id="nav-dashboard" href="/dashboard" onclick="switchTab('dashboard');return false"
+                <a id="nav-dashboard" href="/dashboard"
                    x-show="isLoggedIn" x-cloak
                    class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'dashboard' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
                     <span class="material-symbols-outlined text-[20px]">dashboard</span>
                     <span class="text-sm {% if initial_tab == 'dashboard' %}font-bold{% else %}font-medium{% endif %}">Dashboard</span>
                 </a>
-                <a id="nav-login" href="/login" onclick="switchTab('login');return false"
+                <a id="nav-login" href="/login"
                    x-show="!isLoggedIn"
                    class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'login' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
                     <span class="material-symbols-outlined text-[20px]">login</span>
                     <span class="text-sm {% if initial_tab == 'login' %}font-bold{% else %}font-medium{% endif %}">Sign In</span>
                 </a>
-                <a id="nav-contact" href="/contact" onclick="switchTab('contact');return false"
+                <a id="nav-contact" href="/contact"
                    class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'contact' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
                     <span class="material-symbols-outlined text-[20px]">mail</span>
                     <span class="text-sm {% if initial_tab == 'contact' %}font-bold{% else %}font-medium{% endif %}">Contact</span>
@@ -81,7 +81,7 @@
                         </button>
                         <div x-show="open" @click.outside="open = false"
                              class="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-lg border border-slate-200 py-1 z-50">
-                            <a href="/dashboard" @click="open=false;switchTab('dashboard')" class="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+                            <a href="/dashboard" class="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors" data-tab="dashboard">
                                 <span class="material-symbols-outlined text-base">dashboard</span> Dashboard
                             </a>
                             <hr class="border-slate-100 my-1">
@@ -92,7 +92,7 @@
                     </div>
                 </template>
                 <template x-if="!isLoggedIn">
-                    <a href="/login" onclick="switchTab('login');return false" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors">
+                    <a href="/login" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors" data-tab="login">
                         <span class="material-symbols-outlined text-base">login</span>
                         <span class="hidden md:inline">Sign In</span>
                     </a>
@@ -139,6 +139,24 @@
             {% include "partials/register_form.html" %}
         </div>
 
+        <!-- ══════════════ DASHBOARD SECTION ══════════════ -->
+        <div class="section-panel {% if initial_tab == 'dashboard' %}active{% endif %}" id="section-dashboard">
+            <div class="max-w-4xl mx-auto p-4">
+                <div id="dashboard-content"
+                     hx-get="/auth/me"
+                     hx-trigger="load"
+                     hx-target="this"
+                     hx-swap="innerHTML"
+                     hx-indicator="#dash-spinner"
+                     hx-target-error="#dash-error">
+                    <div id="dash-spinner" class="flex items-center justify-center py-12">
+                        <span class="material-symbols-outlined text-4xl text-slate-300 animate-spin">progress_activity</span>
+                    </div>
+                    <div id="dash-error" class="hidden"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- ══════════════ CONTACT SECTION ══════════════ -->
         <div class="section-panel {% if initial_tab == 'contact' %}active{% endif %}" id="section-contact">
             {% include "partials/contact.html" %}
@@ -154,7 +172,7 @@
                 {% include "partials/diabetes_form.html" %}
 
                 <!-- Right: Results -->
-                <div class="lg:col-span-5 space-y-6" id="diabetes-result">
+                <div class="lg:col-span-5 space-y-6" id="diabetes-result" aria-live="polite" role="status">
                     {% include "partials/diabetes_empty.html" %}
                 </div>
 
@@ -171,7 +189,7 @@
                 {% include "partials/heart_form.html" %}
 
                 <!-- Right: Results -->
-                <div class="lg:col-span-5 space-y-6" id="heart-result">
+                <div class="lg:col-span-5 space-y-6" id="heart-result" aria-live="polite" role="status">
                     {% include "partials/heart_empty.html" %}
                 </div>
 
@@ -188,7 +206,7 @@
                 {% include "partials/lung_form.html" %}
 
                 <!-- Right: Results -->
-                <div class="lg:col-span-5 space-y-6" id="lung-result">
+                <div class="lg:col-span-5 space-y-6" id="lung-result" aria-live="polite" role="status">
                     {% include "partials/lung_empty.html" %}
                 </div>
 
@@ -212,7 +230,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ request.state.nonce }}">
 /* ── Auth State (Alpine Component) ──────────────────── */
 function authState() {
     return {
@@ -465,6 +483,27 @@ var pathTabs = {
     '/login': 'login',
     '/register': 'register'
 };
+
+// Nav click delegation — replaces inline onclick handlers for CSP nonce compat
+document.addEventListener('click', function(e) {
+    var drBtn = e.target.closest('.dr-play-btn');
+    if (drBtn && typeof window._drSpeak === 'function') {
+        window._drSpeak(drBtn);
+        return;
+    }
+    var link = e.target.closest('.nav-link, [data-tab]');
+    if (!link) return;
+    var tab = link.id && link.id.indexOf('nav-') === 0 ? link.id.slice(4) : (link.getAttribute('data-tab') || '');
+    if (tab && typeof switchTab === 'function') {
+        e.preventDefault();
+        switchTab(tab);
+    }
+});
+document.addEventListener('submit', function(e) {
+    if (e.target && e.target.hasAttribute('data-prevent-submit')) {
+        e.preventDefault();
+    }
+});
 
 function switchTab(tab, skipHistory) {
     // Stop any in-progress speech when switching tabs

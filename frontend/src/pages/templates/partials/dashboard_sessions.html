@@ -36,7 +36,7 @@ function sessionsPage() {
   return {
     sessions: [],
     async init() {
-      await this.load();
+      try { await this.load(); } catch(e) { console.warn('sessionsPage init error:', e); }
     },
     async load() {
       const res = await window.HealthPredictConfig.fetch('/auth/sessions');

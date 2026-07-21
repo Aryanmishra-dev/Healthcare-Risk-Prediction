@@ -10,8 +10,10 @@ import re
 
 from fastapi import HTTPException, UploadFile
 
+from backend.app.core.config import settings
+
 # ── Constants ──────────────────────────────────────────────────────────────
-MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
+MAX_FILE_SIZE_BYTES = settings.max_upload_size_mb * 1024 * 1024
 
 ALLOWED_MIME_TYPES = {
     "application/pdf",
@@ -21,6 +23,24 @@ ALLOWED_MIME_TYPES = {
 }
 
 ALLOWED_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png"}
+
+# Magic byte signatures for MIME validation (first bytes of file content).
+_MAGIC_BYTES: dict[str, bytes] = {
+    "application/pdf": b"%PDF",
+    "image/jpeg": b"\xff\xd8\xff",
+    "image/png": b"\x89PNG\r\n\x1a\n",
+}
+
+
+def _check_magic_bytes(file_bytes: bytes, mime_type: str) -> None:
+    """Verify file content matches expected magic bytes for the given MIME type."""
+    expected = _MAGIC_BYTES.get(mime_type)
+    if expected and not file_bytes.startswith(expected):
+        raise HTTPException(
+            status_code=400,
+            detail=f"File content does not match expected signature for {mime_type}. "
+            "The file may be corrupt or mislabeled.",
+        )
 
 
 def sanitize_filename(filename: str) -> str:
@@ -82,8 +102,13 @@ async def validate_upload(file: UploadFile) -> tuple[bytes, str]:
     # 1. Validate MIME type
     mime_type = validate_mime_type(file.content_type, file.filename)
 
-    # 2. Read contents and check size
+    # 2. Read contents
     file_bytes = await file.read()
+
+    # 3. Magic byte validation
+    _check_magic_bytes(file_bytes, mime_type)
+
+    # 4. Check size
     if len(file_bytes) > MAX_FILE_SIZE_BYTES:
         size_mb = round(len(file_bytes) / (1024 * 1024), 2)
         raise HTTPException(

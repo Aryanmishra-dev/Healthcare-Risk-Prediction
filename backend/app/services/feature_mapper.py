@@ -170,6 +170,59 @@ def map_to_lung_features(entities: dict[str, Any]) -> dict[str, Any]:
 # ══════════════════════════════════════════════════════════════════════════
 
 
+def _translate_to_prediction_params(mapped: dict[str, Any]) -> dict[str, Any]:
+    """Translate mapper output keys to prediction function parameter names.
+
+    Mapper uses hd_/lc_ prefixed keys; prediction functions expect unprefixed.
+    """
+    key_map = {
+        "hd_age": "age",
+        "hd_sex": "sex",
+        "hd_bmi": "bmi",
+        "hd_high_bp": "high_bp",
+        "hd_high_chol": "high_chol",
+        "hd_smoker": "smoker",
+        "hd_phys_activity": "phys_activity",
+        "hd_fruits": "fruits",
+        "hd_veggies": "veggies",
+        "hd_heavy_drinker": "heavy_drinker",
+        "hd_gen_health": "gen_health",
+        "hd_ment_health": "ment_health",
+        "hd_phys_health": "phys_health",
+        "hd_diabetes": "diabetes",
+        "lc_age": "age",
+        "lc_gender": "gender",
+        "lc_smoking": "smoking",
+        "lc_yellow_fingers": "yellow_fingers",
+        "lc_chronic_disease": "chronic_disease",
+        "lc_fatigue": "fatigue",
+        "lc_wheezing": "wheezing",
+        "lc_shortness_of_breath": "shortness_of_breath",
+    }
+    translated = {}
+    for k, v in mapped.items():
+        if v is None:
+            continue
+        target = key_map.get(k, k)
+        translated[target] = v["value"]
+    return translated
+
+
+def heart_mapper_to_params(mapped: dict[str, Any]) -> dict[str, Any]:
+    """Translate heart mapper output to prediction function kwargs."""
+    return _translate_to_prediction_params(mapped)
+
+
+def lung_mapper_to_params(mapped: dict[str, Any]) -> dict[str, Any]:
+    """Translate lung mapper output to prediction function kwargs."""
+    return _translate_to_prediction_params(mapped)
+
+
+def diabetes_mapper_to_params(mapped: dict[str, Any]) -> dict[str, Any]:
+    """Translate diabetes mapper output to prediction function kwargs."""
+    return _translate_to_prediction_params(mapped)
+
+
 def map_to_all_models(entities: dict[str, Any]) -> dict[str, Any]:
     """
     Map extracted entities to feature dicts for all three disease models.
@@ -180,6 +233,9 @@ def map_to_all_models(entities: dict[str, Any]) -> dict[str, Any]:
             "heart": { ... },
             "lung": { ... },
         }
+
+    Note: keys use hd_/lc_ prefix convention. Use the *_to_params()
+    helpers to translate to prediction function kwargs.
     """
     return {
         "diabetes": map_to_diabetes_features(entities),

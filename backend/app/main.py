@@ -170,7 +170,9 @@ async def lifespan(app: FastAPI):
     # Load models before accepting requests so health and inference are ready.
     await model_manager.load_all_models()
     app.state.models.update(model_manager.export_app_state())
-    asyncio.create_task(asyncio.to_thread(load_explainers))
+    # Load SHAP explainers synchronously (in a thread to avoid blocking).
+    # This ensures explainers are ready before the first prediction request.
+    await asyncio.to_thread(load_explainers)
     logger.info("models_loaded")
     yield
     logger.info("application_shutdown")
@@ -354,6 +356,26 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     )
 
 
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    """Catch-all 500 handler for unhandled exceptions."""
+    logger.exception(
+        "unhandled_exception",
+        extra={"path": request.url.path, "method": request.method},
+    )
+    if request.headers.get("hx-request") == "true":
+        return templates.TemplateResponse(
+            request,
+            "partials/error.html",
+            {"request": request, "error": "An unexpected error occurred. Please try again."},
+            status_code=500,
+        )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
+
+
 # ══════════════════════════════════════════════════════════════════════════
 #  UI Pages
 # ══════════════════════════════════════════════════════════════════════════
@@ -511,6 +533,7 @@ def readiness(request: Request):
 )
 async def predict_diabetes_htmx(
     request: Request,
+    current_user=Depends(get_current_user),
     age: float = Form(7),
     bmi: float = Form(25.0),
     bp: float = Form(0),
@@ -553,7 +576,7 @@ async def predict_diabetes_htmx(
             pct,
             result["risk_level"],
             "htmx",
-            None,
+            str(current_user.id),
         )
         PREDICTION_PROB_METRIC.labels(model_name="diabetes").observe(
             pct / 100.0
@@ -589,6 +612,7 @@ async def predict_diabetes_htmx(
 )
 async def predict_heart_htmx(
     request: Request,
+    current_user=Depends(get_current_user),
     hd_age: float = Form(7),
     hd_sex: int = Form(1),
     hd_bmi: float = Form(25.0),
@@ -649,7 +673,7 @@ async def predict_heart_htmx(
             pct,
             result["risk_level"],
             "htmx",
-            None,
+            str(current_user.id),
         )
         PREDICTION_PROB_METRIC.labels(model_name="heart_disease").observe(
             pct / 100.0
@@ -685,6 +709,7 @@ async def predict_heart_htmx(
 )
 async def predict_lung_htmx(
     request: Request,
+    current_user=Depends(get_current_user),
     lc_age: int = Form(50),
     lc_gender: int = Form(1),
     lc_smoking: int = Form(0),
@@ -727,7 +752,7 @@ async def predict_lung_htmx(
             pct,
             result["risk_level"],
             "htmx",
-            None,
+            str(current_user.id),
         )
         PREDICTION_PROB_METRIC.labels(model_name="lung_cancer").observe(
             pct / 100.0
@@ -786,7 +811,11 @@ async def api_dashboard(user=Depends(get_current_user)):
     response_model=PredictionResponse,
     dependencies=[Depends(OptionalRateLimiter(times=RATE_LIMIT, seconds=60))],
 )
-async def api_predict_diabetes(request: Request, data: PredictionRequest):
+async def api_predict_diabetes(
+    request: Request,
+    data: PredictionRequest,
+    current_user=Depends(get_current_user),
+):
     """Predict diabetes risk (JSON API)."""
     result = await predict(
         request=request,
@@ -806,7 +835,7 @@ async def api_predict_diabetes(request: Request, data: PredictionRequest):
         result["risk_percentage"],
         result["risk_level"],
         "api",
-        None,
+        str(current_user.id),
     )
     return PredictionResponse(**_prediction_payload(result, "diabetes"))
 
@@ -817,7 +846,9 @@ async def api_predict_diabetes(request: Request, data: PredictionRequest):
     dependencies=[Depends(OptionalRateLimiter(times=RATE_LIMIT, seconds=60))],
 )
 async def api_predict_heart(
-    request: Request, data: HeartDiseasePredictionRequest
+    request: Request,
+    data: HeartDiseasePredictionRequest,
+    current_user=Depends(get_current_user),
 ):
     """Predict heart disease risk (JSON API)."""
     result = await predict_heart_disease(
@@ -844,7 +875,7 @@ async def api_predict_heart(
         result["risk_percentage"],
         result["risk_level"],
         "api",
-        None,
+        str(current_user.id),
     )
     return PredictionResponse(**_prediction_payload(result, "heart_disease"))
 
@@ -855,7 +886,9 @@ async def api_predict_heart(
     dependencies=[Depends(OptionalRateLimiter(times=RATE_LIMIT, seconds=60))],
 )
 async def api_predict_lung(
-    request: Request, data: LungCancerPredictionRequest
+    request: Request,
+    data: LungCancerPredictionRequest,
+    current_user=Depends(get_current_user),
 ):
     """Predict lung cancer risk (JSON API)."""
     result = await predict_lung_cancer(
@@ -876,7 +909,7 @@ async def api_predict_lung(
         result["risk_percentage"],
         result["risk_level"],
         "api",
-        None,
+        str(current_user.id),
     )
     return PredictionResponse(**_prediction_payload(result, "lung_cancer"))
 
@@ -886,7 +919,9 @@ async def api_predict_lung(
     dependencies=[Depends(OptionalRateLimiter(times=RATE_LIMIT, seconds=60))],
 )
 async def api_predict_diabetes_audit(
-    request: Request, data: LegacyDiabetesAuditRequest
+    request: Request,
+    data: LegacyDiabetesAuditRequest,
+    current_user=Depends(get_current_user),
 ):
     """Compatibility endpoint for the launch-audit diabetes payload."""
     payload = {
@@ -921,7 +956,7 @@ async def api_predict_diabetes_audit(
         result["risk_percentage"],
         result["risk_level"],
         "api_audit",
-        None,
+        str(current_user.id),
     )
     return _prediction_payload(result, "diabetes")
 
@@ -931,7 +966,9 @@ async def api_predict_diabetes_audit(
     dependencies=[Depends(OptionalRateLimiter(times=RATE_LIMIT, seconds=60))],
 )
 async def api_predict_heart_audit(
-    request: Request, data: LegacyHeartAuditRequest
+    request: Request,
+    data: LegacyHeartAuditRequest,
+    current_user=Depends(get_current_user),
 ):
     """Compatibility endpoint for the launch-audit heart disease payload."""
     payload = {
@@ -960,7 +997,7 @@ async def api_predict_heart_audit(
         result["risk_percentage"],
         result["risk_level"],
         "api_audit",
-        None,
+        str(current_user.id),
     )
     return _prediction_payload(result, "heart_disease")
 
@@ -974,7 +1011,9 @@ async def api_predict_heart_audit(
     dependencies=[Depends(OptionalRateLimiter(times=RATE_LIMIT, seconds=60))],
 )
 async def api_predict_lung_audit(
-    request: Request, data: LegacyLungCancerAuditRequest
+    request: Request,
+    data: LegacyLungCancerAuditRequest,
+    current_user=Depends(get_current_user),
 ):
     """Compatibility endpoint for the launch-audit lung cancer payload."""
     payload = {
@@ -995,7 +1034,7 @@ async def api_predict_lung_audit(
         result["risk_percentage"],
         result["risk_level"],
         "api_audit",
-        None,
+        str(current_user.id),
     )
     return _prediction_payload(result, "lung_cancer")
 
@@ -1004,7 +1043,10 @@ async def api_predict_lung_audit(
     "/api/upload",
     dependencies=[Depends(OptionalRateLimiter(times=RATE_LIMIT, seconds=60))],
 )
-async def api_upload_alias(file: UploadFile = File(...)):
+async def api_upload_alias(
+    file: UploadFile = File(...),
+    current_user=Depends(get_current_user),
+):
     """Compatibility upload endpoint used by the audit workflow."""
     try:
         return await process_uploaded_document(file)
@@ -1456,6 +1498,7 @@ app.include_router(
     upload_router,
     prefix="/api/v1",
     dependencies=[
+        Depends(get_api_key),
         Depends(verify_csrf_token),
         Depends(OptionalRateLimiter(times=RATE_LIMIT, seconds=60)),
     ],

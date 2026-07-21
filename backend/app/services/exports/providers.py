@@ -1,9 +1,12 @@
+import logging
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import AsyncGenerator
 
 import aiofiles  # type: ignore[import-untyped]
+
+logger = logging.getLogger(__name__)
 
 
 class ExportProvider(ABC):
@@ -27,11 +30,6 @@ class ExportProvider(ABC):
     async def delete_export(self, storage_path: str) -> None:
         """Deletes the export data from storage."""
         pass
-
-
-import logging
-
-logger = logging.getLogger(__name__)
 
 
 class LocalExportProvider(ExportProvider):

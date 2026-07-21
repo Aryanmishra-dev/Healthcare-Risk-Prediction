@@ -55,7 +55,7 @@ var _histData = [];
 function historyPage() {
   return {
     async init() {
-      await this.load();
+      try { await this.load(); } catch(e) { console.warn('historyPage init error:', e); }
     },
     async load() {
       const type = document.getElementById('hist-filter-type')?.value || '';

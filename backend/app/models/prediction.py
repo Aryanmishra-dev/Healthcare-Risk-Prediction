@@ -10,6 +10,13 @@ from backend.app.models.base import Base, TimestampMixin
 class PredictionAuditLog(Base, TimestampMixin):
     __tablename__ = "prediction_audit_logs"
 
+    __table_args__ = (
+        # Performance index for user history queries
+        __import__("sqlalchemy").Index("ix_prediction_audit_logs_user_id", "user_id"),
+        __import__("sqlalchemy").Index("ix_prediction_audit_logs_tenant_id", "tenant_id"),
+        __import__("sqlalchemy").Index("ix_prediction_audit_logs_created_at", "created_at"),
+    )
+
     # We use Integer as primary key to match the legacy SQLite schema that
     # used AUTOINCREMENT.
     id: Mapped[int] = mapped_column(

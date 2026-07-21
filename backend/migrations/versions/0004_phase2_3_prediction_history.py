@@ -87,23 +87,23 @@ def upgrade() -> None:
         sa.Column("notes", sa.String(length=1000), nullable=True),
     )
 
-    # Add foreign key constraint for report_id
-    op.create_foreign_key(
-        "fk_prediction_audit_logs_report_id_user_reports",
-        "prediction_audit_logs",
-        "user_reports",
-        ["report_id"],
-        ["id"],
-        ondelete="SET NULL",
-    )
+    # Add foreign key constraint for report_id (batch mode for SQLite compat)
+    with op.batch_alter_table("prediction_audit_logs") as batch_op:
+        batch_op.create_foreign_key(
+            "fk_prediction_audit_logs_report_id_user_reports",
+            "user_reports",
+            ["report_id"],
+            ["id"],
+            ondelete="SET NULL",
+        )
 
 
 def downgrade() -> None:
-    op.drop_constraint(
-        "fk_prediction_audit_logs_report_id_user_reports",
-        "prediction_audit_logs",
-        type_="foreignkey",
-    )
+    with op.batch_alter_table("prediction_audit_logs") as batch_op:
+        batch_op.drop_constraint(
+            "fk_prediction_audit_logs_report_id_user_reports",
+            type_="foreignkey",
+        )
 
     op.drop_column("prediction_audit_logs", "notes")
     op.drop_column("prediction_audit_logs", "archived")

@@ -17,6 +17,7 @@ Injects all recommended security headers on every response:
 from __future__ import annotations
 
 import os
+import secrets
 import uuid
 
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -25,32 +26,36 @@ from starlette.responses import Response
 
 # Allowlisted external script origins used by the HTMX UI.
 # These are the CDN hosts that deliver HTMX and Alpine.js.
-_CDN_SCRIPT_HOSTS = "cdn.jsdelivr.net unpkg.com cdn.tailwindcss.com"
+_CDN_SCRIPT_HOSTS = "cdn.jsdelivr.net unpkg.com"
 _CDN_STYLE_HOSTS = "cdn.jsdelivr.net fonts.googleapis.com"
 _CDN_FONT_HOSTS = "fonts.gstatic.com"
 
-# Build CSP based on environment.  In production we lock down further.
+# Build static CSP base (without nonce).  Nonce is added per-request.
 _APP_ENV = os.environ.get("APP_ENV", "development")
 
-if _APP_ENV == "production":
-    # Production: strict CSP
-    # Alpine.js standard build requires 'unsafe-eval' (expression evaluation).
-    # Switch to @alpinejs/csp and remove 'unsafe-eval' for stricter CSP.
-    _CSP = (
-        "default-src 'self'; "
-        f"script-src 'self' 'unsafe-eval' {_CDN_SCRIPT_HOSTS}; "
-        f"style-src 'self' 'unsafe-inline' {_CDN_STYLE_HOSTS}; "
-        "img-src 'self' data: blob:; "
-        f"font-src 'self' {_CDN_FONT_HOSTS}; "
-        "connect-src 'self'; "
-        "frame-ancestors 'none'; "
-        "base-uri 'self'; "
-        "form-action 'self'; "
-        "object-src 'none';"
-    )
-else:
-    # Development: relaxed for local dev servers
-    _CSP = (
+
+def _build_csp(nonce: str) -> str:
+    """Build the Content-Security-Policy header with the given nonce."""
+    nonce_directive = f"'nonce-{nonce}'"
+    if _APP_ENV == "production":
+        # NOTE: 'unsafe-eval' is required by Alpine.js for dynamic expressions.
+        # To remove it entirely, migrate from Alpine.js base to @alpinejs/csp
+        # (see https://alpinejs.dev/advanced/csp).  Once migrated, the
+        # eval-based magic properties and x-on syntax must be reviewed.
+        return (
+            "default-src 'self'; "
+            f"script-src 'self' {nonce_directive} 'strict-dynamic' "
+            f"'unsafe-eval' {_CDN_SCRIPT_HOSTS}; "
+            f"style-src 'self' 'unsafe-inline' {_CDN_STYLE_HOSTS}; "
+            "img-src 'self' data: blob:; "
+            f"font-src 'self' {_CDN_FONT_HOSTS}; "
+            "connect-src 'self'; "
+            "frame-ancestors 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self'; "
+            "object-src 'none';"
+        )
+    return (
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' "
         f"{_CDN_SCRIPT_HOSTS} localhost:*; "
@@ -72,6 +77,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
         request.state.request_id = request_id
 
+        # Generate a CSP nonce for this request.  Used by inline <script> tags
+        # in the templates to bypass the strict production CSP.
+        nonce = secrets.token_urlsafe(16)
+        request.state.nonce = nonce
+
         response: Response = await call_next(request)
 
         h = response.headers
@@ -81,7 +91,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         # ── Content Security Policy ───────────────────────────────────────
         # Protects against XSS, data injection, and CDN-supply-chain attacks.
-        h.setdefault("Content-Security-Policy", _CSP)
+        # The nonce is injected per-request so inline scripts can execute.
+        h.setdefault("Content-Security-Policy", _build_csp(nonce))
 
         # ── Anti-sniffing ─────────────────────────────────────────────────
         h.setdefault("X-Content-Type-Options", "nosniff")
@@ -122,5 +133,14 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # When all CDN resources are brought in-house, switch to
         # 'require-corp'.
         h.setdefault("Cross-Origin-Embedder-Policy", "unsafe-none")
+
+        # ── Expect-CT ────────────────────────────────────────────────────────
+        # Tells browsers to expect Certificate Transparency for this origin.
+        # Deprecated but still observed by Chrome.
+        h.setdefault("Expect-CT", "max-age=86400, enforce")
+
+        # ── X-Permitted-Cross-Domain-Policies ────────────────────────────────
+        # Restrict Adobe Flash/PDF from loading cross-domain content.
+        h.setdefault("X-Permitted-Cross-Domain-Policies", "none")
 
         return response

@@ -199,6 +199,11 @@ class AuditLog(Base, UUIDMixin):
 class LoginHistory(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "login_history"
 
+    __table_args__ = (
+        __import__("sqlalchemy").Index("ix_login_history_user_id", "user_id"),
+        __import__("sqlalchemy").Index("ix_login_history_created_at", "created_at"),
+    )
+
     user_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("users.id", ondelete="CASCADE")
     )

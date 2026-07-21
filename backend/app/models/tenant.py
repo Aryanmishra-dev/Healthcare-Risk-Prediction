@@ -57,6 +57,12 @@ class Team(Base, UUIDMixin, TimestampMixin):
 class Membership(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "memberships"
 
+    __table_args__ = (
+        __import__("sqlalchemy").UniqueConstraint(
+            "tenant_id", "user_id", name="uq_memberships_tenant_user"
+        ),
+    )
+
     tenant_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
     )

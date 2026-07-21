@@ -19,7 +19,11 @@ import pytest
 from fastapi.testclient import TestClient
 from starlette.requests import Request as StarletteRequest
 
-from backend.app.api.dependencies import RequireRole, get_api_key
+from backend.app.api.dependencies import (
+    RequireRole,
+    get_api_key,
+    get_current_tenant,
+)
 from backend.app.auth.router import get_current_session_id, get_current_user
 from backend.app.core.enums import UserRole
 from backend.app.main import app, verify_csrf_token
@@ -46,6 +50,10 @@ def mock_get_current_user():
     return MOCK_USER
 
 
+async def mock_get_current_tenant():
+    return uuid.uuid4()
+
+
 # CSRF bypass fixture
 @pytest.fixture()
 def bypass_csrf():
@@ -62,6 +70,7 @@ _original_require_role_call = RequireRole.__call__
 def override_auth():
     app.dependency_overrides[get_current_user] = mock_get_current_user
     app.dependency_overrides[get_current_session_id] = lambda: uuid.uuid4()
+    app.dependency_overrides[get_current_tenant] = mock_get_current_tenant
 
     # Monkey-patch RequireRole to set request.state.user and return MOCK_USER
     def _mock_require_role(self, request: StarletteRequest):
@@ -429,6 +438,7 @@ LUNG_PAYLOAD = {
 }
 
 
+@pytest.mark.usefixtures("override_auth")
 class TestDiabetesPredictions:
     def test_predict_diabetes_json(self, client):
         resp = client.post("/api/predict", json=DIABETES_PAYLOAD)
@@ -464,6 +474,7 @@ class TestDiabetesPredictions:
         assert resp.status_code == 422
 
 
+@pytest.mark.usefixtures("override_auth")
 class TestHeartPredictions:
     def test_predict_heart_json(self, client):
         resp = client.post("/api/predict-heart", json=HEART_PAYLOAD)
@@ -495,6 +506,7 @@ class TestHeartPredictions:
         assert resp.status_code == 422
 
 
+@pytest.mark.usefixtures("override_auth")
 class TestLungPredictions:
     def test_predict_lung_json(self, client):
         resp = client.post("/api/predict-lung", json=LUNG_PAYLOAD)
@@ -515,9 +527,10 @@ class TestLungPredictions:
         assert resp.status_code == 422
 
 
+@pytest.mark.usefixtures("override_auth")
 class TestApiUpload:
     def test_api_upload_compatibility(self, client, bypass_csrf):
-        fake_file = io.BytesIO(b"fake pdf content")
+        fake_file = io.BytesIO(b"%PDF-1.4 fake pdf content")
         resp = client.post(
             "/api/upload",
             files={"file": ("test.pdf", fake_file, "application/pdf")},
@@ -541,6 +554,7 @@ class TestApiDashboard:
 # ══════════════════════════════════════════════════════════════════════════
 
 
+@pytest.mark.usefixtures("override_auth")
 class TestHtmxPredictions:
     CSRF_COOKIES = {"csrf_token": "test-token"}
     CSRF_HEADERS = {"X-CSRFToken": "test-token"}
@@ -728,6 +742,7 @@ class TestDocumentPipeline(TestHtmxPredictions):
         resp = client.post(
             "/api/v1/document/text",
             json={"text": "Patient age 45, BMI 28.5, non-smoker."},
+            headers={"X-API-Key": VALID_API_KEY},
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -738,6 +753,7 @@ class TestDocumentPipeline(TestHtmxPredictions):
         resp = client.post(
             "/api/v1/document/text",
             json={"text": ""},
+            headers={"X-API-Key": VALID_API_KEY},
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -748,6 +764,7 @@ class TestDocumentPipeline(TestHtmxPredictions):
         resp = client.post(
             "/api/v1/document/upload",
             files={"file": ("test.txt", fake_file, "text/plain")},
+            headers={"X-API-Key": VALID_API_KEY},
         )
         assert resp.status_code == 400
 
@@ -758,6 +775,7 @@ class TestDocumentPipeline(TestHtmxPredictions):
         resp = client.post(
             "/api/v1/document/upload",
             files={"file": ("big.pdf", fake_file, "application/pdf")},
+            headers={"X-API-Key": VALID_API_KEY},
         )
         assert resp.status_code == 400
 
@@ -766,6 +784,7 @@ class TestDocumentPipeline(TestHtmxPredictions):
         resp = client.post(
             "/api/v1/document/upload",
             files={"file": ("empty.pdf", fake_file, "application/pdf")},
+            headers={"X-API-Key": VALID_API_KEY},
         )
         assert resp.status_code == 400
 
@@ -778,6 +797,7 @@ class TestDocumentPipeline(TestHtmxPredictions):
         resp = client.post(
             "/api/v1/document/upload",
             files={"file": ("report.pdf", fake_pdf, "application/pdf")},
+            headers={"X-API-Key": VALID_API_KEY},
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -787,20 +807,22 @@ class TestDocumentPipeline(TestHtmxPredictions):
     @patch("backend.app.api.v1.routes.upload.parse_document")
     def test_upload_parse_failure(self, mock_parse, client, bypass_csrf):
         mock_parse.side_effect = Exception("Corrupt file")
-        fake_file = io.BytesIO(b"some bytes")
+        fake_file = io.BytesIO(b"%PDF- corrupt file contents")
         resp = client.post(
             "/api/v1/document/upload",
             files={"file": ("bad.pdf", fake_file, "application/pdf")},
+            headers={"X-API-Key": VALID_API_KEY},
         )
         assert resp.status_code == 422
 
     @patch("backend.app.api.v1.routes.upload.parse_document")
     def test_upload_no_text(self, mock_parse, client, bypass_csrf):
         mock_parse.return_value = ""
-        fake_file = io.BytesIO(b"content")
+        fake_file = io.BytesIO(b"%PDF- blank page")
         resp = client.post(
             "/api/v1/document/upload",
             files={"file": ("blank.pdf", fake_file, "application/pdf")},
+            headers={"X-API-Key": VALID_API_KEY},
         )
         assert resp.status_code == 200
         assert "warning" in resp.json()
@@ -1303,6 +1325,7 @@ class TestCSRFProtection:
         resp = client.post(
             "/api/v1/document/text",
             json={"text": "test"},
+            headers={"X-API-Key": VALID_API_KEY},
         )
         assert resp.status_code == 403
 
@@ -1310,5 +1333,6 @@ class TestCSRFProtection:
         resp = client.post(
             "/api/v1/document/text",
             json={"text": "test"},
+            headers={"X-API-Key": VALID_API_KEY},
         )
         assert resp.status_code == 200

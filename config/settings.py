@@ -22,13 +22,13 @@ class Settings(BaseSettings):
     exports_dir: str = Field(
         default_factory=lambda: __import__("os").getenv(
             "EXPORT_DIR",
-            str(Path(__import__("tempfile").gettempdir()) / "exports_data")
+            str(Path(__import__("tempfile").gettempdir()) / "exports_data"),
         )
     )
     uploads_dir: str = Field(
         default_factory=lambda: __import__("os").getenv(
             "UPLOAD_DIR",
-            str(Path(__import__("tempfile").gettempdir()) / "uploads")
+            str(Path(__import__("tempfile").gettempdir()) / "uploads"),
         )
     )
 
@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     sync_database_url: str = "sqlite:///data/interim/audit_log.db"
     db_pool_size: int = 10
     db_max_overflow: int = 20
+    db_pool_timeout: int = Field(
+        default=30,
+        validation_alias=AliasChoices("DB_POOL_TIMEOUT", "DATABASE_POOL_TIMEOUT"),
+    )
 
     @field_validator("database_url", mode="before")
     @classmethod
@@ -44,9 +48,13 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             if v.startswith("postgres://"):
                 return v.replace("postgres://", "postgresql+asyncpg://", 1)
-            if v.startswith("postgresql://") and not v.startswith("postgresql+asyncpg://"):
+            if v.startswith("postgresql://") and not v.startswith(
+                "postgresql+asyncpg://"
+            ):
                 return v.replace("postgresql://", "postgresql+asyncpg://", 1)
-            if v.startswith("sqlite://") and not v.startswith("sqlite+aiosqlite://"):
+            if v.startswith("sqlite://") and not v.startswith(
+                "sqlite+aiosqlite://"
+            ):
                 return v.replace("sqlite://", "sqlite+aiosqlite://", 1)
         return v
 
@@ -67,6 +75,12 @@ class Settings(BaseSettings):
     # ── Redis / Rate limiting ────────────────────────────────────────────────
     redis_url: str = "redis://localhost:6379/0"
     rate_limit_per_minute: int = 60
+
+    # ── File Storage ─────────────────────────────────────────────────────────
+    max_upload_size_mb: int = Field(
+        default=5,
+        validation_alias=AliasChoices("MAX_UPLOAD_SIZE_MB", "UPLOAD_MAX_SIZE_MB"),
+    )
 
     # ── Email ────────────────────────────────────────────────────────────────
     # EMAIL_BACKEND: "development" (default, logs only) | "smtp" (real delivery)

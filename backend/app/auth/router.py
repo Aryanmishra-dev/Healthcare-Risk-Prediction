@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -33,10 +34,12 @@ from backend.app.auth.utils import (
 )
 from backend.app.core.config import settings
 from backend.app.core.database import get_db
+from backend.app.core.logging import get_logger
 from backend.app.models.prediction import PredictionAuditLog
 from backend.app.models.tenant import Membership, Tenant
 from backend.app.models.user import (
     EmailVerificationToken,
+    LoginHistory,
     PasswordResetToken,
     User,
     UserSession,
@@ -54,6 +57,22 @@ from backend.app.services.notifications.notification_service import (
     notification_dispatcher,
 )
 
+logger = get_logger(__name__)
+async def _update_session_activity(session_id: uuid.UUID) -> None:
+    """Update session last_activity in a separate session to avoid blocking."""
+    from backend.app.core.database import AsyncSessionLocal
+    from backend.app.models.base import utc_now
+
+    try:
+        async with AsyncSessionLocal() as db:
+            session = await db.get(UserSession, session_id)
+            if session:
+                session.last_activity = utc_now()
+                await db.commit()
+    except Exception:
+        logger.warning("session_activity_update_failed", extra={"sid": str(session_id)})
+
+
 router = APIRouter(prefix="/auth", tags=["auth"])
 bearer = HTTPBearer(auto_error=False)
 
@@ -67,7 +86,9 @@ async def get_current_user(
     if credentials is not None:
         token = credentials.credentials
     elif request is not None:
-        token = request.cookies.get("access_token")
+        token = request.cookies.get(
+            "__Host-access_token", request.cookies.get("access_token")
+        )
 
     if token is None:
         raise HTTPException(
@@ -88,11 +109,11 @@ async def get_current_user(
             status_code=401, detail="Session revoked or expired"
         )
 
-    # Update last activity
+    # Update last activity asynchronously to avoid blocking the request
     from backend.app.models.base import utc_now
 
     session.last_activity = utc_now()
-    await db.commit()
+    asyncio.create_task(_update_session_activity(session_id))
 
     user = await get_user_by_id(db, user_id)
     if user is None:
@@ -146,6 +167,7 @@ async def register(
     db: AsyncSession = Depends(get_db),
 ):
     ip = _get_ip(request)
+    request_id = getattr(request.state, "request_id", None)
     try:
         user = await create_user(
             db,
@@ -174,6 +196,17 @@ async def register(
         db.add(membership)
 
         await log_audit(db, "register", ip, None, user.id)
+
+        # Create email verification token
+        import secrets
+        raw_token = secrets.token_urlsafe(32)
+        token_hash = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+        verif_token = EmailVerificationToken(
+            user_id=user.id,
+            token_hash=token_hash,
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
+        )
+        db.add(verif_token)
         await db.commit()
         await db.refresh(user)
         user_id = user.id
@@ -184,12 +217,34 @@ async def register(
             category="Authentication",
             priority="NORMAL",
             title="Welcome to Healthcare Risk Prediction",
-            message="Your account has been successfully created.",
+            message=f"Verify your email: {settings.app_base_url}/auth/verify-email/{raw_token}",
+        )
+        logger.info(
+            "registration_success | user_id=%s tenant_id=%s "
+            "ip=%s request_id=%s",
+            user.id,
+            tenant.id,
+            ip,
+            request_id,
         )
         return user
     except HTTPException as e:
         await db.rollback()
         raise e
+    except Exception as e:
+        await db.rollback()
+        logger.exception(
+            "registration_failure | exception=%s endpoint=%s "
+            "user_id=anonymous tenant_id=none ip=%s request_id=%s",
+            type(e).__name__,
+            "/auth/register",
+            ip,
+            request_id,
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Registration failed. Please try again later.",
+        )
 
 
 @router.post(
@@ -207,6 +262,25 @@ async def login(
     db: AsyncSession = Depends(get_db),
 ):
     ip = _get_ip(request)
+
+    # Per-email rate limiting — max 10 failed attempts per 15 minutes
+    window_start = datetime.now(timezone.utc) - timedelta(minutes=15)
+    recent_failures = await db.execute(
+        select(func.count(LoginHistory.id)).where(
+            LoginHistory.user_id == select(User.id).where(
+                User.email == payload.email
+            ).scalar_subquery(),
+            LoginHistory.status == "failed",
+            LoginHistory.login_time >= window_start,
+        )
+    )
+    fail_count = recent_failures.scalar() or 0
+    if fail_count >= 10:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many login attempts. Please try again later.",
+        )
+
     user = await get_user_by_email(db, payload.email)
 
     if user is None or not verify_password(
@@ -241,9 +315,10 @@ async def login(
             access_token=access_token, refresh_token=refresh_token
         ).model_dump()
     )
-    secure = settings.app_env == "production"
+    secure = settings.app_env != "development"
+    cookie_prefix = "__Host-" if secure else ""
     response.set_cookie(
-        key="access_token",
+        key=f"{cookie_prefix}access_token",
         value=access_token,
         httponly=True,
         secure=secure,
@@ -252,7 +327,7 @@ async def login(
         path="/",
     )
     response.set_cookie(
-        key="refresh_token",
+        key=f"{cookie_prefix}refresh_token",
         value=refresh_token,
         httponly=True,
         secure=secure,
@@ -270,7 +345,9 @@ async def refresh(
     db: AsyncSession = Depends(get_db),
 ):
     if refresh_token is None:
-        refresh_token = request.cookies.get("refresh_token")
+        refresh_token = request.cookies.get(
+            "__Host-refresh_token", request.cookies.get("refresh_token")
+        )
     if refresh_token is None:
         raise HTTPException(status_code=401, detail="Missing refresh token")
 
@@ -300,9 +377,10 @@ async def refresh(
             access_token=access_token, refresh_token=new_refresh
         ).model_dump()
     )
-    secure = settings.app_env == "production"
+    secure = settings.app_env != "development"
+    cookie_prefix = "__Host-" if secure else ""
     response.set_cookie(
-        key="access_token",
+        key=f"{cookie_prefix}access_token",
         value=access_token,
         httponly=True,
         secure=secure,
@@ -311,7 +389,7 @@ async def refresh(
         path="/",
     )
     response.set_cookie(
-        key="refresh_token",
+        key=f"{cookie_prefix}refresh_token",
         value=new_refresh,
         httponly=True,
         secure=secure,
@@ -384,8 +462,10 @@ async def logout(
     )
     await db.commit()
     response = JSONResponse(content={"status": "Successfully logged out"})
-    response.delete_cookie("access_token", path="/")
-    response.delete_cookie("refresh_token", path="/")
+    secure = settings.app_env != "development"
+    cookie_prefix = "__Host-" if secure else ""
+    response.delete_cookie(f"{cookie_prefix}access_token", path="/")
+    response.delete_cookie(f"{cookie_prefix}refresh_token", path="/")
     return response
 
 

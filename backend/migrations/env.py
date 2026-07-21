@@ -27,24 +27,14 @@ from backend.app.models import Base  # noqa: E402
 
 target_metadata = Base.metadata
 
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
+
+def _include_symbol(tablename: str, schema: str | None) -> bool:
+    """Include all tables in autogenerate migrations."""
+    return True
 
 
 def run_migrations_offline() -> None:
-    """Run migrations in 'offline' mode.
-
-    This configures the context with just a URL
-    and not an Engine, though an Engine is acceptable
-    here as well.  By skipping the Engine creation
-    we don't even need a DBAPI to be available.
-
-    Calls to context.execute() here emit the given string to the
-    script output.
-
-    """
+    """Run migrations in 'offline' mode."""
     url = settings.database_url
     config.set_main_option("sqlalchemy.url", url)
     context.configure(
@@ -52,6 +42,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        include_symbol=_include_symbol,
     )
 
     with context.begin_transaction():
@@ -59,7 +50,15 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    is_sqlite = "sqlite" in settings.database_url
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        render_as_batch=is_sqlite,
+        compare_type=True,
+        compare_server_default=True,
+        include_symbol=_include_symbol,
+    )
 
     with context.begin_transaction():
         context.run_migrations()
@@ -68,7 +67,6 @@ def do_run_migrations(connection: Connection) -> None:
 async def run_async_migrations() -> None:
     """In this scenario we need to create an Engine
     and associate a connection with the context.
-
     """
 
     configuration = config.get_section(config.config_ini_section, {})
@@ -80,14 +78,33 @@ async def run_async_migrations() -> None:
     )
 
     async with connectable.connect() as connection:
-        await connection.run_sync(do_run_migrations)
+        if "sqlite" in settings.database_url:
+
+            def _setup_sqlite(conn):
+                from alembic.migration import MigrationContext
+                from alembic.script import ScriptDirectory
+
+                # Create all tables for SQLite (incremental ALTER not supported).
+                Base.metadata.create_all(conn)
+
+                # Stamp to head so alembic state is consistent.
+                script = ScriptDirectory.from_config(config)
+                head_revision = script.get_heads()[0]
+                mc = MigrationContext.configure(
+                    conn,
+                    opts={"target_metadata": Base.metadata},
+                )
+                mc.stamp(script, head_revision)
+
+            await connection.run_sync(_setup_sqlite)
+        else:
+            await connection.run_sync(do_run_migrations)
 
     await connectable.dispose()
 
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
-
     asyncio.run(run_async_migrations())
 
 

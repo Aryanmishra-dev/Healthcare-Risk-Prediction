@@ -85,7 +85,16 @@
     function onFileSelected(targetInput) {
         if (targetInput.files && targetInput.files.length > 0) {
             var f = targetInput.files[0];
-            label.textContent = f.name + ' (' + (f.size / 1024 / 1024).toFixed(2) + ' MB)';
+            var mb = (f.size / 1024 / 1024);
+            if (mb > 5) {
+                label.textContent = f.name + ' (' + mb.toFixed(2) + ' MB) — exceeds 5 MB limit';
+                label.classList.remove('hidden');
+                label.classList.add('text-red-600');
+                btn.disabled = true;
+                return;
+            }
+            label.classList.remove('text-red-600');
+            label.textContent = f.name + ' (' + mb.toFixed(2) + ' MB)';
             label.classList.remove('hidden');
             btn.disabled = false;
         } else {

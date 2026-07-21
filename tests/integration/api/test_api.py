@@ -9,9 +9,35 @@ Covers:
   - Pydantic schema validation edge cases
 """
 
+from datetime import datetime
 from unittest.mock import patch
+from uuid import uuid4
 
 import pytest
+from fastapi.testclient import TestClient
+
+from backend.app.auth.router import get_current_user
+from backend.app.main import app
+from backend.app.models.user import User
+
+
+def mock_get_current_user():
+    return User(
+        id=uuid4(),
+        email="test@example.com",
+        full_name="Test User",
+        is_active=True,
+        is_verified=True,
+        created_at=datetime.utcnow(),
+    )
+
+
+@pytest.fixture(autouse=True)
+def override_dependency():
+    app.dependency_overrides[get_current_user] = mock_get_current_user
+    yield
+    app.dependency_overrides.clear()
+
 
 # ── Root & Info ────────────────────────────────────────────────────────────
 

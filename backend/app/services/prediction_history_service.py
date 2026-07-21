@@ -84,11 +84,14 @@ async def get_history(
     db: AsyncSession,
     user_id: UUID,
     params: PredictionHistoryParams,
+    tenant_id: UUID | None = None,
 ) -> PredictionHistoryPaginated:
     """Get paginated prediction history with filters."""
     query = select(PredictionAuditLog).where(
         PredictionAuditLog.user_id == user_id
     )
+    if tenant_id:
+        query = query.where(PredictionAuditLog.tenant_id == tenant_id)
 
     if params.disease:
         query = query.where(PredictionAuditLog.disease_model == params.disease)

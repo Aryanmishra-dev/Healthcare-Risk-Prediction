@@ -1,8 +1,10 @@
+import uuid
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.app.api.dependencies import get_current_tenant
 from backend.app.auth.router import get_current_user
 from backend.app.core.database import get_db
 from backend.app.models.user import User
@@ -20,11 +22,12 @@ router = APIRouter(prefix="/predictions", tags=["Prediction History"])
 async def get_history(
     params: PredictionHistoryParams = Depends(),
     current_user: User = Depends(get_current_user),
+    tenant_id: uuid.UUID = Depends(get_current_tenant),
     db: AsyncSession = Depends(get_db),
 ):
     """Get paginated prediction history with filters."""
     return await prediction_history_service.get_history(
-        db, current_user.id, params
+        db, current_user.id, params, tenant_id
     )
 
 

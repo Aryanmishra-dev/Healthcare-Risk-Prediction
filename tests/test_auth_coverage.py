@@ -47,6 +47,41 @@ async def get_token(client):
     return None
 
 
+class TestRegistrationIntegration:
+    """End-to-end registration tests — verifies the full register flow."""
+
+    async def test_register_returns_201_and_user_response(self, client):
+        email = f"integration_{uuid.uuid4().hex[:8]}@example.com"
+        resp = await register_user(client, email=email)
+        assert resp.status_code == 201, resp.text
+        data = resp.json()
+        assert data["email"] == email
+        assert "id" in data
+        assert data["is_active"] is True
+        assert data["is_verified"] is False
+        assert data["role"] == "user"
+
+    async def test_register_duplicate_returns_409(self, client):
+        email = f"dup_{uuid.uuid4().hex[:8]}@example.com"
+        await register_user(client, email=email)
+        resp = await register_user(client, email=email)
+        assert resp.status_code == 409
+        assert "already registered" in resp.json()["detail"].lower()
+
+    async def test_register_then_login_and_access_me(self, client):
+        email = f"flow_{uuid.uuid4().hex[:8]}@example.com"
+        register_resp = await register_user(client, email=email)
+        assert register_resp.status_code == 201
+        login_resp = await login_user(client, email=email)
+        assert login_resp.status_code == 200, login_resp.text
+        token = login_resp.json()["access_token"]
+        me_resp = await client.get(
+            "/auth/me", headers={"Authorization": f"Bearer {token}"}
+        )
+        assert me_resp.status_code == 200
+        assert me_resp.json()["email"] == email
+
+
 class TestHttpOnlyCookies:
     async def test_login_sets_httponly_cookies(self, client):
         await register_user(client)

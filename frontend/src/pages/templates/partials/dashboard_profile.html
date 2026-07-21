@@ -58,7 +58,7 @@
 function profilePage() {
   return {
     async init() {
-      await this.load();
+      try { await this.load(); } catch(e) { console.warn('profilePage init error:', e); }
     },
     async load() {
       const res = await window.HealthPredictConfig.fetch('/auth/me');

@@ -12,7 +12,7 @@
             </div>
         </div>
 
-        <form id="login-form" class="p-6 space-y-4" onsubmit="return false;">
+        <form id="login-form" class="p-6 space-y-4" data-prevent-submit>
             <div id="login-error" class="hidden p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700"></div>
 
             <div>
@@ -37,7 +37,7 @@
 
             <p class="text-center text-xs text-slate-500">
                 Don't have an account?
-                <a href="/register" onclick="switchTab('register');return false" class="text-primary font-semibold hover:underline">Create one</a>
+                <a href="/register" class="text-primary font-semibold hover:underline">Create one</a>
             </p>
         </form>
     </div>

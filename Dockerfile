@@ -54,6 +54,9 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:8000/healthz || exit 1
 
+COPY --chown=appuser:appuser docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+
 # 1 worker: minimum viable concurrency for free tier (512MB limit).
 # Scale to 2*$(nproc)+1 in production orchestration with higher memory.
-CMD ["gunicorn", "backend.app.main:app", "-w", "1", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--timeout", "120", "--keep-alive", "30", "--worker-tmp-dir", "/dev/shm", "--access-logfile", "-", "--error-logfile", "-"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

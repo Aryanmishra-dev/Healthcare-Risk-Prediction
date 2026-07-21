@@ -1,28 +1,41 @@
+import uuid as _uuid
 from datetime import datetime
-from uuid import uuid4
 
 import pytest
+from fastapi import Request
 from fastapi.testclient import TestClient
 
+from backend.app.api.dependencies import get_current_tenant
 from backend.app.auth.router import get_current_user
 from backend.app.main import app
 from backend.app.models.user import User
 
 
-def mock_get_current_user():
-    return User(
-        id=uuid4(),
+MOCK_TENANT_ID = _uuid.uuid4()
+MOCK_USER_ID = _uuid.uuid4()
+
+
+def mock_get_current_user(request: Request):
+    user = User(
+        id=MOCK_USER_ID,
         email="test@example.com",
         full_name="Test User",
         is_active=True,
         is_verified=True,
         created_at=datetime.utcnow(),
     )
+    request.state.user = user
+    return user
+
+
+async def mock_get_current_tenant(request: Request) -> _uuid.UUID:
+    return MOCK_TENANT_ID
 
 
 @pytest.fixture(autouse=True)
 def override_dependency():
     app.dependency_overrides[get_current_user] = mock_get_current_user
+    app.dependency_overrides[get_current_tenant] = mock_get_current_tenant
     yield
     app.dependency_overrides.clear()
 

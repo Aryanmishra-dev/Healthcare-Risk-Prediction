@@ -26,6 +26,11 @@ MLFLOW_TRACKING_URI = os.environ.get(
 MODEL_SOURCE = os.environ.get("MODEL_SOURCE", "local").lower()
 _IS_PRODUCTION = os.environ.get("APP_ENV") == "production"
 
+# Timeout (seconds) for MLflow model downloads per attempt.
+_MLFLOW_DOWNLOAD_TIMEOUT = int(
+    os.environ.get("MLFLOW_DOWNLOAD_TIMEOUT", "120")
+)
+
 # Configure MLflow
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 
@@ -83,10 +88,33 @@ class ModelManager:
             return_exceptions=True,
         )
 
+        # Run a warmup inference benchmark for each loaded model
+        warmup_results = {}
+        for name in ("diabetes", "heart_disease", "lung_cancer"):
+            model_entry = self.models.get(name)
+            if model_entry and model_entry["status"] == "ready":
+                pipeline = model_entry.get("pipeline")
+                if pipeline and hasattr(pipeline, "predict_proba"):
+                    try:
+                        import numpy as np
+
+                        n_features = getattr(pipeline, "n_features_in_", 5)
+                        dummy = np.zeros((1, n_features), dtype=np.float32)
+                        warmup_start = time.perf_counter()
+                        _ = pipeline.predict_proba(dummy)[0]
+                        elapsed = round(
+                            (time.perf_counter() - warmup_start) * 1000, 1
+                        )
+                        warmup_results[name] = f"{elapsed}ms"
+                    except Exception as exc:
+                        warmup_results[name] = f"warmup_failed: {exc}"
+
         max_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-        memory_mb = max_rss / 1024
+        # On macOS ru_maxrss is in bytes, on Linux in kilobytes.
         if os.uname().sysname == "Darwin":
             memory_mb = max_rss / 1024 / 1024
+        else:
+            memory_mb = max_rss / 1024
 
         self.startup_diagnostics = {
             "startup_time_seconds": round(time.time() - start_time, 2),
@@ -94,6 +122,7 @@ class ModelManager:
             "models_loaded": {
                 k: v["status"] == "ready" for k, v in self.models.items()
             },
+            "warmup_latency_ms": warmup_results,
         }
         logger.info(
             f"Model warmup complete. Diagnostics: {self.startup_diagnostics}"
@@ -105,8 +134,11 @@ class ModelManager:
         """Retry logic for loading models from MLflow."""
         for attempt in range(1, max_retries + 1):
             try:
-                # Running blocking load operations in thread
-                return await asyncio.to_thread(load_func)
+                # Running blocking load operations in thread with outer timeout
+                return await asyncio.wait_for(
+                    asyncio.to_thread(load_func),
+                    timeout=_MLFLOW_DOWNLOAD_TIMEOUT,
+                )
             except Exception as e:
                 logger.error(
                     f"Failed to load {model_name} "

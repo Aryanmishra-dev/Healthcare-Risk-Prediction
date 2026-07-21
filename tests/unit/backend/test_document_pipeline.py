@@ -426,7 +426,7 @@ class TestUploadEndpoint:
     def test_upload_parse_failure_returns_422(self, mock_parse, client):
         """When parse_document raises, endpoint returns 422."""
         mock_parse.side_effect = Exception("Corrupt file")
-        fake_file = io.BytesIO(b"some bytes")
+        fake_file = io.BytesIO(b"%PDF-1.4 corrupted")
         resp = client.post(
             "/api/v1/document/upload",
             files={"file": ("bad.pdf", fake_file, "application/pdf")},
@@ -439,7 +439,7 @@ class TestUploadEndpoint:
     def test_upload_no_text_returns_warning(self, mock_parse, client):
         """When parse_document returns empty string, endpoint returns warning."""
         mock_parse.return_value = ""
-        fake_file = io.BytesIO(b"pdf content")
+        fake_file = io.BytesIO(b"%PDF-1.4 blank")
         resp = client.post(
             "/api/v1/document/upload",
             files={"file": ("blank.pdf", fake_file, "application/pdf")},

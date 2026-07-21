@@ -1,22 +1,135 @@
 # Files not needed in the Docker image
 .venv/
-.venv-1/
+.venv-*/
+venv/
+env/
+ENV/
+
+# Git
 .git/
 .gitignore
-.ipynb_checkpoints/
+.gitattributes
+.gitkeep
+
+# Python artifacts
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+
+# Secrets and local configuration
+.env
+.env.local
+.env.*
+*.env
+!config/.env.example
+!config/.env.development
+!config/.env.staging
+config/.env.production
+
+# Node and frontend build artifacts
+node_modules/
+frontend/dist/
+frontend/src/assets/tailwind.css
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+ml/experiments/*_plots/
+ml/experiments/lung_cancer_plots/
+
+# Model binaries (too large for Docker build)
+*.pkl
+*.h5
+*.joblib
+*.pt
+*.onnx
+*.npz
+
+# Data (mounted as volumes in production)
+data/
 data/raw/*
-!data/raw/.gitkeep
-ml/experiments/
+data/interim/*
+data/processed/*
+data/external/*
+data/schemas/*
+backend/data/
+ml/pipelines/evaluation/results/
+uploads/
+exports_data/
+
+# Test and CI artifacts
 tests/
 htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+bandit_report.json
+*.out
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Distribution
+*.tar.gz
+*.zip
+
+# MLflow
+mlruns/
+mlruns.db
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+
+# Documentation (not needed at runtime)
 *.md
 *.png
 !frontend/src/assets/*.png
-*.ipynb
-image.png
-pyproject.toml
+images/
+
+# Requirements (dev not needed)
 backend/requirements-dev.txt
+requirements-dev.txt
+
+# Docker files (avoid recursive includes)
 deployment/docker/
+docker-compose.yml
+Dockerfile
 .dockerignore
+
+# Runtime databases
+*.db
+*.sqlite3
+healthcare.db
+
+# Infrastructure/docs/cicd
+docs/
+monitoring/
+scripts/
+
+# Planning/workspace artifacts
+.planning/
+*.phase/
+.agents/

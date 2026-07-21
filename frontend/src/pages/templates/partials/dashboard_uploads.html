@@ -44,7 +44,7 @@
 function uploadsPage() {
   return {
     async init() {
-      await this.load();
+      try { await this.load(); } catch(e) { console.warn('uploadsPage init error:', e); }
     },
     async load() {
       const res = await window.HealthPredictConfig.fetch('/auth/uploads');

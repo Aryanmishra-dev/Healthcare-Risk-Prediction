@@ -1,12 +1,34 @@
 import os
 import sqlite3
+from datetime import datetime
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
 
+from backend.app.auth.router import get_current_user
 from backend.app.main import app
+from backend.app.models.user import User
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
+
+
+def mock_get_current_user():
+    return User(
+        id=uuid4(),
+        email="test@example.com",
+        full_name="Test User",
+        is_active=True,
+        is_verified=True,
+        created_at=datetime.utcnow(),
+    )
+
+
+@pytest.fixture(autouse=True)
+def override_dependency():
+    app.dependency_overrides[get_current_user] = mock_get_current_user
+    yield
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture(scope="module")

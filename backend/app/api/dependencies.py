@@ -372,6 +372,33 @@ async def get_current_tenant(
 # ── Startup validation ────────────────────────────────────────────────────
 
 
+def _validate_model_files() -> list[str]:
+    """Check that required model artifacts exist on disk."""
+    from pathlib import Path
+
+    model_dir = Path(__file__).resolve().parents[3] / "ml" / "models"
+    if not model_dir.is_dir():
+        return [f"Model directory not found: {model_dir}"]
+
+    required = [
+        "diabetes_xgboost.pkl",
+        "isotonic_calibrator.pkl",
+        "heart_disease_xgboost.pkl",
+        "heart_disease_calibrator.pkl",
+        "heart_disease_features.pkl",
+        "lung_cancer_model.pkl",
+        "lung_cancer_scaler.pkl",
+        "lung_cancer_features.pkl",
+        "lung_cancer_calibrator.pkl",
+    ]
+    missing = [f for f in required if not (model_dir / f).is_file()]
+    if missing:
+        return [
+            f"Missing model files in {model_dir}: {', '.join(missing)}"
+        ]
+    return []
+
+
 def validate_startup_config() -> None:
     """
     Called from the FastAPI lifespan before the application begins serving.
@@ -382,6 +409,23 @@ def validate_startup_config() -> None:
     app_env = os.environ.get("APP_ENV", "development")
     errors: list[str] = []
     warnings: list[str] = []
+
+    # Model file readiness
+    model_source = os.environ.get("MODEL_SOURCE", "local").lower()
+    if model_source == "local":
+        errors.extend(_validate_model_files())
+    elif model_source == "mlflow":
+        mlflow_uri = os.environ.get("MLFLOW_TRACKING_URI", "")
+        if not mlflow_uri:
+            warnings.append(
+                "MODEL_SOURCE=mlflow but MLFLOW_TRACKING_URI is not set. "
+                "Will fall back to disk."
+            )
+    else:
+        warnings.append(
+            f"Unrecognized MODEL_SOURCE={model_source!r}. "
+            "Expected 'local' or 'mlflow'. Will use local."
+        )
 
     # API key
     api_key = os.environ.get("API_KEY", "")

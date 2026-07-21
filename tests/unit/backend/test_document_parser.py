@@ -80,6 +80,7 @@ class TestParsePdf:
         from backend.app.services.document_parser import parse_pdf
 
         mock_doc = MagicMock()
+        mock_doc.page_count = 1
         mock_page = MagicMock()
         mock_page.get_text.return_value = "Page 1 content\n"
         mock_doc.__enter__.return_value = mock_doc
@@ -97,6 +98,7 @@ class TestParsePdf:
         from backend.app.services.document_parser import parse_pdf
 
         mock_doc = MagicMock()
+        mock_doc.page_count = 1
         mock_page = MagicMock()
         mock_page.get_text.return_value = ""
         mock_page.get_pixmap.return_value.tobytes.return_value = b"png"
@@ -109,6 +111,23 @@ class TestParsePdf:
         assert "OCR extracted text" in result
         mock_tess.image_to_string.assert_called_once()
 
+    def test_rejects_excessive_pages(self):
+        mock_fitz, _, _ = _mock_pdf_modules()
+        if "backend.app.services.document_parser" in sys.modules:
+            del sys.modules["backend.app.services.document_parser"]
+
+        from backend.app.services.document_parser import parse_pdf
+
+        mock_doc = MagicMock()
+        mock_doc.page_count = 999
+        mock_doc.__enter__.return_value = mock_doc
+        mock_fitz.open.return_value = mock_doc
+
+        from fastapi import HTTPException
+
+        with pytest.raises(HTTPException, match="has.*pages"):
+            parse_pdf(b"too many pages")
+
     def test_empty_document_returns_empty_string(self):
         mock_fitz, mock_tess, _ = _mock_pdf_modules()
         if "backend.app.services.document_parser" in sys.modules:
@@ -117,6 +136,7 @@ class TestParsePdf:
         from backend.app.services.document_parser import parse_pdf
 
         mock_doc = MagicMock()
+        mock_doc.page_count = 1
         mock_page = MagicMock()
         mock_page.get_text.return_value = ""
         mock_page.get_pixmap = MagicMock(return_value=MagicMock())

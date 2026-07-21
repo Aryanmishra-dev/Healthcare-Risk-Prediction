@@ -6,6 +6,7 @@ Delegates model loading and caching to ModelManager.
 
 import asyncio
 import logging
+import os
 
 import numpy as np
 import pandas as pd  # type: ignore[import-untyped]
@@ -17,7 +18,10 @@ logger = logging.getLogger(__name__)
 
 
 def load_models(app):
-    """Load models synchronously for legacy callers and tests."""
+    """Load models synchronously for legacy callers and tests.
+    NOTE: Kept for test compatibility — model_manager.load_all_models()
+    is the preferred path.
+    """
     app.state.models = {}
     model_manager.models["diabetes"].update(
         {
@@ -72,14 +76,22 @@ def get_lung_deps(request: Request):
         raise HTTPException(status_code=503, detail=str(e))
 
 
+PREDICTION_TIMEOUT = float(os.environ.get("PREDICTION_TIMEOUT_SECONDS", "5.0"))
+
+
 async def _run_with_timeout(func, *args, **kwargs):
     try:
         return await asyncio.wait_for(
-            asyncio.to_thread(func, *args, **kwargs), timeout=5.0
+            asyncio.to_thread(func, *args, **kwargs),
+            timeout=PREDICTION_TIMEOUT,
         )
     except asyncio.TimeoutError:
         raise HTTPException(
-            status_code=504, detail="Model inference timed out (exceeded 5s)"
+            status_code=504,
+            detail=(
+                "Model inference timed out "
+                f"(exceeded {PREDICTION_TIMEOUT}s)"
+            ),
         )
 
 
@@ -207,6 +219,10 @@ def _sync_predict_heart(
     phys_health,
     diabetes,
 ):
+    # BRFSS-derived columns _RFHYPE5, _RFCHOL, _RFDRHV5 use 1=Yes/2=No
+    # encoding. Our inputs are 0/1 where 1=condition present.
+    # --high_bp=1 → _RFHYPE5=0.0 (condition present, inverted indicator)
+    # This inversion matches the encoding used during stub training.
     row = {
         "_AGEG5YR": float(age),
         "SEX": float(sex),

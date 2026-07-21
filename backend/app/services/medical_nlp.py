@@ -11,6 +11,25 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+# Negation detection — checked before keyword patterns to avoid false positives
+_NEGATION_PREFIX_PATTERNS = re.compile(
+    r"\b(?:no|denies|denied|without|rule\s*out|ruled?\s*out|"
+    r"negative\s*for|no\s*history\s*of|no\s*evidence\s*of|"
+    r"does\s*not\s*have|denies\s*any\s*history\s*of)\s+(?:any\s+)?",
+    re.IGNORECASE,
+)
+
+
+def _is_negated(text: str, keyword: str, window: int = 30) -> bool:
+    """Check if a keyword is negated within a window of characters before it."""
+    idx = text.lower().find(keyword.lower())
+    if idx == -1:
+        return False
+    start = max(0, idx - window)
+    prefix = text[start:idx]
+    return bool(_NEGATION_PREFIX_PATTERNS.search(prefix))
+
+
 # Pattern Definitions
 _BMI_PATTERNS = [
     re.compile(
@@ -192,10 +211,10 @@ def _extract_blood_pressure(text: str):
             m.group(0),
         )
     m = _BP_KEYWORD_HIGH.search(text)
-    if m:
+    if m and not _is_negated(text, m.group(0)):
         return _make_res("high", 0.8, m.group(0))
     m = _BP_KEYWORD_NORMAL.search(text)
-    if m:
+    if m and not _is_negated(text, m.group(0)):
         return _make_res("normal", 0.8, m.group(0))
     return None
 
@@ -207,30 +226,30 @@ def _extract_cholesterol(text: str):
             "high" if int(m.group(1)) >= 240 else "normal", 0.9, m.group(0)
         )
     m = _CHOL_KEYWORD_HIGH.search(text)
-    if m:
+    if m and not _is_negated(text, m.group(0)):
         return _make_res("high", 0.8, m.group(0))
     m = _CHOL_KEYWORD_NORMAL.search(text)
-    if m:
+    if m and not _is_negated(text, m.group(0)):
         return _make_res("normal", 0.8, m.group(0))
     return None
 
 
 def _extract_smoking(text: str):
     m = _SMOKER_NO.search(text)
-    if m:
+    if m and not _is_negated(text, m.group(0)):
         return _make_res("no", 0.85, m.group(0))
     m = _SMOKER_YES.search(text)
-    if m:
+    if m and not _is_negated(text, m.group(0)):
         return _make_res("yes", 0.85, m.group(0))
     return None
 
 
 def _extract_physical_activity(text: str):
     m = _ACTIVE_YES.search(text)
-    if m:
+    if m and not _is_negated(text, m.group(0)):
         return _make_res("active", 0.8, m.group(0))
     m = _ACTIVE_NO.search(text)
-    if m:
+    if m and not _is_negated(text, m.group(0)):
         return _make_res("inactive", 0.8, m.group(0))
     return None
 
@@ -315,13 +334,15 @@ def _extract_regex(pattern, text, conf=0.8, bool_flag=False, val_type=str):
     m = pattern.search(text)
     if m:
         if bool_flag:
+            if _is_negated(text, m.group(0)):
+                return None
             return _make_res("yes", conf, m.group(0))
         try:
             return _make_res(val_type(m.group(1)), conf, m.group(0))
         except Exception:
             return None
     if bool_flag:
-        return _make_res("no", 0.5, "not found")  # Low confidence negative
+        return None  # Absence of evidence is not evidence of absence
     return None
 
 

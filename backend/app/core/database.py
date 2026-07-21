@@ -24,6 +24,7 @@ engine = create_async_engine(
     # Increase proportionally when adding workers.
     pool_size=settings.db_pool_size,
     max_overflow=settings.db_max_overflow,
+    pool_timeout=settings.db_pool_timeout,
 )
 
 AsyncSessionLocal = async_sessionmaker(
