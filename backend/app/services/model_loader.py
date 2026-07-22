@@ -20,6 +20,35 @@ def load_models(app):
     Uses lazy loading — loads on first prediction if not already loaded.
     """
     app.state.models = {}
+    model_manager.models["diabetes"].update(
+        {
+            "status": "ready",
+            "version": "local",
+            "stage": "Local",
+            "latency_ms": 0.0,
+            "deps": model_manager._fetch_diabetes_from_disk(),
+        }
+    )
+    model_manager.models["heart_disease"].update(
+        {
+            "status": "ready",
+            "version": "local",
+            "stage": "Local",
+            "latency_ms": 0.0,
+            "deps": model_manager._fetch_heart_disease_from_disk(),
+        }
+    )
+    model_manager.models["lung_cancer"].update(
+        {
+            "status": "ready",
+            "version": "local",
+            "stage": "Local",
+            "latency_ms": 0.0,
+            "deps": model_manager._fetch_lung_cancer_from_disk(),
+        }
+    )
+    app.state.models.update(model_manager.export_app_state())
+    logger.info("local_models_loaded")
 
 
 # ── Dependency Injectors (Circuit Breaker) ──
