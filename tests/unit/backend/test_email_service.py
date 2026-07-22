@@ -6,7 +6,6 @@ from backend.app.services.email_service import (
     SMTPEmailBackend,
     build_email,
     create_email_backend,
-    email_backend,
     render_email_verification,
     render_generic,
     render_new_login,
