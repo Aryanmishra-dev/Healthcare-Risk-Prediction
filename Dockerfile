@@ -47,7 +47,7 @@ ENV PYTHONPATH=/app \
     PYTHONDONTWRITEBYTECODE=1
 
 COPY --chown=appuser:appuser backend/ ./backend/
-COPY --chown=appuser:appuser frontend/ ./frontend/
+COPY --from=builder --chown=appuser:appuser /build/frontend/ ./frontend/
 COPY --chown=appuser:appuser ml/ ./ml/
 COPY --chown=appuser:appuser shared/ ./shared/
 COPY --chown=appuser:appuser config/ ./config/
