@@ -51,11 +51,24 @@ class _InMemoryBucket:
 _buckets: dict[str, _InMemoryBucket] = defaultdict(lambda: _InMemoryBucket(60))
 _buckets_lock = asyncio.Lock()
 _fallback_logged_at: float = 0.0  # Rate-limit the warning log itself
+_last_bucket_cleanup: float = 0.0
 
 
 def clear_rate_limit_buckets() -> None:
     """Clear all in-memory rate limit buckets. Useful in tests."""
     _buckets.clear()
+
+
+async def _cleanup_stale_buckets() -> None:
+    """Remove buckets that haven't been used for 5+ minutes."""
+    global _last_bucket_cleanup
+    now = time.monotonic()
+    if now - _last_bucket_cleanup < 300:
+        return
+    _last_bucket_cleanup = now
+    stale_keys = [k for k, v in _buckets.items() if now - v.last_refill > 300]
+    for k in stale_keys:
+        del _buckets[k]
 
 
 async def _in_memory_rate_limit(
@@ -90,6 +103,7 @@ async def _in_memory_rate_limit(
         )
         _fallback_logged_at = now
 
+    await _cleanup_stale_buckets()
     client_ip = request.headers.get("x-forwarded-for", "").split(",")[
         0
     ].strip() or (request.client.host if request.client else "unknown")
@@ -393,9 +407,7 @@ def _validate_model_files() -> list[str]:
     ]
     missing = [f for f in required if not (model_dir / f).is_file()]
     if missing:
-        return [
-            f"Missing model files in {model_dir}: {', '.join(missing)}"
-        ]
+        return [f"Missing model files in {model_dir}: {', '.join(missing)}"]
     return []
 
 

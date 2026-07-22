@@ -10,10 +10,7 @@ Supports:
 import io
 import logging
 
-import fitz  # type: ignore[import-untyped]  # PyMuPDF
-import pytesseract  # type: ignore[import-untyped]
 from fastapi import HTTPException
-from PIL import Image
 
 logger = logging.getLogger(__name__)
 
@@ -29,13 +26,17 @@ def parse_pdf(file_bytes: bytes) -> str:
     If no text is found (e.g., scanned PDF), falls back to OCR.
     """
 
+    import fitz  # PyMuPDF
+
     text_parts: list[str] = []
     with fitz.open(stream=file_bytes, filetype="pdf") as doc:
         if doc.page_count > MAX_PDF_PAGES:
             raise HTTPException(
                 status_code=400,
-                detail=f"PDF has {doc.page_count} pages (max {MAX_PDF_PAGES}). "
-                "Please upload a shorter document.",
+                detail=(
+                    f"PDF has {doc.page_count} pages (max {MAX_PDF_PAGES}). "
+                    "Please upload a shorter document."
+                ),
             )
         for page_num, page in enumerate(doc):
             page_text = page.get_text("text")
@@ -45,6 +46,9 @@ def parse_pdf(file_bytes: bytes) -> str:
                     "pdf_page_no_text_falling_back_to_ocr",
                     extra={"page": page_num},
                 )
+                import pytesseract
+                from PIL import Image
+
                 pix = page.get_pixmap(dpi=150)
                 img = Image.open(io.BytesIO(pix.tobytes("png")))
                 page_text = pytesseract.image_to_string(img)
@@ -70,6 +74,9 @@ def parse_image(file_bytes: bytes) -> str:
 
     Uses pytesseract with Pillow for image handling.
     """
+
+    import pytesseract
+    from PIL import Image
 
     image = Image.open(io.BytesIO(file_bytes))
 

@@ -1,7 +1,5 @@
 from typing import Any, Optional
 
-from sqlalchemy.orm import selectinload
-
 from backend.app.core.enums import OrganizationRole, UserRole
 from backend.app.models.user import User
 

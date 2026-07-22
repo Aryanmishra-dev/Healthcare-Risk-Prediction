@@ -58,6 +58,8 @@ from backend.app.services.notifications.notification_service import (
 )
 
 logger = get_logger(__name__)
+
+
 async def _update_session_activity(session_id: uuid.UUID) -> None:
     """Update session last_activity in a separate session to avoid blocking."""
     from backend.app.core.database import AsyncSessionLocal
@@ -70,7 +72,9 @@ async def _update_session_activity(session_id: uuid.UUID) -> None:
                 session.last_activity = utc_now()
                 await db.commit()
     except Exception:
-        logger.warning("session_activity_update_failed", extra={"sid": str(session_id)})
+        logger.warning(
+            "session_activity_update_failed", extra={"sid": str(session_id)}
+        )
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -199,6 +203,7 @@ async def register(
 
         # Create email verification token
         import secrets
+
         raw_token = secrets.token_urlsafe(32)
         token_hash = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
         verif_token = EmailVerificationToken(
@@ -217,7 +222,10 @@ async def register(
             category="Authentication",
             priority="NORMAL",
             title="Welcome to Healthcare Risk Prediction",
-            message=f"Verify your email: {settings.app_base_url}/auth/verify-email/{raw_token}",
+            message=(
+                "Verify your email: "
+                f"{settings.app_base_url}/auth/verify-email/{raw_token}"
+            ),
         )
         logger.info(
             "registration_success | user_id=%s tenant_id=%s "
@@ -267,9 +275,10 @@ async def login(
     window_start = datetime.now(timezone.utc) - timedelta(minutes=15)
     recent_failures = await db.execute(
         select(func.count(LoginHistory.id)).where(
-            LoginHistory.user_id == select(User.id).where(
-                User.email == payload.email
-            ).scalar_subquery(),
+            LoginHistory.user_id
+            == select(User.id)
+            .where(User.email == payload.email)
+            .scalar_subquery(),
             LoginHistory.status == "failed",
             LoginHistory.login_time >= window_start,
         )

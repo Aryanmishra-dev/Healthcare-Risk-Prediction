@@ -2,7 +2,7 @@ services:
   - type: web
     name: healthcare-risk-prediction
     runtime: docker
-    plan: standard
+    plan: free
     dockerfilePath: ./Dockerfile
     healthCheckPath: /healthz
     envVars:
@@ -24,3 +24,7 @@ services:
         sync: false
       - key: MLFLOW_TRACKING_URI
         sync: false
+      - key: DB_POOL_SIZE
+        value: "2"
+      - key: DB_MAX_OVERFLOW
+        value: "4"

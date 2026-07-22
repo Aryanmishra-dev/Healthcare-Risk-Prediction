@@ -1,12 +1,3 @@
-"""
-FastAPI Healthcare Risk Prediction — Unified App.
-
-Serves the HTMX-based UI and prediction API endpoints.
-
-Run locally:
-    uvicorn backend.app.main:app --reload --port 8000
-"""
-
 import asyncio
 import json
 import os
@@ -34,7 +25,6 @@ from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi_cache import FastAPICache
 from prometheus_client import (
     CONTENT_TYPE_LATEST,
     Counter,
@@ -95,7 +85,6 @@ from backend.app.services.shap_explainer import (
     explain_diabetes,
     explain_heart,
     explain_lung,
-    load_explainers,
 )
 
 logger = get_logger(__name__)
@@ -106,8 +95,6 @@ TEMPLATE_DIR = FRONTEND_DIR / "pages" / "templates"
 STATIC_DIR = FRONTEND_DIR / "assets"
 REGISTRY_PATH = REPO_ROOT / "ml" / "registry" / "model_registry.json"
 
-# ── Model Monitoring (Drift Detection) ─────────────────────────────────────
-# Track the distribution of predicted probabilities to detect concept drift
 PREDICTION_PROB_METRIC = Histogram(
     "model_prediction_probability",
     "Predicted risk probability distribution",
@@ -128,7 +115,6 @@ HTTP_REQUEST_DURATION = Histogram(
 
 
 def _csv_env(name: str, default: str) -> list[str]:
-    """Read a comma-separated env var into a trimmed list."""
     return [
         item.strip()
         for item in os.environ.get(name, default).split(",")
@@ -137,8 +123,6 @@ def _csv_env(name: str, default: str) -> list[str]:
 
 
 def _cors_origins(default: str) -> list[str]:
-    """Prefer ALLOWED_ORIGINS while keeping CORS_ORIGINS backward
-    compatible."""
     raw_origins = (
         os.environ.get("ALLOWED_ORIGINS")
         or os.environ.get("CORS_ORIGINS")
@@ -151,29 +135,30 @@ def _cors_origins(default: str) -> list[str]:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Load ML models at startup."""
     setup_logging()
     logger.info("application_startup version=3.0.0")
 
-    # Validate configuration before accepting any traffic (B7)
     from backend.app.api.dependencies import validate_startup_config
 
     validate_startup_config()
 
-    # Initialize in-memory cache
+    from fastapi_cache import FastAPICache
     from fastapi_cache.backends.inmemory import InMemoryBackend
 
     FastAPICache.init(InMemoryBackend(), prefix="healthpredict-cache")
 
-    app.state.models = {}
+    try:
+        from backend.app.core.database import engine as _async_db_engine
+        from backend.app.models import Base
 
-    # Load models before accepting requests so health and inference are ready.
-    await model_manager.load_all_models()
-    app.state.models.update(model_manager.export_app_state())
-    # Load SHAP explainers synchronously (in a thread to avoid blocking).
-    # This ensures explainers are ready before the first prediction request.
-    await asyncio.to_thread(load_explainers)
-    logger.info("models_loaded")
+        async with _async_db_engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+            logger.info("database_tables_created")
+    except Exception:
+        logger.warning("table_creation_skipped_continuing_anyway")
+
+    app.state.models = {}
+    logger.info("lazy_init_enabled_models_will_load_on_first_request")
     yield
     logger.info("application_shutdown")
 
@@ -190,7 +175,6 @@ app = FastAPI(
 
 @app.get("/docs", include_in_schema=False)
 async def docs_alias():
-    """Compatibility Swagger UI path expected by common health checks."""
     return get_swagger_ui_html(
         openapi_url="/api/openapi.json",
         title="Healthcare Risk Prediction - Docs",
@@ -199,11 +183,9 @@ async def docs_alias():
 
 @app.get("/openapi.json", include_in_schema=False)
 async def openapi_alias():
-    """Compatibility OpenAPI path expected by common health checks."""
     return JSONResponse(app.openapi())
 
 
-# ── Templates & Static ────────────────────────────────────────────────────
 templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
 templates.env.globals["BACKEND_URL"] = os.environ.get(
     "BACKEND_URL", "https://healthcare-risk-prediction.onrender.com"
@@ -212,11 +194,10 @@ templates.env.globals["BACKEND_URL"] = os.environ.get(
 if STATIC_DIR.is_dir():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
-# ── CORS ───────────────────────────────────────────────────────────────────
 _IS_PROD = os.environ.get("APP_ENV") == "production"
 if _IS_PROD:
     ALLOWED_ORIGINS = _cors_origins(
-        "https://healthcare-risk-prediction.onrender.com",
+        "https://healthcare-risk-prediction.onrender.com"
     )
 else:
     ALLOWED_ORIGINS = _cors_origins(
@@ -243,25 +224,18 @@ app.add_middleware(
     allow_credentials="*" not in ALLOWED_ORIGINS,
 )
 
-# Add Timing Middleware for request timing and error logging
 app.add_middleware(TimingMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 
-# ── Trusted Host middleware (reject spoofed Host headers) ─────────────
 TRUSTED_HOSTS = _csv_env(
     "TRUSTED_HOSTS",
     "localhost,127.0.0.1,testserver,healthcare-risk-prediction.onrender.com",
 )
-
-app.add_middleware(
-    TrustedHostMiddleware,
-    allowed_hosts=TRUSTED_HOSTS,
-)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=TRUSTED_HOSTS)
 
 
 @app.middleware("http")
 async def prometheus_metrics_middleware(request: Request, call_next):
-    """Collect basic request metrics without a Starlette-pinned dependency."""
     if request.url.path == "/metrics":
         return await call_next(request)
     with HTTP_REQUEST_DURATION.labels(request.method, request.url.path).time():
@@ -277,21 +251,15 @@ def metrics():
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
-# Removed old request_id_middleware since SecurityHeadersMiddleware handles it.
-
-
 def _clamp(value, lo, hi):
-    """Clamp a numeric value to [lo, hi]."""
     return max(lo, min(hi, value))
 
 
 def _gauge_offset(pct: float) -> float:
-    """Calculate SVG gauge stroke-dashoffset from percentage."""
     return round(251.2 - 188.4 * pct / 100, 1)
 
 
 def _age_to_group(age_years: float) -> float:
-    """Map an age in years to the BRFSS 13-bucket age feature."""
     if age_years < 25:
         return 1.0
     if age_years >= 80:
@@ -300,7 +268,6 @@ def _age_to_group(age_years: float) -> float:
 
 
 def _prediction_payload(result: dict, model_name: str) -> dict:
-    """Add launch-safe prediction metadata to a risk result."""
     probability = round(float(result["risk_percentage"]) / 100.0, 4)
     return {
         **result,
@@ -313,7 +280,6 @@ def _prediction_payload(result: dict, model_name: str) -> dict:
 
 
 def _binary_from_legacy(value: int | float) -> int:
-    """Map legacy 1/2 yes-no values to 0/1 while preserving 0/1 inputs."""
     return 1 if float(value) >= 2 else int(float(value) >= 1)
 
 
@@ -321,15 +287,16 @@ def _binary_from_legacy(value: int | float) -> int:
 async def validation_exception_handler(
     request: Request, exc: RequestValidationError
 ):
-    """Handle FastAPI validation errors cleanly for HTMX clients."""
     if request.headers.get("hx-request") == "true":
         return templates.TemplateResponse(
             request,
             "partials/error.html",
             {
                 "request": request,
-                "error": "Invalid input provided. "
-                "Please check the form fields and try again.",
+                "error": (
+                    "Invalid input provided. "
+                    "Please check the form fields and try again."
+                ),
             },
             status_code=200,
         )
@@ -341,7 +308,6 @@ async def validation_exception_handler(
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
-    """Handle general HTTP exceptions cleanly for HTMX clients."""
     if request.headers.get("hx-request") == "true":
         return templates.TemplateResponse(
             request,
@@ -358,7 +324,6 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 @app.exception_handler(Exception)
 async def generic_exception_handler(request: Request, exc: Exception):
-    """Catch-all 500 handler for unhandled exceptions."""
     logger.exception(
         "unhandled_exception",
         extra={"path": request.url.path, "method": request.method},
@@ -367,22 +332,18 @@ async def generic_exception_handler(request: Request, exc: Exception):
         return templates.TemplateResponse(
             request,
             "partials/error.html",
-            {"request": request, "error": "An unexpected error occurred. Please try again."},
+            {
+                "request": request,
+                "error": "An unexpected error occurred. Please try again.",
+            },
             status_code=500,
         )
     return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal server error"},
+        status_code=500, content={"detail": "Internal server error"}
     )
 
 
-# ══════════════════════════════════════════════════════════════════════════
-#  UI Pages
-# ══════════════════════════════════════════════════════════════════════════
-
-
 def _render_index(request: Request, initial_tab: str = "home"):
-    """Render the main UI shell with the requested tab selected."""
     csrf_token = request.cookies.get("csrf_token") or secrets.token_hex(32)
     response = templates.TemplateResponse(
         request, "index.html", {"request": request, "initial_tab": initial_tab}
@@ -402,61 +363,51 @@ def _render_index(request: Request, initial_tab: str = "home"):
 
 @app.get("/")
 def index(request: Request):
-    """Render the Home landing page."""
     return _render_index(request, "home")
 
 
 @app.get("/about")
 def about_page(request: Request):
-    """Render the About page."""
     return _render_index(request, "about")
 
 
 @app.get("/how-it-works")
 def how_it_works_page(request: Request):
-    """Render the How It Works page."""
     return _render_index(request, "how-it-works")
 
 
 @app.get("/contact")
 def contact_page(request: Request):
-    """Render the Contact page."""
     return _render_index(request, "contact")
 
 
 @app.get("/model-cards")
 def model_cards_page(request: Request):
-    """Render the Model Cards page."""
     return _render_index(request, "model-cards")
 
 
 @app.get("/login")
 def login_page(request: Request):
-    """Render the Login page."""
     return _render_index(request, "login")
 
 
 @app.get("/register")
 def register_page(request: Request):
-    """Render the Register page."""
     return _render_index(request, "register")
 
 
 @app.get("/diabetes")
 def diabetes_page(request: Request):
-    """Render the Diabetes risk assessment page."""
     return _render_index(request, "diabetes")
 
 
 @app.get("/heart-disease")
 def heart_disease_page(request: Request):
-    """Render the Heart Disease risk assessment page."""
     return _render_index(request, "heart")
 
 
 @app.get("/lung-cancer")
 def lung_cancer_page(request: Request):
-    """Render the Lung Cancer risk assessment page."""
     return _render_index(request, "lung")
 
 
@@ -500,13 +451,11 @@ def verify_csrf_token(
 
 @app.get("/healthz")
 def healthz():
-    """Liveness probe for Kubernetes / Docker."""
     return {"status": "healthy"}
 
 
 @app.get("/api/v1/health/ready")
 def readiness(request: Request):
-    """Readiness probe — confirms models are loaded and app is ready."""
     status = model_manager.get_health_status()
     models_ready = any(
         m["status"] == "ready" for m in status["models"].values()
@@ -517,11 +466,6 @@ def readiness(request: Request):
             content={"status": "not_ready", "reason": "models not loaded"},
         )
     return {"status": "ready"}
-
-
-# ══════════════════════════════════════════════════════════════════════════
-#  HTMX Prediction Endpoints (return HTML fragments)
-# ══════════════════════════════════════════════════════════════════════════
 
 
 @app.post(
@@ -543,7 +487,6 @@ async def predict_diabetes_htmx(
     health: float = Form(3),
     mental: float = Form(0),
 ):
-    """Handle diabetes prediction form via HTMX."""
     try:
         payload = {
             "age": _clamp(float(age), 1, 13),
@@ -567,8 +510,6 @@ async def predict_diabetes_htmx(
             mental_health=payload["mental"],
         )
         pct = float(result["risk_percentage"])
-
-        # Log to DB and Prometheus
         await log_prediction_to_db(
             request,
             "diabetes",
@@ -581,7 +522,6 @@ async def predict_diabetes_htmx(
         PREDICTION_PROB_METRIC.labels(model_name="diabetes").observe(
             pct / 100.0
         )
-
         return templates.TemplateResponse(
             request,
             "partials/diabetes_result.html",
@@ -596,10 +536,7 @@ async def predict_diabetes_htmx(
         return templates.TemplateResponse(
             request,
             "partials/error.html",
-            {
-                "request": request,
-                "error": str(e),
-            },
+            {"request": request, "error": str(e)},
         )
 
 
@@ -628,7 +565,6 @@ async def predict_heart_htmx(
     hd_phys_health: int = Form(0),
     hd_diabetes: int = Form(0),
 ):
-    """Handle heart disease prediction form via HTMX."""
     try:
         payload = {
             "age": _clamp(float(hd_age), 1, 13),
@@ -664,8 +600,6 @@ async def predict_heart_htmx(
             diabetes=payload["diabetes"],
         )
         pct = float(result["risk_percentage"])
-
-        # Log to DB and Prometheus
         await log_prediction_to_db(
             request,
             "heart_disease",
@@ -678,7 +612,6 @@ async def predict_heart_htmx(
         PREDICTION_PROB_METRIC.labels(model_name="heart_disease").observe(
             pct / 100.0
         )
-
         return templates.TemplateResponse(
             request,
             "partials/heart_result.html",
@@ -693,10 +626,7 @@ async def predict_heart_htmx(
         return templates.TemplateResponse(
             request,
             "partials/error.html",
-            {
-                "request": request,
-                "error": str(e),
-            },
+            {"request": request, "error": str(e)},
         )
 
 
@@ -719,7 +649,6 @@ async def predict_lung_htmx(
     lc_wheezing: int = Form(0),
     lc_shortness_of_breath: int = Form(0),
 ):
-    """Handle lung cancer prediction form via HTMX."""
     try:
         payload = {
             "age": _clamp(int(lc_age), 18, 100),
@@ -743,8 +672,6 @@ async def predict_lung_htmx(
             shortness_of_breath=payload["shortness_of_breath"],
         )
         pct = float(result["risk_percentage"])
-
-        # Log to DB and Prometheus
         await log_prediction_to_db(
             request,
             "lung_cancer",
@@ -757,7 +684,6 @@ async def predict_lung_htmx(
         PREDICTION_PROB_METRIC.labels(model_name="lung_cancer").observe(
             pct / 100.0
         )
-
         return templates.TemplateResponse(
             request,
             "partials/lung_result.html",
@@ -772,16 +698,8 @@ async def predict_lung_htmx(
         return templates.TemplateResponse(
             request,
             "partials/error.html",
-            {
-                "request": request,
-                "error": str(e),
-            },
+            {"request": request, "error": str(e)},
         )
-
-
-# ══════════════════════════════════════════════════════════════════════════
-#  JSON API Endpoints (preserved from original FastAPI backend)
-# ══════════════════════════════════════════════════════════════════════════
 
 
 @app.get("/api")
@@ -795,7 +713,6 @@ def api_root():
 
 @app.get("/api/dashboard")
 async def api_dashboard(user=Depends(get_current_user)):
-    """Protected dashboard summary used by auth smoke tests."""
     return {
         "user": {
             "id": str(user.id),
@@ -816,7 +733,6 @@ async def api_predict_diabetes(
     data: PredictionRequest,
     current_user=Depends(get_current_user),
 ):
-    """Predict diabetes risk (JSON API)."""
     result = await predict(
         request=request,
         age_group=data.age,
@@ -850,7 +766,6 @@ async def api_predict_heart(
     data: HeartDiseasePredictionRequest,
     current_user=Depends(get_current_user),
 ):
-    """Predict heart disease risk (JSON API)."""
     result = await predict_heart_disease(
         request=request,
         age=data.age,
@@ -890,7 +805,6 @@ async def api_predict_lung(
     data: LungCancerPredictionRequest,
     current_user=Depends(get_current_user),
 ):
-    """Predict lung cancer risk (JSON API)."""
     result = await predict_lung_cancer(
         request=request,
         age=data.age,
@@ -923,7 +837,6 @@ async def api_predict_diabetes_audit(
     data: LegacyDiabetesAuditRequest,
     current_user=Depends(get_current_user),
 ):
-    """Compatibility endpoint for the launch-audit diabetes payload."""
     payload = {
         "age": _age_to_group(data.age),
         "bmi": _clamp(float(data.bmi) or 10.0, 10.0, 80.0),
@@ -970,7 +883,6 @@ async def api_predict_heart_audit(
     data: LegacyHeartAuditRequest,
     current_user=Depends(get_current_user),
 ):
-    """Compatibility endpoint for the launch-audit heart disease payload."""
     payload = {
         "age": _age_to_group(data.age),
         "sex": int(data.sex),
@@ -1015,7 +927,6 @@ async def api_predict_lung_audit(
     data: LegacyLungCancerAuditRequest,
     current_user=Depends(get_current_user),
 ):
-    """Compatibility endpoint for the launch-audit lung cancer payload."""
     payload = {
         "age": _clamp(int(data.age), 18, 100),
         "gender": int(data.gender >= 1),
@@ -1044,10 +955,8 @@ async def api_predict_lung_audit(
     dependencies=[Depends(OptionalRateLimiter(times=RATE_LIMIT, seconds=60))],
 )
 async def api_upload_alias(
-    file: UploadFile = File(...),
-    current_user=Depends(get_current_user),
+    file: UploadFile = File(...), current_user=Depends(get_current_user)
 ):
-    """Compatibility upload endpoint used by the audit workflow."""
     try:
         return await process_uploaded_document(file)
     except HTTPException as exc:
@@ -1055,10 +964,6 @@ async def api_upload_alias(
             raise HTTPException(status_code=413, detail=exc.detail) from exc
         raise
 
-
-# ══════════════════════════════════════════════════════════════════════════
-#  Versioned API — /api/v1/
-# ══════════════════════════════════════════════════════════════════════════
 
 v1 = APIRouter(
     prefix="/api/v1", tags=["v1"], dependencies=[Depends(get_api_key)]
@@ -1088,9 +993,6 @@ def v1_root():
 
 @v1.get("/models")
 async def v1_model_registry():
-    """Return model registry metadata (versions, metrics, status)."""
-
-    # B8: Use asyncio.to_thread for non-blocking file read
     def _read_registry() -> dict:
         with open(REGISTRY_PATH) as f:
             return json.load(f)
@@ -1102,8 +1004,6 @@ async def v1_model_registry():
     except Exception as exc:
         logger.error("registry_read_failed | error=%s", exc)
         return {"registry_version": "error", "models": {}}
-
-    # Return only safe metadata — strip sha256 hashes from public API
     summary = {}
     for name, meta in registry.get("models", {}).items():
         summary[name] = {
@@ -1121,7 +1021,6 @@ async def v1_model_registry():
 
 @v1.post("/predict/diabetes", response_model=PredictionResponse)
 async def v1_predict_diabetes(request: Request, data: PredictionRequest):
-    """Predict diabetes risk (v1) — fully instrumented."""
     import time as _time
 
     _start = _time.time()
@@ -1138,7 +1037,6 @@ async def v1_predict_diabetes(request: Request, data: PredictionRequest):
             general_health=data.health,
             mental_health=data.mental,
         )
-        # SHAP explanation
         df = build_diabetes_features(
             data.age,
             data.bmi,
@@ -1158,7 +1056,6 @@ async def v1_predict_diabetes(request: Request, data: PredictionRequest):
         model_monitoring_service.record_prediction(
             "diabetes", latency_ms, success
         )
-
     await log_prediction_to_db(
         request,
         "diabetes",
@@ -1188,11 +1085,10 @@ async def v1_predict_diabetes(request: Request, data: PredictionRequest):
 async def v1_predict_heart(
     request: Request, data: HeartDiseasePredictionRequest
 ):
-    """Predict heart disease risk (v1) — fully instrumented."""
     import time as _time
 
     import numpy as np
-    import pandas as pd  # type: ignore[import-untyped]
+    import pandas as pd
 
     _start = _time.time()
     success = True
@@ -1241,7 +1137,6 @@ async def v1_predict_heart(
         model_monitoring_service.record_prediction(
             "heart_disease", latency_ms, success
         )
-
     await log_prediction_to_db(
         request,
         "heart_disease",
@@ -1269,7 +1164,6 @@ async def v1_predict_heart(
 
 @v1.post("/predict/lung", response_model=PredictionResponse)
 async def v1_predict_lung(request: Request, data: LungCancerPredictionRequest):
-    """Predict lung cancer risk (v1) — fully instrumented."""
     import time as _time
 
     import numpy as np
@@ -1314,7 +1208,6 @@ async def v1_predict_lung(request: Request, data: LungCancerPredictionRequest):
         model_monitoring_service.record_prediction(
             "lung_cancer", latency_ms, success
         )
-
     await log_prediction_to_db(
         request,
         "lung_cancer",
@@ -1340,23 +1233,17 @@ async def v1_predict_lung(request: Request, data: LungCancerPredictionRequest):
     )
 
 
-# ══════════════════════════════════════════════════════════════════════════
-#  SHAP Explanation Endpoints (v1 only)
-# ══════════════════════════════════════════════════════════════════════════
-
-
 @v1.post("/explain/diabetes")
 async def v1_explain_diabetes(request: Request, data: PredictionRequest):
-    """Return SHAP feature importances for a diabetes prediction."""
     df = build_diabetes_features(
-        age_group=data.age,
-        bmi=data.bmi,
-        high_bp=data.bp,
-        smoker=data.smoker,
-        high_cholesterol=data.cholesterol,
-        physical_activity=data.activity,
-        general_health=data.health,
-        mental_health=data.mental,
+        data.age,
+        data.bmi,
+        data.bp,
+        data.smoker,
+        data.cholesterol,
+        data.activity,
+        data.health,
+        data.mental,
     )
     result = await predict(
         request=request,
@@ -1369,8 +1256,6 @@ async def v1_explain_diabetes(request: Request, data: PredictionRequest):
         general_health=data.health,
         mental_health=data.mental,
     )
-
-    # Output logging (less rigorous for explanations, but good-to-have)
     await log_prediction_to_db(
         request,
         "diabetes",
@@ -1380,7 +1265,6 @@ async def v1_explain_diabetes(request: Request, data: PredictionRequest):
         "api_v1_explain",
         None,
     )
-
     shap_data = explain_diabetes(df)
     return {**result, "explanation": shap_data}
 
@@ -1389,7 +1273,6 @@ async def v1_explain_diabetes(request: Request, data: PredictionRequest):
 async def v1_explain_heart(
     request: Request, data: HeartDiseasePredictionRequest
 ):
-    """Return SHAP feature importances for a heart disease prediction."""
     import numpy as np
     import pandas as pd
 
@@ -1428,8 +1311,6 @@ async def v1_explain_heart(
         phys_health=data.phys_health,
         diabetes=data.diabetes,
     )
-
-    # Output logging (less rigorous for explanations, but good-to-have)
     await log_prediction_to_db(
         request,
         "heart_disease",
@@ -1439,14 +1320,12 @@ async def v1_explain_heart(
         "api_v1_explain",
         None,
     )
-
     shap_data = explain_heart(df)
     return {**result, "explanation": shap_data}
 
 
 @v1.post("/explain/lung")
 async def v1_explain_lung(request: Request, data: LungCancerPredictionRequest):
-    """Return SHAP feature importances for a lung cancer prediction."""
     import numpy as np
     import pandas as pd
 
@@ -1477,8 +1356,6 @@ async def v1_explain_lung(request: Request, data: LungCancerPredictionRequest):
         wheezing=data.wheezing,
         shortness_of_breath=data.shortness_of_breath,
     )
-
-    # Output logging (less rigorous for explanations, but good-to-have)
     await log_prediction_to_db(
         request,
         "lung_cancer",
@@ -1488,12 +1365,10 @@ async def v1_explain_lung(request: Request, data: LungCancerPredictionRequest):
         "api_v1_explain",
         None,
     )
-
     shap_data = explain_lung(df)
     return {**result, "explanation": shap_data}
 
 
-# ── Mount v1 router (after all routes are defined) ────────────────────────
 app.include_router(
     upload_router,
     prefix="/api/v1",

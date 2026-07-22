@@ -427,6 +427,13 @@ def create_email_backend() -> EmailBackend:
     return DevelopmentEmailBackend()
 
 
-# ── Module-level singleton ────────────────────────────────────────────────
+# ── Module-level singleton (lazy) ────────────────────────────────────────
 
-email_backend: EmailBackend = create_email_backend()
+_email_backend_instance = None
+
+
+def get_email_backend() -> EmailBackend:
+    global _email_backend_instance
+    if _email_backend_instance is None:
+        _email_backend_instance = create_email_backend()
+    return _email_backend_instance

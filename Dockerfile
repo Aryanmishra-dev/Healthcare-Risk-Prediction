@@ -8,7 +8,8 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt && \
+    rm -rf /root/.cache/pip
 
 
 # ── Stage 2: Runtime ─────────────────────────────────────────────────────
@@ -20,15 +21,12 @@ LABEL org.opencontainers.image.title="HealthPredict AI" \
       org.opencontainers.image.source="https://github.com/theogengineer/Healthcare_risk_prediction" \
       org.opencontainers.image.licenses="MIT"
 
-# System deps (XGBoost needs libgomp)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends libgomp1 curl && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy installed Python packages from builder
 COPY --from=builder /install /usr/local
 
-# Create non-root user
 RUN groupadd --gid 1000 appuser && \
     useradd --uid 1000 --gid appuser --shell /bin/sh --create-home appuser
 
@@ -37,20 +35,19 @@ ENV PYTHONPATH=/app \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-# Copy application code securely
 COPY --chown=appuser:appuser backend/ ./backend/
 COPY --chown=appuser:appuser frontend/ ./frontend/
 COPY --chown=appuser:appuser ml/ ./ml/
 COPY --chown=appuser:appuser shared/ ./shared/
 COPY --chown=appuser:appuser config/ ./config/
 
+RUN mkdir -p data/interim && chown -R appuser:appuser data
+
 USER appuser
 
 EXPOSE 8000
 
-# Health check — probes /healthz (the correct endpoint)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:8000/healthz || exit 1
 
-# Use gunicorn with uvicorn workers, timeout 120s for ML model loading
-CMD ["gunicorn", "backend.app.main:app", "-w", "2", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--timeout", "120", "--worker-tmp-dir", "/dev/shm"]
+CMD gunicorn backend.app.main:app -w 1 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:${PORT:-8000} --timeout 120 --worker-tmp-dir /dev/shm

@@ -84,7 +84,7 @@ async def run_async_migrations() -> None:
                 from alembic.migration import MigrationContext
                 from alembic.script import ScriptDirectory
 
-                # Create all tables for SQLite (incremental ALTER not supported).
+                # Create all tables for SQLite (incr ALTER not supported).
                 Base.metadata.create_all(conn)
 
                 # Stamp to head so alembic state is consistent.

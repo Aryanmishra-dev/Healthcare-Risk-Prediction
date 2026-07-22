@@ -4,17 +4,18 @@ from typing import Any, Dict
 
 from fastapi import Request
 
-# NOTE: PredictionPipeline is retained for test compatibility only.
-# All production prediction logic now lives in main.py and model_loader.py
-# directly.  New callers should use predict(), predict_heart_disease(),
-# or predict_lung_cancer() from model_loader instead.
-
 from backend.app.services.model_manager import model_manager
 from backend.app.services.shap_explainer import (
     explain_diabetes,
     explain_heart,
     explain_lung,
 )
+
+# NOTE: PredictionPipeline is retained for test compatibility only.
+# All production prediction logic now lives in main.py and model_loader.py
+# directly.  New callers should use predict(), predict_heart_disease(),
+# or predict_lung_cancer() from model_loader instead.
+
 
 logger = logging.getLogger(__name__)
 

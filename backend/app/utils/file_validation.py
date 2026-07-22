@@ -33,13 +33,16 @@ _MAGIC_BYTES: dict[str, bytes] = {
 
 
 def _check_magic_bytes(file_bytes: bytes, mime_type: str) -> None:
-    """Verify file content matches expected magic bytes for the given MIME type."""
+    """Verify file content matches expected magic bytes for MIME type."""
     expected = _MAGIC_BYTES.get(mime_type)
     if expected and not file_bytes.startswith(expected):
         raise HTTPException(
             status_code=400,
-            detail=f"File content does not match expected signature for {mime_type}. "
-            "The file may be corrupt or mislabeled.",
+            detail=(
+                f"File content does not match expected signature "
+                f"for {mime_type}. "
+                "The file may be corrupt or mislabeled."
+            ),
         )
 
 

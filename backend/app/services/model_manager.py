@@ -1,20 +1,9 @@
-"""
-ModelManager for handling MLflow-based model loading, caching, and health
-reporting.
-Implements the Singleton pattern and ensures robust lazy-loading with retries.
-"""
-
 import asyncio
 import logging
 import os
-import resource
 import time
 from pathlib import Path
 
-import joblib  # type: ignore[import-untyped]
-import mlflow
-
-# Standard Python logging
 logger = logging.getLogger(__name__)
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -26,13 +15,9 @@ MLFLOW_TRACKING_URI = os.environ.get(
 MODEL_SOURCE = os.environ.get("MODEL_SOURCE", "local").lower()
 _IS_PRODUCTION = os.environ.get("APP_ENV") == "production"
 
-# Timeout (seconds) for MLflow model downloads per attempt.
 _MLFLOW_DOWNLOAD_TIMEOUT = int(
     os.environ.get("MLFLOW_DOWNLOAD_TIMEOUT", "120")
 )
-
-# Configure MLflow
-mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 
 
 class ModelManager:
@@ -73,14 +58,15 @@ class ModelManager:
             },
         }
         self.startup_diagnostics = {}
+        self._loaded = False
         self._initialized = True
 
     async def load_all_models(self):
-        """Warm up all models in the background."""
+        if self._loaded:
+            return
         logger.info("Starting background model warmup...")
         start_time = time.time()
 
-        # We use asyncio.gather for parallel loading
         await asyncio.gather(
             self._load_diabetes(),
             self._load_heart_disease(),
@@ -88,7 +74,6 @@ class ModelManager:
             return_exceptions=True,
         )
 
-        # Run a warmup inference benchmark for each loaded model
         warmup_results = {}
         for name in ("diabetes", "heart_disease", "lung_cancer"):
             model_entry = self.models.get(name)
@@ -109,8 +94,9 @@ class ModelManager:
                     except Exception as exc:
                         warmup_results[name] = f"warmup_failed: {exc}"
 
+        import resource
+
         max_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-        # On macOS ru_maxrss is in bytes, on Linux in kilobytes.
         if os.uname().sysname == "Darwin":
             memory_mb = max_rss / 1024 / 1024
         else:
@@ -124,25 +110,27 @@ class ModelManager:
             },
             "warmup_latency_ms": warmup_results,
         }
+        self._loaded = True
         logger.info(
-            f"Model warmup complete. Diagnostics: {self.startup_diagnostics}"
+            "Model warmup complete. Diagnostics: %s", self.startup_diagnostics
         )
 
     async def _load_model_with_retry(
         self, model_name, load_func, max_retries=3
     ):
-        """Retry logic for loading models from MLflow."""
         for attempt in range(1, max_retries + 1):
             try:
-                # Running blocking load operations in thread with outer timeout
                 return await asyncio.wait_for(
                     asyncio.to_thread(load_func),
                     timeout=_MLFLOW_DOWNLOAD_TIMEOUT,
                 )
             except Exception as e:
                 logger.error(
-                    f"Failed to load {model_name} "
-                    f"(Attempt {attempt}/{max_retries}): {e}"
+                    "Failed to load %s (Attempt %d/%d): %s",
+                    model_name,
+                    attempt,
+                    max_retries,
+                    e,
                 )
                 if attempt == max_retries:
                     if _IS_PRODUCTION:
@@ -152,19 +140,17 @@ class ModelManager:
                         ) from e
                     else:
                         logger.warning(
-                            f"Could not load {model_name}. "
-                            "Proceeding in degraded mode."
+                            "Could not load %s. Proceeding in degraded mode.",
+                            model_name,
                         )
                         return None
                 await asyncio.sleep(2**attempt)
 
     def _fetch_diabetes_from_mlflow(self):
-        model_uri = "models:/diabetes_xgboost/latest"
-        calibrator_uri = "models:/diabetes_calibrator/latest"
+        import mlflow
 
-        m = mlflow.sklearn.load_model(model_uri)
-        c = mlflow.sklearn.load_model(calibrator_uri)
-
+        m = mlflow.sklearn.load_model("models:/diabetes_xgboost/latest")
+        c = mlflow.sklearn.load_model("models:/diabetes_calibrator/latest")
         return {
             "model": m,
             "calibrator": c,
@@ -173,6 +159,8 @@ class ModelManager:
         }
 
     def _fetch_diabetes_from_disk(self):
+        import joblib
+
         return {
             "model": joblib.load(MODEL_DIR / "diabetes_xgboost.pkl"),
             "calibrator": joblib.load(MODEL_DIR / "isotonic_calibrator.pkl"),
@@ -197,7 +185,6 @@ class ModelManager:
             "diabetes", self._fetch_diabetes
         )
         latency = round((time.time() - start_t) * 1000, 2)
-
         if result:
             self.models["diabetes"].update(
                 {
@@ -212,13 +199,13 @@ class ModelManager:
             self.models["diabetes"]["status"] = "failed"
 
     def _fetch_heart_disease_from_mlflow(self):
-        model_uri = "models:/heart_disease_xgboost/latest"
-        calibrator_uri = "models:/heart_disease_calibrator/latest"
+        import joblib
+        import mlflow
 
-        m = mlflow.sklearn.load_model(model_uri)
-        c = mlflow.sklearn.load_model(calibrator_uri)
-
-        # Features are artifacts, download them locally
+        m = mlflow.sklearn.load_model("models:/heart_disease_xgboost/latest")
+        c = mlflow.sklearn.load_model(
+            "models:/heart_disease_calibrator/latest"
+        )
         client = mlflow.tracking.MlflowClient()
         latest_versions = client.get_latest_versions(
             "heart_disease_xgboost", stages=[]
@@ -226,12 +213,8 @@ class ModelManager:
         if not latest_versions:
             raise ValueError("No versions found for heart_disease_xgboost")
         run_id = latest_versions[0].run_id
-
-        import joblib
-
         features_path = client.download_artifacts(run_id, "heart_features")
         f = joblib.load(features_path)
-
         return {
             "model": m,
             "calibrator": c,
@@ -241,6 +224,8 @@ class ModelManager:
         }
 
     def _fetch_heart_disease_from_disk(self):
+        import joblib
+
         return {
             "model": joblib.load(MODEL_DIR / "heart_disease_xgboost.pkl"),
             "calibrator": joblib.load(
@@ -268,7 +253,6 @@ class ModelManager:
             "heart_disease", self._fetch_heart_disease
         )
         latency = round((time.time() - start_t) * 1000, 2)
-
         if result:
             self.models["heart_disease"].update(
                 {
@@ -283,30 +267,27 @@ class ModelManager:
             self.models["heart_disease"]["status"] = "failed"
 
     def _fetch_lung_cancer_from_mlflow(self):
-        model_uri = "models:/lung_cancer_model/latest"
-        scaler_uri = "models:/lung_cancer_scaler/latest"
-        calibrator_uri = "models:/lung_cancer_calibrator/latest"
+        import joblib
+        import mlflow
 
-        m = mlflow.sklearn.load_model(model_uri)
+        m = mlflow.sklearn.load_model("models:/lung_cancer_model/latest")
         try:
-            s = mlflow.sklearn.load_model(scaler_uri)
+            s = mlflow.sklearn.load_model("models:/lung_cancer_scaler/latest")
         except Exception:
             s = None
-
         try:
-            c = mlflow.sklearn.load_model(calibrator_uri)
+            c = mlflow.sklearn.load_model(
+                "models:/lung_cancer_calibrator/latest"
+            )
         except Exception:
             c = None
-
-        # Features
         client = mlflow.tracking.MlflowClient()
         latest_versions = client.get_latest_versions(
             "lung_cancer_model", stages=[]
         )
+        f = None
         if latest_versions:
             run_id = latest_versions[0].run_id
-            import joblib
-
             try:
                 features_path = client.download_artifacts(
                     run_id, "lung_features"
@@ -314,9 +295,6 @@ class ModelManager:
                 f = joblib.load(features_path)
             except Exception:
                 f = None
-        else:
-            f = None
-
         return {
             "model": m,
             "scaler": s,
@@ -327,6 +305,8 @@ class ModelManager:
         }
 
     def _fetch_lung_cancer_from_disk(self):
+        import joblib
+
         calibrator_path = MODEL_DIR / "lung_cancer_calibrator.pkl"
         return {
             "model": joblib.load(MODEL_DIR / "lung_cancer_model.pkl"),
@@ -358,7 +338,6 @@ class ModelManager:
             "lung_cancer", self._fetch_lung_cancer
         )
         latency = round((time.time() - start_t) * 1000, 2)
-
         if result:
             self.models["lung_cancer"].update(
                 {
@@ -372,21 +351,39 @@ class ModelManager:
         else:
             self.models["lung_cancer"]["status"] = "failed"
 
+    def _ensure_loaded(self, name):
+        if self.models[name]["status"] != "ready":
+            import time as _time
+
+            start_t = _time.time()
+            fetch_func = getattr(self, f"_fetch_{name}")
+            result = fetch_func()
+            latency = round((_time.time() - start_t) * 1000, 2)
+            if result:
+                self.models[name].update(
+                    {
+                        "status": "ready",
+                        "version": result["version"],
+                        "stage": result["stage"],
+                        "latency_ms": latency,
+                        "deps": result,
+                    }
+                )
+        if self.models[name]["status"] != "ready":
+            raise Exception(f"{name} model temporarily offline.")
+
     def get_diabetes_deps(self):
-        if self.models["diabetes"]["status"] != "ready":
-            raise Exception("Diabetes model temporarily offline.")
+        self._ensure_loaded("diabetes")
         d = self.models["diabetes"]["deps"]
         return d["model"], d["calibrator"]
 
     def get_heart_deps(self):
-        if self.models["heart_disease"]["status"] != "ready":
-            raise Exception("Heart disease model temporarily offline.")
+        self._ensure_loaded("heart_disease")
         d = self.models["heart_disease"]["deps"]
         return d["model"], d["calibrator"], d.get("features")
 
     def get_lung_deps(self):
-        if self.models["lung_cancer"]["status"] != "ready":
-            raise Exception("Lung cancer model temporarily offline.")
+        self._ensure_loaded("lung_cancer")
         d = self.models["lung_cancer"]["deps"]
         return (
             d["model"],
@@ -410,8 +407,6 @@ class ModelManager:
         }
 
     def export_app_state(self):
-        """Return the legacy app.state model mapping used by older
-        tests/routes."""
         state = {}
         if self.models["diabetes"]["status"] == "ready":
             d = self.models["diabetes"]["deps"]

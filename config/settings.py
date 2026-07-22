@@ -35,8 +35,8 @@ class Settings(BaseSettings):
     # ── Database ─────────────────────────────────────────────────────────────
     database_url: str = "sqlite:///data/interim/audit_log.db"
     sync_database_url: str = "sqlite:///data/interim/audit_log.db"
-    db_pool_size: int = 10
-    db_max_overflow: int = 20
+    db_pool_size: int = Field(default=2, validation_alias=AliasChoices("DB_POOL_SIZE", "DATABASE_POOL_SIZE"))
+    db_max_overflow: int = Field(default=4, validation_alias=AliasChoices("DB_MAX_OVERFLOW", "DATABASE_MAX_OVERFLOW"))
     db_pool_timeout: int = Field(
         default=30,
         validation_alias=AliasChoices("DB_POOL_TIMEOUT", "DATABASE_POOL_TIMEOUT"),

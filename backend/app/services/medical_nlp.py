@@ -21,7 +21,7 @@ _NEGATION_PREFIX_PATTERNS = re.compile(
 
 
 def _is_negated(text: str, keyword: str, window: int = 30) -> bool:
-    """Check if a keyword is negated within a window of characters before it."""
+    """Check if keyword is negated within a window of chars before it."""
     idx = text.lower().find(keyword.lower())
     if idx == -1:
         return False

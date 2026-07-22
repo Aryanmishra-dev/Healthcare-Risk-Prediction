@@ -61,7 +61,7 @@ class EmailProvider(NotificationProvider):
             from backend.app.core.config import settings
             from backend.app.services.email_service import (
                 build_email,
-                email_backend,
+                get_email_backend,
             )
 
             base_url = getattr(
@@ -75,7 +75,7 @@ class EmailProvider(NotificationProvider):
                 base_url=base_url,
             )
 
-            return await email_backend.send_email(
+            return await get_email_backend().send_email(
                 to_address=to_address,
                 subject=subject,
                 html_body=html_body,

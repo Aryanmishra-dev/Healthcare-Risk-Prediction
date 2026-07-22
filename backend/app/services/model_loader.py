@@ -8,8 +8,6 @@ import asyncio
 import logging
 import os
 
-import numpy as np
-import pandas as pd  # type: ignore[import-untyped]
 from fastapi import HTTPException, Request
 
 from backend.app.services.model_manager import model_manager
@@ -19,39 +17,9 @@ logger = logging.getLogger(__name__)
 
 def load_models(app):
     """Load models synchronously for legacy callers and tests.
-    NOTE: Kept for test compatibility — model_manager.load_all_models()
-    is the preferred path.
+    Uses lazy loading — loads on first prediction if not already loaded.
     """
     app.state.models = {}
-    model_manager.models["diabetes"].update(
-        {
-            "status": "ready",
-            "version": "local",
-            "stage": "Local",
-            "latency_ms": 0.0,
-            "deps": model_manager._fetch_diabetes_from_disk(),
-        }
-    )
-    model_manager.models["heart_disease"].update(
-        {
-            "status": "ready",
-            "version": "local",
-            "stage": "Local",
-            "latency_ms": 0.0,
-            "deps": model_manager._fetch_heart_disease_from_disk(),
-        }
-    )
-    model_manager.models["lung_cancer"].update(
-        {
-            "status": "ready",
-            "version": "local",
-            "stage": "Local",
-            "latency_ms": 0.0,
-            "deps": model_manager._fetch_lung_cancer_from_disk(),
-        }
-    )
-    app.state.models.update(model_manager.export_app_state())
-    logger.info("local_models_loaded")
 
 
 # ── Dependency Injectors (Circuit Breaker) ──
@@ -109,8 +77,11 @@ def build_diabetes_features(
     physical_activity: float,
     general_health: float,
     mental_health: float,
-) -> pd.DataFrame:
+):
     """Build a single-row DataFrame with all 13 diabetes features."""
+    import numpy as np
+    import pandas as pd
+
     features = {
         "bmi": bmi,
         "age_group": age_group,
@@ -141,6 +112,8 @@ def _sync_predict_diabetes(
     general_health,
     mental_health,
 ):
+    import numpy as np
+
     df = build_diabetes_features(
         age_group,
         bmi,
@@ -239,6 +212,9 @@ def _sync_predict_heart(
         "PHYSHLTH": float(phys_health),
         "DIABETE3": float(diabetes),
     }
+    import numpy as np
+    import pandas as pd
+
     feature_order = f or list(row.keys())
     df = pd.DataFrame([row])[feature_order].astype(np.float64)
     raw_prob = m.predict_proba(df)[:, 1][0]
@@ -322,6 +298,9 @@ def _sync_predict_lung(
         "Wheezing": float(wheezing),
         "Shortness of Breath": float(shortness_of_breath),
     }
+    import numpy as np
+    import pandas as pd
+
     feature_order = f or list(row.keys())
     df = pd.DataFrame([row])[feature_order].copy()
     if s is not None and "Age" in df:
