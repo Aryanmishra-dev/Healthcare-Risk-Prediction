@@ -80,7 +80,7 @@ def build_diabetes_features(
 ):
     """Build a single-row DataFrame with all 13 diabetes features."""
     import numpy as np
-    import pandas as pd
+    import pandas as pd  # type: ignore[import-untyped]
 
     features = {
         "bmi": bmi,

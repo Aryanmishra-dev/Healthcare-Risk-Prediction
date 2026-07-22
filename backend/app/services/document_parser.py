@@ -26,7 +26,7 @@ def parse_pdf(file_bytes: bytes) -> str:
     If no text is found (e.g., scanned PDF), falls back to OCR.
     """
 
-    import fitz  # PyMuPDF
+    import fitz  # type: ignore[import-untyped]  # PyMuPDF
 
     text_parts: list[str] = []
     with fitz.open(stream=file_bytes, filetype="pdf") as doc:
@@ -46,7 +46,7 @@ def parse_pdf(file_bytes: bytes) -> str:
                     "pdf_page_no_text_falling_back_to_ocr",
                     extra={"page": page_num},
                 )
-                import pytesseract
+                import pytesseract  # type: ignore[import-untyped]
                 from PIL import Image
 
                 pix = page.get_pixmap(dpi=150)

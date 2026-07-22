@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 REPO_ROOT = Path(__file__).resolve().parents[3]
 MODEL_DIR = os.path.join(REPO_ROOT, "ml", "models")
 
-_explainers = {}
+_explainers: dict = {}
 _explainers_loaded = False
 
 
@@ -16,8 +16,8 @@ def load_explainers():
     global _explainers_loaded
     if _explainers_loaded:
         return
-    import joblib
-    import shap
+    import joblib  # type: ignore[import-untyped]
+    import shap  # type: ignore[import-untyped]
 
     shap_path = os.path.join(MODEL_DIR, "shap_explainer.pkl")
     try:
@@ -46,7 +46,7 @@ def load_explainers():
 
     try:
         import numpy as np
-        import pandas as pd
+        import pandas as pd  # type: ignore[import-untyped]
 
         model = joblib.load(os.path.join(MODEL_DIR, "lung_cancer_model.pkl"))
         scaler = joblib.load(os.path.join(MODEL_DIR, "lung_cancer_scaler.pkl"))

@@ -159,7 +159,7 @@ class ModelManager:
         }
 
     def _fetch_diabetes_from_disk(self):
-        import joblib
+        import joblib  # type: ignore[import-untyped]
 
         return {
             "model": joblib.load(MODEL_DIR / "diabetes_xgboost.pkl"),
@@ -199,8 +199,8 @@ class ModelManager:
             self.models["diabetes"]["status"] = "failed"
 
     def _fetch_heart_disease_from_mlflow(self):
-        import joblib
-        import mlflow
+        import joblib  # type: ignore[import-untyped]
+        import mlflow  # type: ignore[import-untyped]
 
         m = mlflow.sklearn.load_model("models:/heart_disease_xgboost/latest")
         c = mlflow.sklearn.load_model(
@@ -224,7 +224,7 @@ class ModelManager:
         }
 
     def _fetch_heart_disease_from_disk(self):
-        import joblib
+        import joblib  # type: ignore[import-untyped]
 
         return {
             "model": joblib.load(MODEL_DIR / "heart_disease_xgboost.pkl"),
@@ -267,8 +267,8 @@ class ModelManager:
             self.models["heart_disease"]["status"] = "failed"
 
     def _fetch_lung_cancer_from_mlflow(self):
-        import joblib
-        import mlflow
+        import joblib  # type: ignore[import-untyped]
+        import mlflow  # type: ignore[import-untyped]
 
         m = mlflow.sklearn.load_model("models:/lung_cancer_model/latest")
         try:
@@ -305,7 +305,7 @@ class ModelManager:
         }
 
     def _fetch_lung_cancer_from_disk(self):
-        import joblib
+        import joblib  # type: ignore[import-untyped]
 
         calibrator_path = MODEL_DIR / "lung_cancer_calibrator.pkl"
         return {
