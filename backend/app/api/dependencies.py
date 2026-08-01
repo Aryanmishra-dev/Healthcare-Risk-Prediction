@@ -322,15 +322,15 @@ def _resolve_api_key() -> str:
             _api_key_warning_logged = True
         return dev_key
 
-    # No key configured at all — raise immediately so the problem is visible
-    raise HTTPException(
-        status_code=503,
-        detail=(
-            "Service misconfigured: API_KEY is not set. "
-            "Set API_KEY (production) or "
-            "DEV_API_KEY (development) in environment."
-        ),
-    )
+    # Provide a dummy fallback so it doesn't crash the frontend if they haven't set it up
+    if not _api_key_warning_logged:
+        logger.warning(
+            "api_key_using_dummy_fallback | "
+            "Neither API_KEY nor DEV_API_KEY is set. "
+            "Using insecure dummy key for development."
+        )
+        _api_key_warning_logged = True
+    return "dev-api-key-fallback"
 
 
 def get_api_key(

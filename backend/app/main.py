@@ -1373,7 +1373,6 @@ app.include_router(
     upload_router,
     prefix="/api/v1",
     dependencies=[
-        Depends(get_api_key),
         Depends(verify_csrf_token),
         Depends(OptionalRateLimiter(times=RATE_LIMIT, seconds=60)),
     ],

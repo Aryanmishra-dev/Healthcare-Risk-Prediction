@@ -142,18 +142,7 @@
         <!-- ══════════════ DASHBOARD SECTION ══════════════ -->
         <div class="section-panel {% if initial_tab == 'dashboard' %}active{% endif %}" id="section-dashboard">
             <div class="max-w-4xl mx-auto p-4">
-                <div id="dashboard-content"
-                     hx-get="/auth/me"
-                     hx-trigger="load"
-                     hx-target="this"
-                     hx-swap="innerHTML"
-                     hx-indicator="#dash-spinner"
-                     hx-target-error="#dash-error">
-                    <div id="dash-spinner" class="flex items-center justify-center py-12">
-                        <span class="material-symbols-outlined text-4xl text-slate-300 animate-spin">progress_activity</span>
-                    </div>
-                    <div id="dash-error" class="hidden"></div>
-                </div>
+                {% include "partials/dashboard_profile.html" ignore missing %}
             </div>
         </div>
 
@@ -468,7 +457,8 @@ var tabPaths = {
     'heart': '/heart-disease',
     'lung': '/lung-cancer',
     'login': '/login',
-    'register': '/register'
+    'register': '/register',
+    'dashboard': '/dashboard'
 };
 
 var pathTabs = {
@@ -481,7 +471,8 @@ var pathTabs = {
     '/heart-disease': 'heart',
     '/lung-cancer': 'lung',
     '/login': 'login',
-    '/register': 'register'
+    '/register': 'register',
+    '/dashboard': 'dashboard'
 };
 
 // Nav click delegation — replaces inline onclick handlers for CSP nonce compat
@@ -537,7 +528,8 @@ function switchTab(tab, skipHistory) {
         'heart': 'Heart Disease Risk Assessment',
         'lung': 'Lung Cancer Risk Assessment',
         'login': 'Sign In',
-        'register': 'Create Account'
+        'register': 'Create Account',
+        'dashboard': 'Dashboard'
     };
     var ht = document.getElementById('header-title');
     if (ht) {
