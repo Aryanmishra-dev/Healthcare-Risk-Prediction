@@ -61,7 +61,7 @@ function historyPage() {
       const type = document.getElementById('hist-filter-type')?.value || '';
       const url = '/auth/history' + (type ? '?disease_type=' + type : '');
       const res = await window.HealthPredictConfig.fetch(url);
-      if (res.status === 401) { window.location.href = '/'; return; }
+      if (res.status === 401) { return; }
       _histData = await res.json();
       const tbody = document.getElementById('history-tbody');
       if (!_histData.length) {

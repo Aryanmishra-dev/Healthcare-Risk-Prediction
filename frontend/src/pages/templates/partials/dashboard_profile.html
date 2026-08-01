@@ -62,7 +62,7 @@ function profilePage() {
     },
     async load() {
       const res = await window.HealthPredictConfig.fetch('/auth/me');
-      if (res.status === 401) { window.location.href = '/'; return; }
+      if (res.status === 401) { return; }
       const u = await res.json();
       document.getElementById('profile-name-display').textContent = u.full_name || 'No name set';
       document.getElementById('profile-email-display').textContent = u.email;

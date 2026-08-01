@@ -40,7 +40,7 @@ function sessionsPage() {
     },
     async load() {
       const res = await window.HealthPredictConfig.fetch('/auth/sessions');
-      if (res.status === 401) { window.location.href = '/'; return; }
+      if (res.status === 401) { return; }
       this.sessions = await res.json();
       const tbody = document.getElementById('sessions-tbody');
       if (!this.sessions.length) {

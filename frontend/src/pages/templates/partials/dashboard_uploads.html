@@ -48,7 +48,7 @@ function uploadsPage() {
     },
     async load() {
       const res = await window.HealthPredictConfig.fetch('/auth/uploads');
-      if (res.status === 401) { window.location.href = '/'; return; }
+      if (res.status === 401) { return; }
       const items = await res.json();
       const tbody = document.getElementById('uploads-tbody');
       if (!items.length) {
