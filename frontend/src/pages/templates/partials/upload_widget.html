@@ -110,6 +110,18 @@
         var raw = evt.detail.target.textContent;
         try { var data = JSON.parse(raw); } catch(e) { return; }
 
+        if (data.status === 'offline') {
+            var offlineHtml = '<div class="p-4 bg-blue-50 border border-blue-200 rounded-lg animate-fade-up">'
+                + '<div class="flex items-center gap-2 mb-2">'
+                + '<span class="material-symbols-outlined text-blue-600 text-xl">info</span>'
+                + '<h4 class="text-sm font-bold text-blue-900">OCR Feature Temporarily Unavailable</h4>'
+                + '</div><p class="text-xs text-blue-800 mb-3">Medical report auto-extraction is currently offline. You can still continue by entering your health information manually below. This does not affect prediction accuracy. We appreciate your patience while this feature is being improved.</p>'
+                + '<button type="button" onclick="document.getElementById(\'upload-result-\'+wid).innerHTML=\'\';" class="bg-blue-100 hover:bg-blue-200 text-blue-800 px-4 py-1.5 rounded text-xs font-semibold transition-colors">Continue with Manual Entry</button>'
+                + '</div>';
+            evt.detail.target.innerHTML = offlineHtml;
+            return;
+        }
+
         if (data.error) {
             var errHtml = '<div class="p-3 bg-red-50 border border-red-200 rounded-lg animate-fade-up">'
                 + '<div class="flex items-center gap-2 mb-2">'

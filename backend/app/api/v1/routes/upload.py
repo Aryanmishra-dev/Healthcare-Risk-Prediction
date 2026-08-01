@@ -81,7 +81,11 @@ async def upload_document(
         }
       }
     """
-    return await process_uploaded_document(file)
+    # Temporarily short-circuit the OCR endpoint
+    return {
+        "status": "offline",
+        "message": "Medical report auto-extraction is temporarily unavailable. Please enter the values manually."
+    }
 
 
 async def process_uploaded_document(file: UploadFile):
