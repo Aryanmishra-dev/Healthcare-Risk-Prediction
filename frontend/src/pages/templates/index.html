@@ -22,16 +22,6 @@
                     <span class="material-symbols-outlined text-[20px]">home</span>
                     <span class="text-sm {% if initial_tab == 'home' or not initial_tab %}font-bold{% else %}font-medium{% endif %}">Home</span>
                 </a>
-                <a id="nav-how-it-works" href="/how-it-works"
-                   class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'how-it-works' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
-                    <span class="material-symbols-outlined text-[20px]">help</span>
-                    <span class="text-sm {% if initial_tab == 'how-it-works' %}font-bold{% else %}font-medium{% endif %}">How It Works</span>
-                </a>
-                <a id="nav-about" href="/about"
-                   class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'about' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
-                    <span class="material-symbols-outlined text-[20px]">info</span>
-                    <span class="text-sm {% if initial_tab == 'about' %}font-bold{% else %}font-medium{% endif %}">About</span>
-                </a>
                                 <a id="nav-diabetes" href="/diabetes"
                    class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'diabetes' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
                     <span class="material-symbols-outlined text-[20px]">water_drop</span>
@@ -46,6 +36,16 @@
                    class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'lung' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
                     <span class="material-symbols-outlined text-[20px]">pulmonology</span>
                     <span class="text-sm {% if initial_tab == 'lung' %}font-bold{% else %}font-medium{% endif %}">Lung Cancer Risk</span>
+                </a>
+                <a id="nav-how-it-works" href="/how-it-works"
+                   class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'how-it-works' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
+                    <span class="material-symbols-outlined text-[20px]">help</span>
+                    <span class="text-sm {% if initial_tab == 'how-it-works' %}font-bold{% else %}font-medium{% endif %}">How It Works</span>
+                </a>
+                <a id="nav-about" href="/about"
+                   class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'about' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
+                    <span class="material-symbols-outlined text-[20px]">info</span>
+                    <span class="text-sm {% if initial_tab == 'about' %}font-bold{% else %}font-medium{% endif %}">About</span>
                 </a>
                 <a id="nav-dashboard" href="/dashboard"
                    x-show="isLoggedIn" x-cloak
