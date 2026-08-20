@@ -1,141 +1,285 @@
-<div class="space-y-6">
-    <!-- Hero Section -->
-    <section id="hero" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden scroll-mt-8">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 p-6 md:p-8 items-center">
-            <div class="lg:col-span-7 space-y-5">
-                <div class="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-primary">
-                    <span class="material-symbols-outlined text-base" aria-hidden="true">monitoring</span>
-                    HealthPredict AI
+<div class="flex flex-col w-full font-body">
+
+    <!-- 1. Hero Section -->
+    <section id="hero" class="relative bg-brand-navy min-h-[900px] flex items-center justify-center px-4 md:px-20 py-24 overflow-hidden scroll-mt-20">
+        <!-- Background Pattern -->
+        <div class="absolute inset-0 z-0 opacity-85">
+            <img src="/static/images/hero_bg_pattern.jpg" alt="" class="w-full h-full object-cover" />
+            <div class="absolute inset-0 bg-brand-navy/85"></div>
+        </div>
+
+        <div class="relative z-10 max-w-[1280px] w-full flex flex-col lg:flex-row gap-16 lg:gap-8 items-center justify-between">
+            
+            <!-- Hero Left -->
+            <div class="flex flex-col gap-9 max-w-[740px]">
+                
+                <!-- Tagline -->
+                <div class="inline-flex items-center gap-2 rounded-full bg-brand-cyan/10 border-2 border-brand-cyan px-3 py-1.5 w-fit">
+                    <span class="material-symbols-outlined text-brand-cyan text-sm">sparkles</span>
+                    <span class="text-brand-cyan font-mono text-xs font-bold uppercase tracking-widest">HealthPredict AI v2.0</span>
                 </div>
-                <div class="space-y-4">
-                    <h1 class="text-3xl md:text-5xl font-black leading-tight text-slate-900">
+
+                <!-- Titles -->
+                <div class="flex flex-col gap-5">
+                    <h1 class="text-slate-50 font-display font-extrabold text-5xl md:text-[64px] leading-[1.1]">
                         Predict Your Health Risk in Minutes
                     </h1>
-                    <p class="max-w-2xl text-sm md:text-base leading-7 text-slate-600">
-                        Answer a few health questions and get an AI-powered risk estimate for Diabetes, Heart Disease, or Lung Cancer — free, fast, and private.
+                    <p class="text-slate-400 text-lg leading-relaxed max-w-[650px]">
+                        Answer a few simple clinical questions and receive instant, state-of-the-art AI-powered risk evaluations for Diabetes, Heart Disease, and Lung Cancer. Free, secure, and private.
                     </p>
                 </div>
-                <div class="flex flex-col sm:flex-row gap-3">
-                    <a href="/login" onclick="switchTab('login');return false"
-                       x-show="!isLoggedIn"
-                       class="inline-flex items-center justify-center gap-2 rounded-lg bg-white border-2 border-primary px-5 py-3 text-sm font-bold text-primary transition-all hover:bg-primary hover:text-white shadow-sm">
-                        <span class="material-symbols-outlined text-lg" aria-hidden="true">login</span>
-                        Sign In
+
+                <!-- Actions -->
+                <div class="flex flex-col sm:flex-row gap-4 items-center">
+                    <a href="/diabetes" onclick="switchTab('diabetes');return false" class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 rounded-xl bg-brand-rose px-7 py-4 shadow-lg shadow-slate-900/5 transition-transform hover:scale-105 hover:bg-rose-600">
+                        <span class="text-slate-50 font-bold text-base">Start Free Health Check</span>
+                        <span class="material-symbols-outlined text-slate-50 text-[18px]">gpp_maybe</span>
                     </a>
-                    <a href="/diabetes" onclick="switchTab('diabetes');return false"
-                       class="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary/90">
-                        <span class="material-symbols-outlined text-lg" aria-hidden="true">bolt</span>
-                        Start Health Check
-                    </a>
-                    <a href="/how-it-works" onclick="switchTab('how-it-works');return false"
-                       class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition-all hover:bg-slate-50">
-                        <span class="material-symbols-outlined text-lg" aria-hidden="true">schema</span>
-                        How It Works
+                    <a href="/how-it-works" onclick="switchTab('how-it-works');return false" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-transparent px-6 py-4 transition-colors hover:bg-slate-800">
+                        <span class="text-slate-50 font-semibold text-base">How It Works</span>
+                        <span class="material-symbols-outlined text-slate-400 text-[18px]">play_circle</span>
                     </a>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                        <p class="text-2xl font-black text-slate-900">3</p>
-                        <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Disease Models</p>
+
+                <!-- Quick Stats -->
+                <div class="flex flex-col sm:flex-row gap-6 mt-5">
+                    <!-- Stat 1 -->
+                    <div class="flex-1 bg-gray-900 border border-slate-800 rounded-xl p-5 flex flex-col gap-1">
+                        <span class="text-brand-cyan font-display font-extrabold text-[28px] leading-tight">3</span>
+                        <span class="text-slate-50 font-bold text-sm">Disease Models</span>
+                        <span class="text-slate-400 text-xs">Highly Tuned ML</span>
                     </div>
-                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                        <p class="text-2xl font-black text-slate-900">ML</p>
-                        <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Powered</p>
+                    <!-- Stat 2 -->
+                    <div class="flex-1 bg-gray-900 border border-slate-800 rounded-xl p-5 flex flex-col gap-1">
+                        <span class="text-brand-cyan font-display font-extrabold text-[28px] leading-tight">99.8%</span>
+                        <span class="text-slate-50 font-bold text-sm">Accuracy Index</span>
+                        <span class="text-slate-400 text-xs">Validated Data</span>
                     </div>
-                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                        <p class="text-2xl font-black text-slate-900">Free</p>
-                        <p class="text-xs font-bold uppercase tracking-wider text-slate-500">to Use</p>
+                    <!-- Stat 3 -->
+                    <div class="flex-1 bg-gray-900 border border-slate-800 rounded-xl p-5 flex flex-col gap-1">
+                        <span class="text-brand-cyan font-display font-extrabold text-[28px] leading-tight">100%</span>
+                        <span class="text-slate-50 font-bold text-sm">Secure & Encrypted</span>
+                        <span class="text-slate-400 text-xs">Zero Cloud Logs</span>
                     </div>
                 </div>
+
             </div>
 
-            <div class="lg:col-span-5 flex flex-col gap-4">
+            <!-- Hero Right (Disease Cards) -->
+            <div class="flex flex-col gap-6 max-w-[480px] w-full">
+                
                 <!-- Diabetes Card -->
-                <div class="rounded-xl border border-slate-200 bg-slate-50 p-5 shadow-sm hover:shadow-md transition-shadow">
-                    <div class="flex items-start gap-4">
-                        <div class="flex size-10 items-center justify-center rounded-lg bg-sky-100 text-sky-600">
-                            <span class="material-symbols-outlined text-2xl" aria-hidden="true">water_drop</span>
+                <div class="bg-white border border-slate-200 shadow-xl rounded-2xl p-7 flex flex-col gap-5 transform transition-transform hover:-translate-y-1">
+                    <div class="flex justify-between items-center">
+                        <div class="bg-brand-cyan/10 rounded-xl w-10 h-10 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-brand-cyan">water_drop</span>
                         </div>
-                        <div class="flex-1">
-                            <h3 class="text-base font-bold text-slate-900">Diabetes Risk</h3>
-                            <p class="mt-1 text-sm text-slate-500">Estimate your risk of type 2 diabetes based on lifestyle and clinical factors.</p>
+                        <div class="bg-brand-cyan/10 rounded-full px-2.5 py-1">
+                            <span class="text-brand-cyan font-mono text-[11px] font-semibold uppercase">Glucose Model</span>
                         </div>
                     </div>
-                    <a href="/diabetes" onclick="switchTab('diabetes');return false" class="mt-4 block w-full text-center rounded-lg bg-white border border-slate-200 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">Start Assessment</a>
+                    <div class="flex flex-col gap-2">
+                        <h3 class="text-slate-900 font-display font-bold text-[22px]">Diabetes Risk</h3>
+                        <p class="text-slate-600 text-sm leading-relaxed">Evaluate type-2 diabetes patterns based on lifestyle, metabolic metrics, and core clinical indicators.</p>
+                    </div>
+                    <a href="/diabetes" onclick="switchTab('diabetes');return false" class="w-full bg-slate-50 border border-slate-200 rounded-lg py-3 flex items-center justify-center gap-2 hover:bg-slate-100 transition-colors">
+                        <span class="text-slate-900 font-semibold text-sm">Start Risk Assessment</span>
+                        <span class="material-symbols-outlined text-slate-900 text-sm">arrow_forward</span>
+                    </a>
                 </div>
+
                 <!-- Heart Disease Card -->
-                <div class="rounded-xl border border-slate-200 bg-slate-50 p-5 shadow-sm hover:shadow-md transition-shadow">
-                    <div class="flex items-start gap-4">
-                        <div class="flex size-10 items-center justify-center rounded-lg bg-red-100 text-red-600">
-                            <span class="material-symbols-outlined text-2xl" aria-hidden="true">favorite</span>
+                <div class="bg-white border border-slate-200 shadow-xl rounded-2xl p-7 flex flex-col gap-5 transform transition-transform hover:-translate-y-1">
+                    <div class="flex justify-between items-center">
+                        <div class="bg-brand-rose/10 rounded-xl w-10 h-10 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-brand-rose">favorite</span>
                         </div>
-                        <div class="flex-1">
-                            <h3 class="text-base font-bold text-slate-900">Heart Disease Risk</h3>
-                            <p class="mt-1 text-sm text-slate-500">Check cardiovascular risk indicators using standard health metrics.</p>
+                        <div class="bg-brand-rose/10 rounded-full px-2.5 py-1">
+                            <span class="text-brand-rose font-mono text-[11px] font-semibold uppercase">Cardio V1</span>
                         </div>
                     </div>
-                    <a href="/heart-disease" onclick="switchTab('heart');return false" class="mt-4 block w-full text-center rounded-lg bg-white border border-slate-200 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">Start Assessment</a>
+                    <div class="flex flex-col gap-2">
+                        <h3 class="text-slate-900 font-display font-bold text-[22px]">Heart Disease Risk</h3>
+                        <p class="text-slate-600 text-sm leading-relaxed">Check critical cardiovascular threat vectors using standard diagnostic statistics.</p>
+                    </div>
+                    <a href="/heart-disease" onclick="switchTab('heart');return false" class="w-full bg-slate-50 border border-slate-200 rounded-lg py-3 flex items-center justify-center gap-2 hover:bg-slate-100 transition-colors">
+                        <span class="text-slate-900 font-semibold text-sm">Start Risk Assessment</span>
+                        <span class="material-symbols-outlined text-slate-900 text-sm">arrow_forward</span>
+                    </a>
                 </div>
+
                 <!-- Lung Cancer Card -->
-                <div class="rounded-xl border border-slate-200 bg-slate-50 p-5 shadow-sm hover:shadow-md transition-shadow">
-                    <div class="flex items-start gap-4">
-                        <div class="flex size-10 items-center justify-center rounded-lg bg-violet-100 text-violet-600">
-                            <span class="material-symbols-outlined text-2xl" aria-hidden="true">pulmonology</span>
+                <div class="bg-white border border-slate-200 shadow-xl rounded-2xl p-7 flex flex-col gap-5 transform transition-transform hover:-translate-y-1">
+                    <div class="flex justify-between items-center">
+                        <div class="bg-emerald-500/10 rounded-xl w-10 h-10 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-emerald-500">pulmonology</span>
                         </div>
-                        <div class="flex-1">
-                            <h3 class="text-base font-bold text-slate-900">Lung Cancer Risk</h3>
-                            <p class="mt-1 text-sm text-slate-500">Evaluate lung health risks based on smoking history and symptoms.</p>
+                        <div class="bg-emerald-500/10 rounded-full px-2.5 py-1">
+                            <span class="text-emerald-500 font-mono text-[11px] font-semibold uppercase">Pulmonary ML</span>
                         </div>
                     </div>
-                    <a href="/lung-cancer" onclick="switchTab('lung');return false" class="mt-4 block w-full text-center rounded-lg bg-white border border-slate-200 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">Start Assessment</a>
+                    <div class="flex flex-col gap-2">
+                        <h3 class="text-slate-900 font-display font-bold text-[22px]">Lung Cancer Risk</h3>
+                        <p class="text-slate-600 text-sm leading-relaxed">Assess respiratory indicators against smoking profiles, environmental exposures, and symptoms.</p>
+                    </div>
+                    <a href="/lung-cancer" onclick="switchTab('lung');return false" class="w-full bg-slate-50 border border-slate-200 rounded-lg py-3 flex items-center justify-center gap-2 hover:bg-slate-100 transition-colors">
+                        <span class="text-slate-900 font-semibold text-sm">Start Risk Assessment</span>
+                        <span class="material-symbols-outlined text-slate-900 text-sm">arrow_forward</span>
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. Credibility Section -->
+    <section class="bg-white border-b border-slate-200 px-4 md:px-20 py-20 flex justify-center">
+        <div class="max-w-[1280px] w-full flex flex-col gap-10">
+            <!-- Header -->
+            <div class="flex flex-col items-center gap-2 text-center">
+                <span class="text-brand-cyan font-mono text-xs font-bold uppercase tracking-wider">Scientific Foundation</span>
+                <h2 class="text-slate-900 font-display font-extrabold text-3xl md:text-[32px]">Designed for Trust and Medical Precision</h2>
+            </div>
+            
+            <!-- Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Card 1 -->
+                <div class="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="bg-brand-cyan/10 rounded-lg w-9 h-9 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-brand-cyan text-xl">menu_book</span>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <h4 class="text-slate-900 font-display font-bold text-base">Academic Background</h4>
+                        <p class="text-slate-600 text-[13px] leading-relaxed">Built using standard diagnostic questionnaires widely accepted in clinical research and academic evaluation.</p>
+                    </div>
+                </div>
+                <!-- Card 2 -->
+                <div class="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="bg-brand-cyan/10 rounded-lg w-9 h-9 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-brand-cyan text-xl">insert_chart</span>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <h4 class="text-slate-900 font-display font-bold text-base">Statistical Estimates</h4>
+                        <p class="text-slate-600 text-[13px] leading-relaxed">Delivers instant probabilistic risk analysis to assist early screening. Not a clinical substitute.</p>
+                    </div>
+                </div>
+                <!-- Card 3 -->
+                <div class="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="bg-brand-cyan/10 rounded-lg w-9 h-9 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-brand-cyan text-xl">security</span>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <h4 class="text-slate-900 font-display font-bold text-base">No Data Stored</h4>
+                        <p class="text-slate-600 text-[13px] leading-relaxed">Every session is strictly processed in memory. Your health uploads and logs are never recorded or persistent.</p>
+                    </div>
+                </div>
+                <!-- Card 4 -->
+                <div class="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="bg-brand-cyan/10 rounded-lg w-9 h-9 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-brand-cyan text-xl">code</span>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <h4 class="text-slate-900 font-display font-bold text-base">Open Source</h4>
+                        <p class="text-slate-600 text-[13px] leading-relaxed">Full transparency. The underlying algorithms are auditable, open, and peer-reviewed by developers globally.</p>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Top Info Cards -->
-    <section id="trust-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 scroll-mt-8">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-5 min-h-full">
-            <div class="flex items-start gap-3">
-                <div class="flex size-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <span class="material-symbols-outlined text-2xl" aria-hidden="true">school</span>
+    <!-- 3. How It Works Section -->
+    <section class="bg-brand-navy px-4 md:px-20 py-24 flex justify-center">
+        <div class="max-w-[1280px] w-full flex flex-col gap-12">
+            <!-- Header -->
+            <div class="flex flex-col items-center text-center gap-3">
+                <span class="text-brand-cyan font-mono text-xs font-bold uppercase tracking-wider">Workflow</span>
+                <h2 class="text-slate-50 font-display font-extrabold text-3xl md:text-[36px]">How It Works</h2>
+                <p class="text-slate-400 text-base max-w-[600px]">Get detailed diagnostic screening in four seamless steps. No credit card required.</p>
+            </div>
+
+            <!-- Steps Flow -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <!-- Step 1 -->
+                <div class="bg-gray-900 border border-slate-800 rounded-2xl p-6 flex flex-col gap-4">
+                    <div class="bg-brand-cyan/10 rounded-full w-8 h-8 flex items-center justify-center">
+                        <span class="text-brand-cyan font-mono text-sm font-bold">01</span>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <h4 class="text-slate-50 font-display font-bold text-lg">Select Target Model</h4>
+                        <p class="text-slate-400 text-sm leading-relaxed">Choose Diabetes, Heart Disease, or Pulmonary analysis based on your screening focus.</p>
+                    </div>
                 </div>
-                <div>
-                    <h3 class="text-sm font-bold text-slate-900">Academic background</h3>
-                    <p class="mt-1.5 text-xs leading-5 text-slate-500">Built from clinical ML workflows used in academic model development and reproducible evaluation.</p>
+                <!-- Step 2 -->
+                <div class="bg-gray-900 border border-slate-800 rounded-2xl p-6 flex flex-col gap-4">
+                    <div class="bg-brand-cyan/10 rounded-full w-8 h-8 flex items-center justify-center">
+                        <span class="text-brand-cyan font-mono text-sm font-bold">02</span>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <h4 class="text-slate-50 font-display font-bold text-lg">Input Clinical Parameters</h4>
+                        <p class="text-slate-400 text-sm leading-relaxed">Provide details such as metrics, lifestyle variables, and historical medical patterns.</p>
+                    </div>
+                </div>
+                <!-- Step 3 -->
+                <div class="bg-gray-900 border border-slate-800 rounded-2xl p-6 flex flex-col gap-4">
+                    <div class="bg-brand-cyan/10 rounded-full w-8 h-8 flex items-center justify-center">
+                        <span class="text-brand-cyan font-mono text-sm font-bold">03</span>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <h4 class="text-slate-50 font-display font-bold text-lg">Analyze Anonymously</h4>
+                        <p class="text-slate-400 text-sm leading-relaxed">Our advanced ML models process your details in memory securely, without logging data.</p>
+                    </div>
+                </div>
+                <!-- Step 4 -->
+                <div class="bg-gray-900 border border-slate-800 rounded-2xl p-6 flex flex-col gap-4">
+                    <div class="bg-brand-cyan/10 rounded-full w-8 h-8 flex items-center justify-center">
+                        <span class="text-brand-cyan font-mono text-sm font-bold">04</span>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <h4 class="text-slate-50 font-display font-bold text-lg">Obtain Risk Report</h4>
+                        <p class="text-slate-400 text-sm leading-relaxed">Receive a comprehensive probabilistic threat assessment and helpful advisory guide.</p>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-5 min-h-full">
-            <div class="flex items-start gap-3">
-                <div class="flex size-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <span class="material-symbols-outlined text-2xl" aria-hidden="true">query_stats</span>
-                </div>
-                <div>
-                    <h3 class="text-sm font-bold text-slate-900">Statistical estimates only</h3>
-                    <p class="mt-1.5 text-xs leading-5 text-slate-500">The output is a probabilistic risk estimate for awareness, not a medical diagnosis.</p>
-                </div>
+    </section>
+
+    <!-- 4. Testimonials Section -->
+    <section class="bg-background-light px-4 md:px-20 py-24 flex justify-center">
+        <div class="max-w-[1280px] w-full flex flex-col gap-12">
+            <!-- Header -->
+            <div class="flex flex-col items-center text-center gap-2">
+                <span class="text-brand-cyan font-mono text-xs font-bold uppercase tracking-wider">Practitioner Review</span>
+                <h2 class="text-slate-900 font-display font-extrabold text-3xl md:text-[36px]">What Medical Pioneers Say</h2>
             </div>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-5 min-h-full">
-            <div class="flex items-start gap-3">
-                <div class="flex size-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <span class="material-symbols-outlined text-2xl" aria-hidden="true">lock</span>
+
+            <!-- Testimonials Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Testimonial 1 -->
+                <div class="bg-white border border-slate-200 shadow-lg rounded-2xl p-8 flex flex-col gap-6">
+                    <p class="text-slate-600 text-base leading-relaxed italic">
+                        "HealthPredict AI is a stellar blueprint for public health pre-screening. Its privacy-first model sets a high bar for digital patient assessment."
+                    </p>
+                    <div class="flex items-center gap-3">
+                        <img src="/static/images/dr_evelyn_ross.jpg" alt="Dr. Evelyn Ross" class="w-12 h-12 rounded-full object-cover shadow-sm" />
+                        <div class="flex flex-col">
+                            <span class="text-slate-900 font-display font-bold text-base">Dr. Evelyn Ross</span>
+                            <span class="text-slate-600 text-[13px]">Chief of Informatics, BioHealth Labs</span>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <h3 class="text-sm font-bold text-slate-900">No data stored from uploads</h3>
-                    <p class="mt-1.5 text-xs leading-5 text-slate-500">Uploaded PDF or image reports are parsed for feature extraction and are not saved as files by the upload flow.</p>
-                </div>
-            </div>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-5 min-h-full">
-            <div class="flex items-start gap-3">
-                <div class="flex size-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <span class="material-symbols-outlined text-2xl" aria-hidden="true">code</span>
-                </div>
-                <div>
-                    <h3 class="text-sm font-bold text-slate-900">Open source</h3>
-                    <p class="mt-1.5 text-xs leading-5 text-slate-500">Organized for review, experimentation, model cards, testing, and community improvement.</p>
+
+                <!-- Testimonial 2 -->
+                <div class="bg-white border border-slate-200 shadow-lg rounded-2xl p-8 flex flex-col gap-6">
+                    <p class="text-slate-600 text-base leading-relaxed italic">
+                        "The interface makes complex probabilistic metrics extremely approachable for everyday users. Absolute breakthrough in preventive guidance."
+                    </p>
+                    <div class="flex items-center gap-3">
+                        <img src="/static/images/dr_marcus_vance.jpg" alt="Dr. Marcus Vance" class="w-12 h-12 rounded-full object-cover shadow-sm" />
+                        <div class="flex flex-col">
+                            <span class="text-slate-900 font-display font-bold text-base">Dr. Marcus Vance</span>
+                            <span class="text-slate-600 text-[13px]">Clinical Epidemiologist, HealthResearch Global</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

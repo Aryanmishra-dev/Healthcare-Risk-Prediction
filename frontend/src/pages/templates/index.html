@@ -4,101 +4,75 @@
 <div class="flex h-screen flex-col overflow-hidden" x-data="authState()">
 
     <!-- Unified Navigation -->
-    <header class="border-b border-slate-200 bg-white z-10 sticky top-0 w-full">
-        <div class="h-16 flex items-center px-4 md:px-8 gap-2 md:gap-4 max-w-7xl mx-auto">
-            <!-- Left: Logo -->
-            <div class="flex-shrink-0 flex items-center gap-2 md:gap-3 pr-2 md:border-r border-slate-200">
-                <div class="bg-primary rounded-lg p-1 text-white shadow-sm">
-                    <span class="material-symbols-outlined text-[18px] md:text-xl">monitoring</span>
+    <header class="bg-brand-navy border-b border-slate-800 z-10 sticky top-0 w-full">
+        <div class="h-20 flex items-center justify-between px-4 md:px-20 max-w-[1440px] mx-auto">
+            <!-- Left: Logo & Brand -->
+            <div class="flex-shrink-0 flex items-center gap-3">
+                <div class="bg-brand-cyan rounded-lg w-8 h-8 flex items-center justify-center shadow-sm">
+                    <span class="material-symbols-outlined text-[18px] text-brand-navy font-bold">monitoring</span>
                 </div>
-                <h1 class="text-slate-900 text-sm md:text-base font-black leading-none hidden sm:block">HealthPredict AI</h1>
+                <h1 class="text-slate-50 text-xl font-display font-extrabold tracking-tight hidden sm:block">HealthPredict.AI</h1>
             </div>
 
-            <!-- Center: Tabs -->
-            <div class="flex-1 flex overflow-x-auto hide-scrollbar mask-edges relative">
-                <nav class="flex items-center gap-1 md:gap-2 px-1" id="main-nav">
-                                <a id="nav-home" href="/"
-                   class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'home' or not initial_tab %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
-                    <span class="material-symbols-outlined text-[20px]">home</span>
-                    <span class="text-sm {% if initial_tab == 'home' or not initial_tab %}font-bold{% else %}font-medium{% endif %}">Home</span>
-                </a>
-                                <a id="nav-diabetes" href="/diabetes"
-                   class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'diabetes' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
-                    <span class="material-symbols-outlined text-[20px]">water_drop</span>
-                    <span class="text-sm {% if initial_tab == 'diabetes' %}font-bold{% else %}font-medium{% endif %}">Diabetes Risk</span>
-                </a>
-                                <a id="nav-heart" href="/heart-disease"
-                   class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'heart' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
-                    <span class="material-symbols-outlined text-[20px]">favorite</span>
-                    <span class="text-sm {% if initial_tab == 'heart' %}font-bold{% else %}font-medium{% endif %}">Heart Disease Risk</span>
-                </a>
-                                <a id="nav-lung" href="/lung-cancer"
-                   class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'lung' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
-                    <span class="material-symbols-outlined text-[20px]">pulmonology</span>
-                    <span class="text-sm {% if initial_tab == 'lung' %}font-bold{% else %}font-medium{% endif %}">Lung Cancer Risk</span>
-                </a>
-                <a id="nav-how-it-works" href="/how-it-works"
-                   class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'how-it-works' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
-                    <span class="material-symbols-outlined text-[20px]">help</span>
-                    <span class="text-sm {% if initial_tab == 'how-it-works' %}font-bold{% else %}font-medium{% endif %}">How It Works</span>
-                </a>
-                <a id="nav-about" href="/about"
-                   class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'about' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
-                    <span class="material-symbols-outlined text-[20px]">info</span>
-                    <span class="text-sm {% if initial_tab == 'about' %}font-bold{% else %}font-medium{% endif %}">About</span>
-                </a>
-                <a id="nav-dashboard" href="/dashboard"
-                   x-show="isLoggedIn" x-cloak
-                   class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'dashboard' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
-                    <span class="material-symbols-outlined text-[20px]">dashboard</span>
-                    <span class="text-sm {% if initial_tab == 'dashboard' %}font-bold{% else %}font-medium{% endif %}">Dashboard</span>
-                </a>
-                <a id="nav-login" href="/login"
-                   x-show="!isLoggedIn"
-                   class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'login' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
-                    <span class="material-symbols-outlined text-[20px]">login</span>
-                    <span class="text-sm {% if initial_tab == 'login' %}font-bold{% else %}font-medium{% endif %}">Sign In</span>
-                </a>
-                <a id="nav-contact" href="/contact"
-                   class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg {% if initial_tab == 'contact' %}bg-primary/10 text-primary shadow-sm{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %} transition-colors whitespace-nowrap">
-                    <span class="material-symbols-outlined text-[20px]">mail</span>
-                    <span class="text-sm {% if initial_tab == 'contact' %}font-bold{% else %}font-medium{% endif %}">Contact</span>
-                </a>
+            <!-- Center: Nav Links -->
+            <div class="flex-1 flex justify-center overflow-x-auto hide-scrollbar mask-edges relative">
+                <nav class="flex items-center gap-8 px-1" id="main-nav">
+                    <a id="nav-home" href="/"
+                       class="nav-link text-sm font-semibold transition-colors whitespace-nowrap {% if initial_tab == 'home' or not initial_tab %}text-brand-cyan{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+                        Home
+                    </a>
+                    <a id="nav-diabetes" href="/diabetes"
+                       class="nav-link text-sm transition-colors whitespace-nowrap {% if initial_tab == 'diabetes' %}text-brand-cyan font-semibold{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+                        Diabetes Risk
+                    </a>
+                    <a id="nav-heart" href="/heart-disease"
+                       class="nav-link text-sm transition-colors whitespace-nowrap {% if initial_tab == 'heart' %}text-brand-cyan font-semibold{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+                        Heart Disease Risk
+                    </a>
+                    <a id="nav-lung" href="/lung-cancer"
+                       class="nav-link text-sm transition-colors whitespace-nowrap {% if initial_tab == 'lung' %}text-brand-cyan font-semibold{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+                        Lung Cancer Risk
+                    </a>
+                    <a id="nav-how-it-works" href="/how-it-works"
+                       class="nav-link text-sm transition-colors whitespace-nowrap {% if initial_tab == 'how-it-works' %}text-brand-cyan font-semibold{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+                        How It Works
+                    </a>
                 </nav>
             </div>
 
-            <!-- Right: Profile / Auth -->
-            <div class="flex-shrink-0 flex items-center gap-2 pl-2 md:pl-4 border-l border-slate-200">
+            <!-- Right: Auth Actions -->
+            <div class="flex-shrink-0 flex items-center gap-4">
                 <template x-if="isLoggedIn">
                     <div class="relative" x-data="{ open: false }">
-                        <button @click="open = !open" class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">
-                            <div class="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center">
-                                <span class="material-symbols-outlined text-primary text-sm">person</span>
+                        <button @click="open = !open" class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-800 transition-colors text-slate-100">
+                            <div class="w-8 h-8 rounded-full bg-brand-cyan/20 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-brand-cyan text-sm">person</span>
                             </div>
-                            <span class="text-sm font-semibold text-slate-700 hidden md:inline" x-text="userName || 'User'"></span>
+                            <span class="text-sm font-semibold hidden md:inline" x-text="userName || 'User'"></span>
                             <span class="material-symbols-outlined text-slate-400 text-sm" x-show="!open">expand_more</span>
                             <span class="material-symbols-outlined text-slate-400 text-sm" x-show="open">expand_less</span>
                         </button>
-                        <div x-show="open" @click.outside="open = false"
-                             class="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-lg border border-slate-200 py-1 z-50">
-                            <a href="/dashboard" class="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors" data-tab="dashboard">
+                        <div x-show="open" @click.outside="open = false" x-cloak
+                             class="absolute right-0 mt-2 w-48 bg-slate-900 rounded-xl shadow-lg border border-slate-700 py-1 z-50">
+                            <a href="/dashboard" class="flex items-center gap-2 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800 transition-colors" data-tab="dashboard">
                                 <span class="material-symbols-outlined text-base">dashboard</span> Dashboard
                             </a>
-                            <hr class="border-slate-100 my-1">
-                            <button @click="logout()" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                            <hr class="border-slate-800 my-1">
+                            <button @click="logout()" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-brand-rose hover:bg-slate-800 transition-colors">
                                 <span class="material-symbols-outlined text-base">logout</span> Sign Out
                             </button>
                         </div>
                     </div>
                 </template>
                 <template x-if="!isLoggedIn">
-                    <a href="/login" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors" data-tab="login">
-                        <span class="material-symbols-outlined text-base">login</span>
-                        <span class="hidden md:inline">Sign In</span>
-                    </a>
+                    <div class="flex items-center gap-4">
+                        <a href="/login" data-tab="login" class="text-sm font-semibold text-slate-100 hover:text-white transition-colors">Sign In</a>
+                        <a href="/register" data-tab="register" class="bg-brand-cyan hover:bg-cyan-400 text-brand-navy text-sm font-bold px-5 py-2.5 rounded-lg transition-colors">
+                            Get Started
+                        </a>
+                    </div>
                 </template>
             </div>
-
         </div>
     </header>
 
@@ -106,8 +80,8 @@
 <main class="flex-1 flex flex-col overflow-hidden">
 
     <!-- Scrollable Content -->
-    <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 hide-scrollbar bg-background-light scroll-smooth flex flex-col">
-        <div class="max-w-7xl mx-auto w-full flex-1">
+    <div class="flex-1 overflow-y-auto hide-scrollbar bg-background-light scroll-smooth flex flex-col">
+        <div class="w-full flex-1">
 
         <!-- ══════════════ HOME SECTION ══════════════ -->
         <div class="section-panel {% if initial_tab == 'home' or not initial_tab %}active{% endif %}" id="section-home">
@@ -116,27 +90,37 @@
 
         <!-- ══════════════ ABOUT SECTION ══════════════ -->
         <div class="section-panel {% if initial_tab == 'about' %}active{% endif %}" id="section-about">
-            {% include "partials/about.html" %}
+            <div class="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+                {% include "partials/about.html" %}
+            </div>
         </div>
 
         <!-- ══════════════ HOW IT WORKS SECTION ══════════════ -->
         <div class="section-panel {% if initial_tab == 'how-it-works' %}active{% endif %}" id="section-how-it-works">
-            {% include "partials/how_it_works.html" %}
+            <div class="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+                {% include "partials/how_it_works.html" %}
+            </div>
         </div>
 
         <!-- ══════════════ MODEL CARDS SECTION ══════════════ -->
         <div class="section-panel {% if initial_tab == 'model-cards' %}active{% endif %}" id="section-model-cards">
-            {% include "partials/model_cards.html" %}
+            <div class="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+                {% include "partials/model_cards.html" %}
+            </div>
         </div>
 
         <!-- ══════════════ LOGIN SECTION ══════════════ -->
         <div class="section-panel {% if initial_tab == 'login' %}active{% endif %}" id="section-login">
-            {% include "partials/login_form.html" %}
+            <div class="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+                {% include "partials/login_form.html" %}
+            </div>
         </div>
 
         <!-- ══════════════ REGISTER SECTION ══════════════ -->
         <div class="section-panel {% if initial_tab == 'register' %}active{% endif %}" id="section-register">
-            {% include "partials/register_form.html" %}
+            <div class="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+                {% include "partials/register_form.html" %}
+            </div>
         </div>
 
         <!-- ══════════════ DASHBOARD SECTION ══════════════ -->
@@ -148,69 +132,130 @@
 
         <!-- ══════════════ CONTACT SECTION ══════════════ -->
         <div class="section-panel {% if initial_tab == 'contact' %}active{% endif %}" id="section-contact">
-            {% include "partials/contact.html" %}
+            <div class="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+                {% include "partials/contact.html" %}
+            </div>
         </div>
 
         <!-- ══════════════ DIABETES SECTION ══════════════ -->
         <div class="section-panel {% if initial_tab == 'diabetes' %}active{% endif %}" id="section-diabetes">
-            {% set widget_id = 'diabetes' %}
-            {% include "partials/upload_widget.html" %}
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
-                <!-- Left: Form -->
-                {% include "partials/diabetes_form.html" %}
-
-                <!-- Right: Results -->
-                <div class="lg:col-span-5 space-y-6" id="diabetes-result" aria-live="polite" role="status">
-                    {% include "partials/diabetes_empty.html" %}
+            <div class="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+                {% set widget_id = 'diabetes' %}
+                {% include "partials/upload_widget.html" %}
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    
+                    <!-- Left: Form -->
+                    {% include "partials/diabetes_form.html" %}
+    
+                    <!-- Right: Results -->
+                    <div class="lg:col-span-5 space-y-6" id="diabetes-result" aria-live="polite" role="status">
+                        {% include "partials/diabetes_empty.html" %}
+                    </div>
+    
                 </div>
-
             </div>
         </div>
 
         <!-- ══════════════ HEART DISEASE SECTION ══════════════ -->
         <div class="section-panel {% if initial_tab == 'heart' %}active{% endif %}" id="section-heart">
-            {% set widget_id = 'heart' %}
-            {% include "partials/upload_widget.html" %}
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
-                <!-- Left: Form -->
-                {% include "partials/heart_form.html" %}
-
-                <!-- Right: Results -->
-                <div class="lg:col-span-5 space-y-6" id="heart-result" aria-live="polite" role="status">
-                    {% include "partials/heart_empty.html" %}
+            <div class="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+                {% set widget_id = 'heart' %}
+                {% include "partials/upload_widget.html" %}
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    
+                    <!-- Left: Form -->
+                    {% include "partials/heart_form.html" %}
+    
+                    <!-- Right: Results -->
+                    <div class="lg:col-span-5 space-y-6" id="heart-result" aria-live="polite" role="status">
+                        {% include "partials/heart_empty.html" %}
+                    </div>
+    
                 </div>
-
             </div>
         </div>
 
         <!-- ══════════════ LUNG CANCER SECTION ══════════════ -->
         <div class="section-panel {% if initial_tab == 'lung' %}active{% endif %}" id="section-lung">
-            {% set widget_id = 'lung' %}
-            {% include "partials/upload_widget.html" %}
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
-                <!-- Left: Form -->
-                {% include "partials/lung_form.html" %}
-
-                <!-- Right: Results -->
-                <div class="lg:col-span-5 space-y-6" id="lung-result" aria-live="polite" role="status">
-                    {% include "partials/lung_empty.html" %}
+            <div class="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+                {% set widget_id = 'lung' %}
+                {% include "partials/upload_widget.html" %}
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    
+                    <!-- Left: Form -->
+                    {% include "partials/lung_form.html" %}
+    
+                    <!-- Right: Results -->
+                    <div class="lg:col-span-5 space-y-6" id="lung-result" aria-live="polite" role="status">
+                        {% include "partials/lung_empty.html" %}
+                    </div>
+    
                 </div>
-
             </div>
         </div>
 
 
 
-        </div>
-        
         <!-- Persistent Footer -->
-        <footer class="mt-8 py-4 text-center border-t border-slate-200">
-            <p class="text-xs text-slate-500">
-                HealthPredict AI provides statistical risk estimates only. Not a substitute for medical advice.
-            </p>
+        <footer class="bg-brand-navy pt-20 pb-10 px-4 md:px-20 mt-12 w-full">
+            <div class="max-w-[1280px] mx-auto flex flex-col gap-16">
+                <!-- Top Footer -->
+                <div class="flex flex-col lg:flex-row gap-12 lg:gap-20">
+                    <!-- Brand Column -->
+                    <div class="flex flex-col gap-5 max-w-xs">
+                        <div class="flex items-center gap-2.5">
+                            <div class="bg-brand-cyan rounded-lg w-8 h-8 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-brand-navy text-sm font-bold">monitoring</span>
+                            </div>
+                            <span class="text-slate-50 font-display font-extrabold text-xl">HealthPredict.AI</span>
+                        </div>
+                        <p class="text-slate-400 text-sm leading-relaxed">
+                            Democratizing preventive diagnostic guidance globally. Privacy-first risk analysis models powered by modern medical intelligence.
+                        </p>
+                    </div>
+
+                    <!-- Links Columns -->
+                    <div class="flex-1 grid grid-cols-2 md:grid-cols-3 gap-8">
+                        <div class="flex flex-col gap-4">
+                            <h4 class="text-slate-50 font-display font-bold text-sm uppercase">Disease Models</h4>
+                            <div class="flex flex-col gap-2.5">
+                                <a href="/diabetes" onclick="switchTab('diabetes');return false;" class="text-slate-400 hover:text-brand-cyan text-sm transition-colors">Diabetes Risk</a>
+                                <a href="/heart-disease" onclick="switchTab('heart');return false;" class="text-slate-400 hover:text-brand-cyan text-sm transition-colors">Heart Disease Risk</a>
+                                <a href="/lung-cancer" onclick="switchTab('lung');return false;" class="text-slate-400 hover:text-brand-cyan text-sm transition-colors">Lung Cancer Risk</a>
+                                <a href="#" class="text-slate-400 hover:text-brand-cyan text-sm transition-colors">Accuracy Report</a>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-4">
+                            <h4 class="text-slate-50 font-display font-bold text-sm uppercase">Resources</h4>
+                            <div class="flex flex-col gap-2.5">
+                                <a href="#" class="text-slate-400 hover:text-brand-cyan text-sm transition-colors">Clinical Methodology</a>
+                                <a href="#" class="text-slate-400 hover:text-brand-cyan text-sm transition-colors">Research Papers</a>
+                                <a href="/how-it-works" onclick="switchTab('how-it-works');return false;" class="text-slate-400 hover:text-brand-cyan text-sm transition-colors">How It Works</a>
+                                <a href="#" class="text-slate-400 hover:text-brand-cyan text-sm transition-colors">Developer API</a>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-4">
+                            <h4 class="text-slate-50 font-display font-bold text-sm uppercase">Transparency</h4>
+                            <div class="flex flex-col gap-2.5">
+                                <a href="#" class="text-slate-400 hover:text-brand-cyan text-sm transition-colors">Open Source Code</a>
+                                <a href="#" class="text-slate-400 hover:text-brand-cyan text-sm transition-colors">Security Protocols</a>
+                                <a href="#" class="text-slate-400 hover:text-brand-cyan text-sm transition-colors">No-Logs Policy</a>
+                                <a href="#" class="text-slate-400 hover:text-brand-cyan text-sm transition-colors">Disclaimer</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Footer -->
+                <div class="border-t border-slate-800 pt-8 flex flex-col items-center gap-5">
+                    <p class="text-slate-400 text-xs text-center leading-relaxed max-w-4xl">
+                        Disclaimer: HealthPredict AI provides statistical estimates for educational screening and wellness awareness. It is not a diagnostic device, clinical consult, or medical substitute. Please coordinate with qualified medical personnel.
+                    </p>
+                    <p class="text-slate-500 text-xs font-mono">
+                        © 2026 HealthPredict AI. Released under the open-source MIT License.
+                    </p>
+                </div>
+            </div>
         </footer>
     </div>
 </main>

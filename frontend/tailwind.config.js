@@ -10,11 +10,16 @@ export default {
     theme: {
         extend: {
             colors: {
-                primary: "#0284c5",
-                "background-light": "#f5f7f8",
+                primary: "#06B6D4",
+                "brand-navy": "#0B0F19",
+                "brand-rose": "#F43F5E",
+                "brand-cyan": "#06B6D4",
+                "background-light": "#F8FAFC",
             },
             fontFamily: {
-                display: ["Inter", "sans-serif"],
+                display: ["Outfit", "sans-serif"],
+                body: ["Manrope", "sans-serif"],
+                mono: ["Geist Mono", "monospace"],
             },
             borderRadius: {
                 DEFAULT: "0.25rem",
