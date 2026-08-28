@@ -1,5 +1,5 @@
 # ── Stage 1: Builder ──────────────────────────────────────────────────────
-FROM python:3.11-slim AS builder
+FROM python:3.14-slim AS builder
 
 WORKDIR /build
 
@@ -24,7 +24,7 @@ WORKDIR /build
 
 
 # ── Stage 2: Runtime ─────────────────────────────────────────────────────
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 LABEL org.opencontainers.image.title="HealthPredict AI" \
       org.opencontainers.image.description="AI-powered clinical risk prediction (Diabetes, Heart Disease, Lung Cancer)" \
